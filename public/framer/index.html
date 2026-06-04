@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ScopeBnB Framing Tool</title>
+    <!-- Aladin Lite v3 — CDS (Centre de Données astronomiques de Strasbourg, France). Open-source sky atlas. -->
+    <script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+    <style>
+      :root { --bg:#05070f; --surface:#0b0f1d; --fg:#e8ebf5; --muted:#9aa3bd; --accent:#6ea8fe; --gold:#f5b34a; --hairline:rgba(255,255,255,.1); }
+      * { box-sizing: border-box; }
+      body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--fg); height:100vh; display:flex; flex-direction:column; }
+      header { padding:10px 16px; border-bottom:1px solid var(--hairline); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+      header h1 { font-size:14px; margin:0; font-weight:600; white-space:nowrap; }
+      #ident { font-size:13px; color:var(--accent); font-weight:600; white-space:nowrap; }
+      #labels-btn { margin-left:auto; height:32px; padding:0 12px; border:1px solid var(--hairline); border-radius:8px; background:var(--surface); color:var(--fg); cursor:pointer; font-size:13px; white-space:nowrap; }
+      #labels-btn:hover { background:rgba(255,255,255,.08); }
+      #labels-btn.active { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+      header form { display:flex; gap:6px; }
+      header input { height:32px; padding:0 10px; border:1px solid var(--hairline); border-radius:8px; background:var(--surface); color:var(--fg); font-size:13px; min-width:200px; }
+      header .go { height:32px; padding:0 12px; border:0; border-radius:8px; background:var(--surface); color:var(--fg); border:1px solid var(--hairline); cursor:pointer; font-size:13px; }
+      #map { flex:1; position:relative; overflow:hidden; }
+      #aladin-lite-div { position:absolute; inset:0; }
+      /* Hide Aladin's native chrome — we only want the sky + our own camera frame. */
+      .aladin-widgets-toolbar,
+      .aladin-logo-container,
+      .aladin-status-bar,
+      .aladin-cooFrame,
+      .aladin-location,
+      .aladin-location-copy,
+      .aladin-fov,
+      .aladin-zoom-in,
+      .aladin-zoom-out,
+      .aladin-projection-control,
+      .aladin-fullScreen-control,
+      .aladin-stack-control { display: none !important; }
+      /* Camera field-of-view box: screen-space, always centered on the view, rotates with the camera. */
+      /* Camera frame / mosaic: a zero-size point at the view centre, rotated by the
+         camera angle; panel rectangles are placed relative to it. */
+      #fov-group { position:absolute; left:50%; top:50%; width:0; height:0; pointer-events:none; }
+      .fov-panel { position:absolute; box-sizing:border-box; border:2px solid var(--gold); box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 0 12px rgba(245,179,74,.35); }
+      #fov-hint { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); pointer-events:none; font-size:12px; color:var(--muted); background:rgba(5,7,15,.6); padding:4px 10px; border-radius:6px; }
+      /* Status bar above the framing: left half = quality evaluator, right half = recommended targets. */
+      #statusbar { display:flex; align-items:stretch; border-bottom:1px solid var(--hairline); background:var(--surface); }
+      #status-left { flex:1 1 50%; min-width:0; padding:10px 16px; border-right:1px solid var(--hairline); }
+      #status-right { flex:1 1 50%; min-width:0; padding:10px 16px; display:flex; flex-direction:column; }
+      #score-row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+      #score-label { font-size:13px; font-weight:600; }
+      #score-meta { font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+      #score-track { margin-top:6px; height:6px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden; }
+      #score-fill { height:100%; width:0%; border-radius:99px; transition:width .25s ease, background-color .25s ease; }
+      #moon-row { margin-top:6px; display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+      #moon-row .dot { width:7px; height:7px; border-radius:99px; background:#e9c46a; flex:none; }
+      #curve { display:block; width:100%; height:92px; margin-top:18px; }
+      #curve-axis { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:5px; }
+      #curve-legend { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:8px; font-size:10.5px; color:var(--muted); }
+      #curve-legend span { display:inline-flex; align-items:center; gap:5px; }
+      #curve-legend i { display:inline-block; width:14px; flex:none; }
+      #curve-legend i.ln { height:0; border-top:2px solid currentColor; }
+      #curve-legend i.target { color:#6ea8fe; }
+      #curve-legend i.moon { color:#e9c46a; border-top-style:dashed; }
+      #curve-legend i.min { color:#b07cff; border-top-style:dashed; }
+      #curve-legend i.dark { height:11px; border-radius:2px; background:rgba(110,168,254,0.18); border:1px solid var(--hairline); }
+      /* Recommended targets carousel */
+      #recos-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+      #recos-title { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+      #recos-nav { display:flex; gap:6px; }
+      #recos-nav button { width:24px; height:24px; border-radius:6px; border:1px solid var(--hairline); background:var(--bg); color:var(--fg); cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; }
+      #recos-nav button:hover { background:rgba(255,255,255,.1); }
+      #recos-track { display:flex; gap:8px; overflow-x:auto; scroll-behavior:smooth; padding-bottom:4px; scrollbar-width:none; }
+      #recos-track::-webkit-scrollbar { display:none; }
+      .reco { flex:none; width:128px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid var(--hairline); border-radius:8px; overflow:hidden; }
+      .reco:hover { background:rgba(255,255,255,.09); }
+      .reco .thumb { width:100%; height:72px; object-fit:cover; display:block; background:#05070f; }
+      .reco .nm { padding:6px 8px 0; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .reco .sc { padding:0 8px 8px; margin-top:4px; font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px; }
+      .reco .dot { width:7px; height:7px; border-radius:99px; flex:none; }
+      footer { padding:12px 16px; border-top:1px solid var(--hairline); display:flex; align-items:center; gap:16px; flex-wrap:wrap; background:var(--surface); }
+      label { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+      input[type=range] { accent-color: var(--accent); }
+      .val { font-variant-numeric: tabular-nums; color:var(--fg); min-width:46px; }
+      footer select { height:30px; background:var(--surface); color:var(--fg); border:1px solid var(--hairline); border-radius:6px; padding:0 6px; font-size:12px; cursor:pointer; }
+      button#use { height:36px; padding:0 16px; border:0; border-radius:8px; background:var(--accent); color:var(--bg); font-weight:600; font-size:13px; cursor:pointer; margin-left:auto; }
+      button#use:hover { opacity:.9; }
+      button#use.disabled { background:#1b2030; color:var(--muted); cursor:not-allowed; opacity:1; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>◐ ScopeBnB Framing</h1>
+      <span id="ident">—</span>
+      <button id="labels-btn" type="button" title="Toggle object labels">◎ Labels</button>
+      <form id="search-form">
+        <input id="search" type="text" placeholder="Search an object, e.g. M16, NGC 7000…" autocomplete="off" />
+        <button class="go" type="submit">Go</button>
+      </form>
+    </header>
+
+    <div id="statusbar">
+      <div id="status-left">
+        <div id="score-row">
+          <span id="score-label">—</span>
+          <span id="score-meta"></span>
+        </div>
+        <div id="score-track"><div id="score-fill"></div></div>
+        <svg id="curve" viewBox="0 0 400 78" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="curve-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#6ea8fe" stop-opacity="0.32" />
+              <stop offset="1" stop-color="#6ea8fe" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <rect id="curve-dark" x="0" y="0" width="0" height="78" fill="rgba(110,168,254,0.14)" />
+          <line id="curve-grid" x1="0" x2="400" stroke="rgba(255,255,255,0.06)" stroke-width="1" vector-effect="non-scaling-stroke" />
+          <line id="curve-min" x1="0" x2="400" stroke="#b07cff" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke" />
+          <path id="curve-fill" fill="url(#curve-grad)" stroke="none" />
+          <path id="curve-moon" fill="none" stroke="#e9c46a" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.7" vector-effect="non-scaling-stroke" />
+          <path id="curve-target" fill="none" stroke="#6ea8fe" stroke-width="2" vector-effect="non-scaling-stroke" />
+        </svg>
+        <div id="curve-axis"><span>Dusk</span><span>Midnight</span><span>Dawn</span></div>
+        <div id="curve-legend">
+          <span><i class="ln target"></i>Target altitude</span>
+          <span><i class="ln moon"></i>Moon</span>
+          <span><i class="ln min"></i>30° minimum</span>
+          <span><i class="dark"></i>Astronomical dark</span>
+        </div>
+        <div id="moon-row"><span class="dot"></span><span id="moon-text">—</span></div>
+      </div>
+      <div id="status-right">
+        <div id="recos-head">
+          <span id="recos-title">Recommended this night</span>
+          <div id="recos-nav">
+            <button id="recos-prev" type="button" aria-label="Scroll left">‹</button>
+            <button id="recos-next" type="button" aria-label="Scroll right">›</button>
+          </div>
+        </div>
+        <div id="recos-track"></div>
+      </div>
+    </div>
+
+    <div id="map">
+      <div id="aladin-lite-div"></div>
+      <div id="fov-group"></div>
+      <div id="fov-hint">Pan the sky to compose · the box is your camera frame</div>
+    </div>
+
+    <footer>
+      <label>
+        Camera rotation
+        <input id="rot" type="range" min="0" max="359" value="0" />
+        <span class="val" id="rot-val">0°</span>
+      </label>
+      <label>
+        Mosaic
+        <select id="mosaic">
+          <option value="1x1">Single</option>
+          <option value="2x1">2 × 1</option>
+          <option value="1x2">1 × 2</option>
+          <option value="2x2">2 × 2</option>
+        </select>
+      </label>
+      <span class="target" id="fov-label">FOV ≈ 3.02° × 2.02°</span>
+      <button id="use">Use this framing →</button>
+    </footer>
+
+    <script>
+      const DEG = Math.PI / 180;
+      // Sensor field of view in degrees (RedCat 91 @ 448mm + ASI2600 APS-C).
+      const FOV_W = 3.02, FOV_H = 2.02;
+
+      const params = new URLSearchParams(location.search);
+      let targetName = params.get("target") || "M42";
+      let startRa = parseFloat(params.get("ra"));
+      let startDec = parseFloat(params.get("dec"));
+      let rotation = 0;
+      let mCols = 1, mRows = 1; // mosaic grid
+      const OVERLAP = 0.15; // panel overlap fraction
+      const dateStr = params.get("date"); // YYYY-MM-DD (chosen night)
+
+      // --- Real-time target scoring for the chosen night (Starfront, Texas) ---
+      const OBS = { lat: 31.5472, lon: -99.3825, utcOffset: -5 };
+      const SUN_DARK = -18, ALT_MIN = 30;
+      const norm360 = (x) => ((x % 360) + 360) % 360;
+      const toJD = (d) => d.getTime() / 86400000 + 2440587.5;
+      const gmst = (jd) => norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0));
+      function sunEqu(jd) {
+        const n = jd - 2451545.0;
+        const L = norm360(280.46 + 0.9856474 * n);
+        const g = norm360(357.528 + 0.9856003 * n);
+        const lam = (L + 1.915 * Math.sin(g * DEG) + 0.02 * Math.sin(2 * g * DEG)) * DEG;
+        const eps = (23.439 - 0.0000004 * n) * DEG;
+        return {
+          ra: norm360(Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)) / DEG),
+          dec: Math.asin(Math.sin(eps) * Math.sin(lam)) / DEG,
+        };
+      }
+      function altOf(ra, dec, jd) {
+        const ha = (norm360(gmst(jd) + OBS.lon) - ra) * DEG;
+        const sa =
+          Math.sin(OBS.lat * DEG) * Math.sin(dec * DEG) +
+          Math.cos(OBS.lat * DEG) * Math.cos(dec * DEG) * Math.cos(ha);
+        return Math.asin(Math.max(-1, Math.min(1, sa))) / DEG;
+      }
+      const sunEclipticLon = (jd) => {
+        const n = jd - 2451545.0;
+        const L = norm360(280.46 + 0.9856474 * n);
+        const g = norm360(357.528 + 0.9856003 * n);
+        return norm360(L + 1.915 * Math.sin(g * DEG) + 0.02 * Math.sin(2 * g * DEG));
+      };
+      function moonEqu(jd) {
+        const d = jd - 2451543.5;
+        let N = norm360(125.1228 - 0.0529538083 * d);
+        const i = 5.1454;
+        let w = norm360(318.0634 + 0.1643573223 * d);
+        const a = 60.2666, e = 0.0549, M = norm360(115.3654 + 13.0649929509 * d);
+        let E = M + (180 / Math.PI) * e * Math.sin(M * DEG) * (1 + e * Math.cos(M * DEG));
+        for (let it = 0; it < 6; it++) {
+          const dE = (E - (180 / Math.PI) * e * Math.sin(E * DEG) - M) / (1 - e * Math.cos(E * DEG));
+          E -= dE;
+          if (Math.abs(dE) < 1e-4) break;
+        }
+        const xv = a * (Math.cos(E * DEG) - e), yv = a * Math.sqrt(1 - e * e) * Math.sin(E * DEG);
+        const v = Math.atan2(yv, xv) / DEG, r = Math.sqrt(xv * xv + yv * yv);
+        const Nr = N * DEG, wr = (v + w) * DEG, ir = i * DEG;
+        const xh = r * (Math.cos(Nr) * Math.cos(wr) - Math.sin(Nr) * Math.sin(wr) * Math.cos(ir));
+        const yh = r * (Math.sin(Nr) * Math.cos(wr) + Math.cos(Nr) * Math.sin(wr) * Math.cos(ir));
+        const zh = r * (Math.sin(wr) * Math.sin(ir));
+        const lon = norm360(Math.atan2(yh, xh) / DEG), lat = Math.atan2(zh, Math.sqrt(xh * xh + yh * yh)) / DEG;
+        const ecl = (23.4393 - 3.563e-7 * d) * DEG, lr = lon * DEG, br = lat * DEG;
+        const xe = Math.cos(lr) * Math.cos(br);
+        const ye = Math.sin(lr) * Math.cos(br) * Math.cos(ecl) - Math.sin(br) * Math.sin(ecl);
+        const ze = Math.sin(lr) * Math.cos(br) * Math.sin(ecl) + Math.sin(br) * Math.cos(ecl);
+        return { ra: norm360(Math.atan2(ye, xe) / DEG), dec: Math.atan2(ze, Math.sqrt(xe * xe + ye * ye)) / DEG, lon };
+      }
+      function moonIllum(jd) {
+        const elong = norm360(moonEqu(jd).lon - sunEclipticLon(jd));
+        const e = elong > 180 ? 360 - elong : elong;
+        const fraction = (1 - Math.cos(e * DEG)) / 2;
+        const phase = e < 12 ? "New" : e > 168 ? "Full" : e < 90 ? (elong <= 180 ? "Waxing crescent" : "Waning crescent") : elong <= 180 ? "Waxing gibbous" : "Waning gibbous";
+        return { fraction, phase };
+      }
+      const angularSep = (r1, d1, r2, d2) => {
+        const a = Math.sin(d1 * DEG) * Math.sin(d2 * DEG) + Math.cos(d1 * DEG) * Math.cos(d2 * DEG) * Math.cos((r1 - r2) * DEG);
+        return Math.acos(Math.max(-1, Math.min(1, a))) / DEG;
+      };
+
+      function scoreAt(ra, dec) {
+        const base = dateStr ? new Date(dateStr + "T12:00:00Z") : new Date();
+        const local = new Date(base.getTime() + OBS.utcOffset * 3600000);
+        const y = local.getUTCFullYear(), m = local.getUTCMonth(), d = local.getUTCDate();
+        const midnight = Date.UTC(y, m, d, 0, 0, 0, 0) + (24 - OBS.utcOffset) * 3600000;
+        const illum = moonIllum(toJD(new Date(midnight)));
+        const moonMid = moonEqu(toJD(new Date(midnight)));
+        const sep = Math.round(angularSep(ra, dec, moonMid.ra, moonMid.dec));
+
+        const pts = [];
+        let maxAlt = -90, darkHours = 0, darkStart = null, darkEnd = null, moonMaxDark = -90;
+        for (let h = 17; h <= 32 + 1e-9; h += 0.25) {
+          const jd = toJD(new Date(Date.UTC(y, m, d, 0, 0, 0, 0) + (h - OBS.utcOffset) * 3600000));
+          const sun = sunEqu(jd);
+          const dark = altOf(sun.ra, sun.dec, jd) < SUN_DARK;
+          const a = Math.max(0, altOf(ra, dec, jd));
+          const mp = moonEqu(jd);
+          const ma = Math.max(0, altOf(mp.ra, mp.dec, jd));
+          if (dark) {
+            if (darkStart === null) darkStart = h;
+            darkEnd = h;
+            if (a > maxAlt) maxAlt = a;
+            if (a >= ALT_MIN) darkHours += 0.25;
+            if (ma > moonMaxDark) moonMaxDark = ma;
+          }
+          pts.push({ h, alt: a, moon: ma });
+        }
+        maxAlt = Math.max(0, maxAlt);
+        const altScore = Math.min(1, maxAlt / 70);
+        const hoursScore = Math.min(1, darkHours / 6);
+        let score = Math.round((altScore * 0.6 + hoursScore * 0.4) * 100);
+
+        const illumPct = Math.round(illum.fraction * 100);
+        const moonUpDark = moonMaxDark > 0;
+        if (moonUpDark && illumPct > 55 && sep < 60) score = Math.round(score * 0.7); // bright moon nearby
+        else if (!moonUpDark || illumPct < 20) score = Math.min(100, score + 5);
+        score = Math.max(0, Math.min(100, score));
+
+        const label = score >= 75 ? "Excellent" : score >= 55 ? "Good" : score >= 35 ? "Fair" : "Poor";
+        return {
+          score, label, maxAlt: Math.round(maxAlt), darkHours: +darkHours.toFixed(1),
+          pts, darkStart, darkEnd,
+          moon: { illumPct, phase: illum.phase, sep, upDark: moonUpDark },
+        };
+      }
+
+      const rotInput = document.getElementById("rot");
+      const rotVal = document.getElementById("rot-val");
+      const fovGroup = document.getElementById("fov-group");
+      const mosaicSel = document.getElementById("mosaic");
+      const labelsBtn = document.getElementById("labels-btn");
+      const fovLabel = document.getElementById("fov-label");
+      let labelsOn = false;
+      let labelsCat = null;
+      let labelsTimer = null;
+
+      // AstroBin-style annotations: overlay catalogued objects (SIMBAD) with labels.
+      function refreshLabels() {
+        if (!aladin) return;
+        if (labelsCat && aladin.removeLayer) {
+          try { aladin.removeLayer(labelsCat); } catch (e) { /* noop */ }
+          labelsCat = null;
+        }
+        if (!labelsOn) return;
+        const c = aladin.getRaDec();
+        let fov = aladin.getFov ? aladin.getFov() : 5;
+        const radius = ((Array.isArray(fov) ? fov[0] : fov) * 0.6).toFixed(2);
+        // Only notable DSOs (M/NGC/IC/…) — like AstroBin annotations, not every faint star.
+        fetch(`/api/objects-in-field?ra=${c[0].toFixed(4)}&dec=${c[1].toFixed(4)}&radius=${radius}`)
+          .then((r) => (r.ok ? r.json() : { objects: [] }))
+          .then((d) => {
+            if (!labelsOn) return; // toggled off while loading
+            try {
+              const cat = A.catalog({
+                name: "labels",
+                shape: "circle",
+                sourceSize: 18,
+                color: "#8fb6ff",
+                displayLabel: true,
+                labelColumn: "name",
+                labelColor: "#dbe7ff",
+                labelFont: "13px sans-serif",
+              });
+              aladin.addCatalog(cat);
+              cat.addSources((d.objects || []).map((o) => A.source(o.ra, o.dec, { name: o.name })));
+              labelsCat = cat;
+            } catch (e) {
+              /* catalog API unavailable */
+            }
+          })
+          .catch(() => {});
+      }
+      function scheduleLabels() {
+        if (!labelsOn) return;
+        if (labelsTimer) clearTimeout(labelsTimer);
+        labelsTimer = setTimeout(refreshLabels, 500);
+      }
+      const searchForm = document.getElementById("search-form");
+      const searchInput = document.getElementById("search");
+      const scoreFill = document.getElementById("score-fill");
+      const scoreLabel = document.getElementById("score-label");
+      const scoreMeta = document.getElementById("score-meta");
+      const curveDark = document.getElementById("curve-dark");
+      const curveGrid = document.getElementById("curve-grid");
+      const curveMin = document.getElementById("curve-min");
+      const curveMoon = document.getElementById("curve-moon");
+      const curveFill = document.getElementById("curve-fill");
+      const curveTarget = document.getElementById("curve-target");
+      const moonText = document.getElementById("moon-text");
+      const identEl = document.getElementById("ident");
+      const useBtn = document.getElementById("use");
+      let origName = targetName; // friendly name of the start/searched target
+      let identTimer = null;
+      let lastScore = 100; // latest target score; framing is blocked when Poor
+      const MIN_SCORE = 35; // below this (Poor) we don't allow confirming a framing
+
+      let aladin;
+
+      function fmtCoords(ra, dec) {
+        const hrs = ra / 15;
+        const hh = Math.floor(hrs);
+        let mm = Math.round((hrs - hh) * 60);
+        let H = hh;
+        if (mm === 60) { mm = 0; H = (H + 1) % 24; }
+        const sgn = dec < 0 ? "−" : "+";
+        const ad = Math.abs(dec);
+        const dd = Math.floor(ad);
+        let dm = Math.round((ad - dd) * 60);
+        let D = dd;
+        if (dm === 60) { dm = 0; D += 1; }
+        return `${String(H).padStart(2, "0")}h${String(mm).padStart(2, "0")}m ${sgn}${D}°${String(dm).padStart(2, "0")}′`;
+      }
+
+      // Reverse-lookup the object at the view centre (SIMBAD via /api/identify).
+      function identify() {
+        if (!aladin || !aladin.getRaDec) return;
+        const c = aladin.getRaDec();
+        // Near the start/searched target → keep its friendly name.
+        if (Number.isFinite(startRa) && Number.isFinite(startDec) && angularSep(c[0], c[1], startRa, startDec) < 0.4) {
+          targetName = origName;
+          identEl.textContent = origName;
+          return;
+        }
+        fetch(`/api/identify?ra=${c[0].toFixed(4)}&dec=${c[1].toFixed(4)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            if (d && d.name) {
+              targetName = d.name;
+              identEl.textContent = d.name;
+            } else {
+              const s = fmtCoords(c[0], c[1]);
+              targetName = s;
+              identEl.textContent = s;
+            }
+          })
+          .catch(() => {});
+      }
+      function scheduleIdentify() {
+        if (identTimer) clearTimeout(identTimer);
+        identTimer = setTimeout(identify, 600);
+      }
+
+      // Update the real-time scoring bar + night curve for the current view centre.
+      const recosTrack = document.getElementById("recos-track");
+      const scoreColor = (s) => (s >= 75 ? "#34d399" : s >= 55 ? "#6ea8fe" : s >= 35 ? "#e9c46a" : "#f87171");
+      // Real sky thumbnail from CDS hips2fits (DSS2 color).
+      const thumbUrl = (ra, dec) =>
+        `https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/DSS2/color&width=160&height=92&fov=1.8&projection=TAN&coordsys=icrs&ra=${ra}&dec=${dec}&format=jpg`;
+      const CW = 400, CH = 78;
+      const cx = (h) => ((h - 17) / 15) * CW;
+      const cy = (alt) => (1 - Math.min(90, Math.max(0, alt)) / 90) * CH;
+      function updateScore() {
+        if (!aladin || !aladin.getRaDec) return;
+        const c = aladin.getRaDec();
+        const r = scoreAt(c[0], c[1]);
+
+        const lvlColor = scoreColor(r.score);
+        scoreFill.style.width = r.score + "%";
+        scoreFill.style.backgroundColor = lvlColor;
+        scoreLabel.textContent = `${r.label} target · ${r.score}/100`;
+        scoreMeta.textContent = r.maxAlt > 0 ? `peaks ${r.maxAlt}° · ${r.darkHours}h above 30°` : "below horizon at night";
+
+        // night altitude curve
+        const toPath = (sel) =>
+          r.pts.map((p, i) => `${i ? "L" : "M"}${cx(p.h).toFixed(1)},${cy(sel(p)).toFixed(1)}`).join(" ");
+        const targetPath = toPath((p) => p.alt);
+        curveTarget.setAttribute("d", targetPath);
+        curveMoon.setAttribute("d", toPath((p) => p.moon));
+        // Soft area fill under the target curve.
+        const xStart = cx(r.pts[0].h).toFixed(1);
+        const xEnd = cx(r.pts[r.pts.length - 1].h).toFixed(1);
+        curveFill.setAttribute("d", `${targetPath} L${xEnd},${CH} L${xStart},${CH} Z`);
+        const yMin = cy(ALT_MIN);
+        curveMin.setAttribute("y1", yMin);
+        curveMin.setAttribute("y2", yMin);
+        const yGrid = cy(60); // faint 60° gridline
+        curveGrid.setAttribute("y1", yGrid);
+        curveGrid.setAttribute("y2", yGrid);
+        if (r.darkStart != null && r.darkEnd != null) {
+          curveDark.setAttribute("x", cx(r.darkStart));
+          curveDark.setAttribute("width", Math.max(0, cx(r.darkEnd) - cx(r.darkStart)));
+        }
+
+        const mo = r.moon;
+        moonText.textContent = `Moon: ${mo.phase} · ${mo.illumPct}% lit · ${mo.sep}° away · ${
+          mo.upDark ? "up during darkness" : "below horizon"
+        }`;
+
+        // Block confirming a framing on a Poor target — we'd only have to reject the order.
+        lastScore = r.score;
+        const blocked = r.score < MIN_SCORE;
+        useBtn.disabled = blocked;
+        useBtn.classList.toggle("disabled", blocked);
+        useBtn.textContent = blocked ? "Too poor to image" : "Use this framing →";
+        // Tint the button by quality level (cleared when blocked → CSS .disabled takes over).
+        useBtn.style.backgroundColor = blocked ? "" : lvlColor;
+      }
+
+      // Jump to a target and adopt it as the current (named) target.
+      function gotoSky(name, ra, dec) {
+        if (!aladin) return;
+        startRa = ra;
+        startDec = dec;
+        origName = name;
+        targetName = name;
+        identEl.textContent = name;
+        aladin.gotoRaDec(ra, dec);
+        updateBox();
+        updateScore();
+      }
+
+      // Load the catalog, score each target for this night, list the best as a carousel.
+      function loadRecos() {
+        fetch("/api/targets")
+          .then((r) => (r.ok ? r.json() : []))
+          .then((list) => {
+            const scored = list
+              .map((t) => ({ ...t, s: scoreAt(t.ra, t.dec).score }))
+              .filter((t) => t.s >= MIN_SCORE)
+              .sort((a, b) => b.s - a.s)
+              .slice(0, 14);
+            recosTrack.innerHTML = "";
+            for (const t of scored) {
+              const el = document.createElement("div");
+              el.className = "reco";
+              el.innerHTML =
+                `<img class="thumb" src="${thumbUrl(t.ra, t.dec)}" alt="" loading="lazy">` +
+                `<div class="nm">${t.name}</div>` +
+                `<div class="sc"><span class="dot" style="background:${scoreColor(t.s)}"></span>${t.s}/100</div>`;
+              el.addEventListener("click", () => gotoSky(t.name, t.ra, t.dec));
+              recosTrack.appendChild(el);
+            }
+          })
+          .catch(() => {});
+      }
+
+      // Draw the camera frame (or mosaic grid) on screen, sized from the current
+      // zoom and rotated by the camera angle. Container px width (getSize lags).
+      function updateBox() {
+        if (!aladin) return;
+        const cw = fovGroup.parentElement ? fovGroup.parentElement.clientWidth : 0;
+        let fov = aladin.getFov ? aladin.getFov() : 5;
+        const fovX = Array.isArray(fov) ? fov[0] : fov;
+        if (!cw || !fovX || !isFinite(fovX)) return;
+        const degPerPx = fovX / cw;
+        const pw = FOV_W / degPerPx;
+        const ph = FOV_H / degPerPx;
+        const sx = pw * (1 - OVERLAP);
+        const sy = ph * (1 - OVERLAP);
+        fovGroup.style.transform = `rotate(${rotation}deg)`;
+        let html = "";
+        for (let j = 0; j < mRows; j++) {
+          for (let i = 0; i < mCols; i++) {
+            const ox = (i - (mCols - 1) / 2) * sx;
+            const oy = (j - (mRows - 1) / 2) * sy;
+            html += `<div class="fov-panel" style="left:${(ox - pw / 2).toFixed(1)}px;top:${(oy - ph / 2).toFixed(1)}px;width:${pw.toFixed(1)}px;height:${ph.toFixed(1)}px"></div>`;
+          }
+        }
+        fovGroup.innerHTML = html;
+        // Update the FOV label with the total mosaic coverage.
+        const totW = (FOV_W + (mCols - 1) * FOV_W * (1 - OVERLAP)).toFixed(2);
+        const totH = (FOV_H + (mRows - 1) * FOV_H * (1 - OVERLAP)).toFixed(2);
+        const n = mCols * mRows;
+        fovLabel.textContent = n > 1 ? `Mosaic ${totW}° × ${totH}° · ${n} panels` : `FOV ≈ ${FOV_W}° × ${FOV_H}°`;
+      }
+
+      // Zoom out so the whole camera frame is comfortably visible on load.
+      function fitFov() {
+        const el = document.getElementById("map");
+        if (!el || !aladin || !aladin.setFoV) return;
+        const W = el.clientWidth, H = el.clientHeight;
+        if (!W || !H) return;
+        const degPerPx = FOV_H / (0.62 * H); // frame height ≈ 62% of the map height
+        aladin.setFoV(degPerPx * W);
+      }
+
+      // Centres (RA/Dec) of each mosaic panel, given the view centre.
+      function panelCenters(cRa, cDec) {
+        const pa = rotation * DEG;
+        const cosr = Math.cos(pa), sinr = Math.sin(pa);
+        const cosDec = Math.cos(cDec * DEG) || 1;
+        const sxDeg = FOV_W * (1 - OVERLAP), syDeg = FOV_H * (1 - OVERLAP);
+        const out = [];
+        for (let j = 0; j < mRows; j++) {
+          for (let i = 0; i < mCols; i++) {
+            const ox = (i - (mCols - 1) / 2) * sxDeg;
+            const oy = (j - (mRows - 1) / 2) * syDeg;
+            const rx = ox * cosr - oy * sinr;
+            const ry = ox * sinr + oy * cosr;
+            out.push({ ra: +(cRa + rx / cosDec).toFixed(4), dec: +(cDec + ry).toFixed(4) });
+          }
+        }
+        return out;
+      }
+
+      // Capture the current sky view, draw the camera frame on top, and send
+      // it back to the booking page along with the coordinates and rotation.
+      async function captureAndPost() {
+        if (lastScore < MIN_SCORE) return; // Poor target — confirming is blocked
+        const c = aladin.getRaDec();
+        const mosaic = { cols: mCols, rows: mRows, overlap: OVERLAP, panels: panelCenters(c[0], c[1]) };
+        const payload = { type: "scopebnb-framing", ra: c[0], dec: c[1], rotation, targetName, mosaic };
+        // Works both as a popup (window.opener) and embedded in an iframe (window.parent).
+        const isPopup = window.opener && window.opener !== window;
+        const dest = isPopup ? window.opener : window.parent;
+        const send = (image) => {
+          if (dest) dest.postMessage({ ...payload, image }, "*");
+          if (isPopup) setTimeout(() => window.close(), 120);
+        };
+        try {
+          // Don't bake the object labels into the saved framing image.
+          const hadLabels = labelsOn && labelsCat;
+          if (hadLabels && aladin.removeLayer) {
+            try { aladin.removeLayer(labelsCat); } catch (e) { /* noop */ }
+            labelsCat = null;
+            await new Promise((r) => setTimeout(r, 180)); // let Aladin redraw without the labels
+          }
+          let url = aladin.getViewDataURL ? aladin.getViewDataURL() : null;
+          if (url && typeof url.then === "function") url = await url; // Aladin v3 returns a Promise
+          if (hadLabels) refreshLabels(); // restore labels on the live view
+          if (!url) return send(null);
+          let fov = aladin.getFov ? aladin.getFov() : 5;
+          const fovX = Array.isArray(fov) ? fov[0] : fov;
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const OUT_W = Math.min(720, img.naturalWidth || 720);
+              const scale = OUT_W / (img.naturalWidth || OUT_W);
+              const OUT_H = Math.round((img.naturalHeight || OUT_W) * scale);
+              const cv = document.createElement("canvas");
+              cv.width = OUT_W;
+              cv.height = OUT_H;
+              const ctx = cv.getContext("2d");
+              ctx.drawImage(img, 0, 0, OUT_W, OUT_H);
+              const bw = (FOV_W / fovX) * OUT_W;
+              const bh = (FOV_H / fovX) * OUT_W;
+              const sx = bw * (1 - OVERLAP);
+              const sy = bh * (1 - OVERLAP);
+              ctx.translate(OUT_W / 2, OUT_H / 2);
+              ctx.rotate((rotation * Math.PI) / 180);
+              ctx.strokeStyle = "#6ea8fe";
+              ctx.lineWidth = Math.max(2, OUT_W / 360);
+              for (let j = 0; j < mRows; j++) {
+                for (let i = 0; i < mCols; i++) {
+                  const ox = (i - (mCols - 1) / 2) * sx;
+                  const oy = (j - (mRows - 1) / 2) * sy;
+                  ctx.strokeRect(ox - bw / 2, oy - bh / 2, bw, bh);
+                }
+              }
+              send(cv.toDataURL("image/jpeg", 0.82));
+            } catch (e) {
+              send(null);
+            }
+          };
+          img.onerror = () => send(null);
+          img.src = url;
+        } catch (e) {
+          send(null);
+        }
+      }
+
+      A.init.then(() => {
+        aladin = A.aladin("#aladin-lite-div", {
+          survey: "P/DSS2/color",
+          fov: 5,
+          cooFrame: "ICRS",
+          showReticle: false,
+          showCooGrid: false,
+        });
+
+        if (Number.isFinite(startRa) && Number.isFinite(startDec)) {
+          aladin.gotoRaDec(startRa, startDec);
+        } else {
+          aladin.gotoObject(targetName);
+        }
+
+        identEl.textContent = origName;
+        fitFov();
+        updateBox();
+        updateScore();
+        loadRecos();
+        setTimeout(fitFov, 400);
+        setTimeout(fitFov, 1200);
+        document.getElementById("recos-prev").addEventListener("click", () => recosTrack.scrollBy({ left: -254 }));
+        document.getElementById("recos-next").addEventListener("click", () => recosTrack.scrollBy({ left: 254 }));
+        // The box resizes with zoom; the score + identity update as we pan.
+        if (aladin.on) {
+          aladin.on("zoomChanged", updateBox);
+          aladin.on("positionChanged", () => {
+            updateBox();
+            updateScore();
+            scheduleIdentify();
+            scheduleLabels();
+          });
+        }
+        // Fallback in case events fire before Aladin is fully ready.
+        setTimeout(() => { updateBox(); updateScore(); identify(); }, 600);
+        setTimeout(() => { updateBox(); updateScore(); }, 1500);
+        window.addEventListener("resize", updateBox);
+        // Recompute whenever the map container actually changes size.
+        if (window.ResizeObserver) {
+          const ro = new ResizeObserver(() => updateBox());
+          const mapEl = document.getElementById("map");
+          if (mapEl) ro.observe(mapEl);
+        }
+
+        rotInput.addEventListener("input", () => {
+          rotation = parseInt(rotInput.value, 10);
+          rotVal.textContent = rotation + "°";
+          updateBox();
+        });
+
+        mosaicSel.addEventListener("change", () => {
+          const [cols, rows] = mosaicSel.value.split("x").map(Number);
+          mCols = cols;
+          mRows = rows;
+          updateBox();
+        });
+
+        labelsBtn.addEventListener("click", () => {
+          labelsOn = !labelsOn;
+          labelsBtn.classList.toggle("active", labelsOn);
+          refreshLabels();
+        });
+
+        // Jump to a named object and adopt it as the referenced target.
+        searchForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const q = searchInput.value.trim();
+          if (!q) return;
+          aladin.gotoObject(
+            q,
+            {
+              success: () => {
+                const c = aladin.getRaDec();
+                startRa = c[0];
+                startDec = c[1];
+                origName = q;
+                targetName = q;
+                identEl.textContent = q;
+                updateBox();
+                updateScore();
+              },
+              error: () => {
+                searchInput.value = "";
+                searchInput.placeholder = `Couldn't find "${q}". Try another name`;
+              },
+            },
+          );
+        });
+
+        document.getElementById("use").addEventListener("click", captureAndPost);
+      });
+
+      // Parent page can set/replace the target after the tool loads.
+      window.addEventListener("message", (e) => {
+        if (!aladin || !e.data || e.data.type !== "scopebnb-set-target") return;
+        const ra = parseFloat(e.data.ra), dec = parseFloat(e.data.dec);
+        targetName = e.data.target || targetName;
+        if (Number.isFinite(ra) && Number.isFinite(dec)) aladin.gotoRaDec(ra, dec);
+        else if (targetName) aladin.gotoObject(targetName);
+        updateBox();
+      });
+    </script>
+  </body>
+</html>

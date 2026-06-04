@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+/* ScopeBnB — deep-space dark theme.
+   Single source of truth for design tokens; tweak here, not in components. */
+:root {
+  --background: #05070f;
+  --surface: #0b0f1d;
+  --surface-2: #121830;
+  --foreground: #e8ebf5;
+  --muted: #9aa3bd;
+  --accent: #6ea8fe;     /* starlight blue */
+  --accent-2: #b07cff;   /* nebula violet  */
+  --gold: #f5b34a;       /* amber — reserved for the most important highlights */
+  --gold-soft: #ffd591;  /* lighter amber for text on dark surfaces */
+  --hairline: rgba(255, 255, 255, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-hairline: var(--hairline);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Pointer cursor on all interactive buttons (Tailwind preflight doesn't add it). */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+/* Make the native date picker icon visible on the dark theme. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.55;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Home logo: a soft glow that cycles colour in sync with the wordmark
+   gradient (celeste → blue → violet). Not a twinkle — the hue shifts. */
+.logo-glow {
+  animation: logoGlow 9s ease-in-out infinite;
+}
+@keyframes logoGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 16px rgba(90, 209, 255, 0.45));
+  }
+  33% {
+    filter: drop-shadow(0 0 22px rgba(124, 155, 255, 0.5));
+  }
+  66% {
+    filter: drop-shadow(0 0 22px rgba(176, 124, 255, 0.5));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-glow {
+    animation: none;
+  }
+}
+
+/* Calendar: hovering an available night tints it with that night's tier colour
+   (set per-cell via the --tier-bg custom property). */
+.cal-day:hover {
+  background-color: var(--tier-bg);
+}
+
+/* Scroll-reveal for the Apple-style product showcase. */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  [data-parallax] {
+    transform: none !important;
+  }
+}
+
+/* Site-wide animated starfield: two layers drifting very slowly in different
+   directions for parallax depth, plus a gentle twinkle. Seamless loop (each
+   drifts exactly one tile). Sits behind all content. */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% -10%, #0a1126 0%, var(--background) 55%);
+}
+.starfield::before,
+.starfield::after {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background-repeat: repeat;
+  will-change: transform;
+}
+/* Far layer — many tiny faint stars in varied stellar colours, gently twinkling. */
+.starfield::before {
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 32% 62%, rgba(170, 200, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 54% 28%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 68% 74%, rgba(255, 188, 200, 0.45), transparent),
+    radial-gradient(1px 1px at 81% 40%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 91% 12%, rgba(255, 210, 160, 0.5), transparent),
+    radial-gradient(1px 1px at 22% 88%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 44% 8%, rgba(185, 212, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 7% 50%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 60% 95%, rgba(255, 224, 196, 0.45), transparent);
+  background-size: 400px 400px;
+  opacity: 0.55;
+  animation: starDriftA 95s linear infinite, starTwinkle 7s ease-in-out infinite;
+}
+/* Near layer — brighter stars; a few have a soft coloured glow (halo + core). */
+.starfield::after {
+  background-image:
+    /* blue glow */
+    radial-gradient(8px 8px at 22% 30%, rgba(150, 190, 255, 0.28), transparent 68%),
+    radial-gradient(1.8px 1.8px at 22% 30%, rgba(225, 238, 255, 0.95), transparent),
+    /* rose glow */
+    radial-gradient(7px 7px at 70% 64%, rgba(255, 178, 200, 0.24), transparent 68%),
+    radial-gradient(1.6px 1.6px at 70% 64%, rgba(255, 235, 240, 0.9), transparent),
+    /* amber glow */
+    radial-gradient(7px 7px at 50% 12%, rgba(255, 205, 150, 0.24), transparent 68%),
+    radial-gradient(1.6px 1.6px at 50% 12%, rgba(255, 240, 220, 0.9), transparent),
+    /* plain coloured stars */
+    radial-gradient(1.4px 1.4px at 88% 42%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.4px 1.4px at 12% 78%, rgba(172, 206, 255, 0.8), transparent),
+    radial-gradient(1.2px 1.2px at 38% 90%, rgba(255, 255, 255, 0.75), transparent);
+  background-size: 320px 320px;
+  opacity: 0.85;
+  animation: starDriftB 70s linear infinite;
+}
+@keyframes starDriftA {
+  to {
+    transform: translate3d(-400px, -400px, 0);
+  }
+}
+@keyframes starDriftB {
+  to {
+    transform: translate3d(300px, -300px, 0);
+  }
+}
+@keyframes starTwinkle {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starfield::before,
+  .starfield::after {
+    animation: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   WARP TRANSITION — "space flight" between pages.
+   To DISABLE: delete this block and remove <WarpTransition/> from layout.tsx.
+   ─────────────────────────────────────────────────────────────────────────── */
+html.warp .starfield {
+  animation: warpFlight 1.05s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes warpFlight {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: blur(0) brightness(1);
+  }
+  32% {
+    transform: scale(2.2) rotate(20deg);
+    filter: blur(3.5px) brightness(1.35);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: blur(0) brightness(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.warp .starfield {
+    animation: none;
+  }
+}
+/* ─────────────────────────── end WARP TRANSITION ─────────────────────────── */
+
+/* Subtle starfield wash for hero/section backdrops. */
+.bg-stars {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 45% 80%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 85% 20%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 10% 70%, rgba(255, 255, 255, 0.35), transparent);
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}

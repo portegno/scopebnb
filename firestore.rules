@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// ScopeBnB Firestore security rules.
+// Deploy with: firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Bookings: a signed-in user can create their own and read/manage only theirs.
+    match /bookings/{bookingId} {
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+  }
+}

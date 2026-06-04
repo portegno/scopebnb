@@ -1,0 +1,47 @@
+/**
+ * The real ScopeBnB rig. Demo/seed content separated from UI.
+ * Specs drive both the equipment showcase and the framer's field-of-view math.
+ */
+export type Spec = {
+  role: string;
+  name: string;
+  detail: string;
+  image?: string;
+};
+
+/** Optical + sensor specs used to compute the camera field of view. */
+export const opticalSpecs = {
+  apertureMm: 91,
+  focalRatio: 4.9,
+  focalLengthMm: 448, // William Optics RedCat 91 WIFD — official 448mm f/4.9
+  sensor: {
+    name: "Sony IMX571 (APS-C)",
+    widthMm: 23.5,
+    heightMm: 15.7,
+    widthPx: 6248,
+    heightPx: 4176,
+    pixelMicrons: 3.76,
+  },
+} as const;
+
+/** Approximate field of view, derived from the optics above (small-angle). */
+export const fieldOfView = {
+  widthDeg: +((opticalSpecs.sensor.widthMm / opticalSpecs.focalLengthMm) * (180 / Math.PI)).toFixed(2),
+  heightDeg: +((opticalSpecs.sensor.heightMm / opticalSpecs.focalLengthMm) * (180 / Math.PI)).toFixed(2),
+  pixelScaleArcsec: +((206.265 * opticalSpecs.sensor.pixelMicrons) / opticalSpecs.focalLengthMm).toFixed(2),
+} as const;
+
+export const equipment: Spec[] = [
+  { role: "Telescope (OTA)", name: "William Optics RedCat 91 WIFD", detail: "91mm f/4.9 apochromatic refractor, wide-field", image: "/images/equipment/redcat-91.jpg" },
+  { role: "Mount", name: "ZWO AM5N", detail: "Harmonic equatorial GoTo", image: "/images/equipment/am5n.jpg" },
+  { role: "Main camera", name: "ZWO ASI2600MC-P25", detail: "26MP cooled one-shot color (APS-C)" },
+  { role: "Rotator", name: "ZWO CAA", detail: "Motorized camera angle adjuster, frames to your chosen rotation" },
+  { role: "Guiding", name: "ZWO 30F5 + ASI220 Mini", detail: "Guide scope + mono guide camera" },
+  { role: "Filter wheel", name: "ZWO EFW (5-position)", detail: "Optolong L-Extreme 7nm (Hα + OIII) + clear" },
+  { role: "Focuser", name: "ZWO EAF", detail: "Electronic autofocus" },
+  { role: "Control", name: "ASUS NUC 15 Pro", detail: "On-site mini PC running N.I.N.A." },
+  { role: "Power", name: "Pegasus Pocket Powerbox Advance Gen2", detail: "Power & USB hub" },
+];
+
+/** Total approximate gear value, shown in the showcase. */
+export const gearValueUsd = 9000;
