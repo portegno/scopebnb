@@ -86,8 +86,11 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>Account</Eyebrow>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight">Your bookings</h1>
-          <p className="mt-2 text-sm text-muted">{user.email ?? "Signed in"}</p>
+          <h1 className="mt-2 text-4xl font-semibold tracking-tight">
+            {user.displayName?.trim()
+              ? `Welcome back, ${user.displayName.trim().split(/\s+/)[0]}`
+              : "Your bookings"}
+          </h1>
         </div>
         <button onClick={() => signOut()} className="text-sm text-muted hover:text-foreground">
           Log out

@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+/* Hero photos: each one zooms in and rotates the SAME way, monotonically, the
+   whole time it's shown (no back-and-forth "pulse"). It resets to the start
+   only while hidden, so the motion always reads as a forward drift through the
+   cross-fade. Duration matches the slideshow interval in HeroBackground (7s).
+   `from` starts at rotate(0) so the un-zoomed frame never reveals corners. */
+.hero-kb {
+  will-change: transform;
+  animation: heroDriftOnce 7s linear forwards;
+}
+@keyframes heroDriftOnce {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1.22) rotate(3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-kb {
+    animation: none;
+  }
+}
+
 /* ScopeBnB — deep-space dark theme.
    Single source of truth for design tokens; tweak here, not in components. */
 :root {
@@ -69,8 +92,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     filter: drop-shadow(0 0 22px rgba(176, 124, 255, 0.5));
   }
 }
+/* Softer, smaller version for the header bar — same hue cycle, gentler shadow. */
+.logo-glow-soft {
+  animation: logoGlowSoft 9s ease-in-out infinite;
+}
+@keyframes logoGlowSoft {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(90, 209, 255, 0.4));
+  }
+  33% {
+    filter: drop-shadow(0 0 8px rgba(124, 155, 255, 0.45));
+  }
+  66% {
+    filter: drop-shadow(0 0 8px rgba(176, 124, 255, 0.45));
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .logo-glow {
+  .logo-glow,
+  .logo-glow-soft {
     animation: none;
   }
 }

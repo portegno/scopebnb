@@ -1,35 +1,64 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Section, Eyebrow, CTA, Card } from "@/components/ui";
+import { HeroBackground } from "@/components/HeroBackground";
 import { HomeLogo } from "@/components/HomeLogo";
 import { site } from "@/config/site";
 import { products } from "@/data/products";
 import { equipment, fieldOfView } from "@/data/equipment";
 
 export default function Home() {
+  // Break the hero subtitle before "under" so it reads as two balanced lines.
+  const [taglineLead, taglineUnder] = site.tagline.split(/\sunder\s/i);
   return (
     <>
-      {/* Hero */}
-      <section className="relative -mt-16 overflow-hidden px-6 pt-28 pb-20 text-center">
-        <div className="mx-auto max-w-3xl">
-          <HomeLogo className="mx-auto mb-10 h-14 w-auto sm:h-20" />
-          <span className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-xs text-muted ring-1 ring-hairline">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            System operational · Bortle {site.location.bortle}
-          </span>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-6xl">
-            Control the night.
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{site.tagline}</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <CTA href="/book">Book a night</CTA>
-            <CTA href="/how-it-works" variant="secondary">
-              How it works
-            </CTA>
+      {/* Hero — full-screen astrophoto backdrop that slowly cross-fades.
+          Content sits in the lower third (anchored to the bottom with a
+          viewport-relative pad) so it reads balanced on any screen height,
+          rather than dead-center where the top-heavy block looks too high. */}
+      <section className="relative -mt-16 flex min-h-screen items-end overflow-hidden px-6 pt-28 pb-[15vh]">
+        <HeroBackground />
+        <div className="relative z-10 mx-auto w-full max-w-6xl">
+          <div className="max-w-2xl">
+            <div className="relative mb-8 w-fit">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-12 blur-3xl"
+                style={{
+                  background:
+                    "radial-gradient(55% 75% at 45% 50%, rgba(5,7,15,0.9), rgba(5,7,15,0.55) 55%, transparent 80%)",
+                }}
+              />
+              <HomeLogo className="relative h-16 w-auto sm:h-24" />
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-background/50 px-3 py-1 text-xs text-muted ring-1 ring-hairline backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              System operational · Bortle {site.location.bortle}
+            </span>
+            <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-7xl">
+              Telescope Rental
+            </h1>
+            <p className="mt-5 max-w-xl text-sm font-semibold uppercase tracking-[0.2em] text-gold-soft">
+              {taglineUnder ? (
+                <>
+                  {taglineLead}
+                  <br />
+                  under {taglineUnder}
+                </>
+              ) : (
+                site.tagline
+              )}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <CTA href="/book">Book a night</CTA>
+              <CTA href="/how-it-works" variant="secondary">
+                How it works
+              </CTA>
+            </div>
+            <p className="mt-6 text-sm text-muted">
+              {site.location.clearNightsPerYear}+ clear nights a year · {fieldOfView.widthDeg}° × {fieldOfView.heightDeg}° wide field
+            </p>
           </div>
-          <p className="mt-6 text-sm text-muted">
-            {site.location.clearNightsPerYear}+ clear nights a year · {fieldOfView.widthDeg}° × {fieldOfView.heightDeg}° wide field
-          </p>
         </div>
       </section>
 

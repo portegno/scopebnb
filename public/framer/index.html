@@ -331,7 +331,8 @@
                 labelFont: "13px sans-serif",
               });
               aladin.addCatalog(cat);
-              cat.addSources((d.objects || []).map((o) => A.source(o.ra, o.dec, { name: o.name })));
+              cat.addSources((d.objects || []).map((o) =>
+                A.source(o.ra, o.dec, { name: o.common ? `${o.name} · ${o.common}` : o.name })));
               labelsCat = cat;
             } catch (e) {
               /* catalog API unavailable */

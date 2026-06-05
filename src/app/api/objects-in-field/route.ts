@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { commonNameFor } from "@/data/commonNames";
 
 /**
  * Notable deep-sky objects within a field, for AstroBin-style annotations.
@@ -19,7 +20,7 @@ function rank(id: string): number {
   return 3;
 }
 
-const cache = new Map<string, { name: string; ra: number; dec: number }[]>();
+const cache = new Map<string, { name: string; common: string | null; ra: number; dec: number }[]>();
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
     }
     const objects = [...best.values()]
       .sort((a, b) => a.r - b.r)
-      .map(({ name, ra: r, dec: d }) => ({ name, ra: r, dec: d }))
+      .map(({ name, ra: r, dec: d }) => ({ name, common: commonNameFor(name), ra: r, dec: d }))
       .slice(0, 40);
     cache.set(key, objects);
     return NextResponse.json({ objects });

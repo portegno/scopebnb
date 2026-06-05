@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { Section, Card } from "@/components/ui";
+import { GoogleButton } from "@/components/GoogleButton";
 import { auth, firebaseEnabled } from "@/lib/firebase/client";
+import { getUserProfile, isProfileComplete } from "@/lib/firebase/users";
 
 export default function Login() {
   const router = useRouter();
@@ -32,11 +34,25 @@ export default function Login() {
     }
   }
 
+  // After Google sign-in, send first-time users to fill in country + phone.
+  async function onGoogle(user: { uid: string }) {
+    const p = await getUserProfile(user.uid);
+    router.push(isProfileComplete(p) ? "/dashboard" : "/complete-profile");
+  }
+
   return (
-    <Section className="max-w-md">
+    <Section>
       <div className="mx-auto max-w-md">
         <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
         <Card className="mt-6">
+          <GoogleButton label="Continue with Google" onSuccess={onGoogle} />
+
+          <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
+            <span className="h-px flex-1 bg-hairline" />
+            or
+            <span className="h-px flex-1 bg-hairline" />
+          </div>
+
           <form className="space-y-4" onSubmit={onSubmit}>
             <div>
               <label className="text-xs uppercase tracking-wider text-muted">Email</label>
