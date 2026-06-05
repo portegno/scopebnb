@@ -9,7 +9,7 @@ import { NightCalendar } from "@/components/NightCalendar";
 import { useAuth } from "@/lib/firebase/useAuth";
 import { createBooking } from "@/lib/firebase/bookings";
 import { skyThumb } from "@/lib/thumbnail";
-import { astrobinUrl, TELESCOPE_SEARCH } from "@/lib/astrobin";
+import { astrobinUrl } from "@/lib/astrobin";
 import { targets, type Target } from "@/data/targets";
 import { demoReservedNights } from "@/data/demoReservations";
 import { site } from "@/config/site";
@@ -78,6 +78,7 @@ function ymd(d: Date) {
 export default function Book() {
   const [framing, setFraming] = useState<Framing | null>(null);
   const [framingName, setFramingName] = useState(""); // user-editable label for the saved framing
+  const [zoomed, setZoomed] = useState(false); // framing preview open in a full-size lightbox
   const [current, setCurrent] = useState<Current | null>(null);
   const [session, setSession] = useState<{ start: number; end: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
@@ -430,7 +431,7 @@ export default function Book() {
                 <button
                   type="button"
                   onClick={() => openFramer(t)}
-                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-accent bg-transparent px-4 text-sm font-semibold text-accent transition-colors hover:bg-accent/10"
+                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-accent/40 bg-transparent px-4 text-sm font-semibold text-accent transition-colors hover:border-accent/60 hover:bg-accent/10"
                 >
                   Frame this target →
                 </button>
@@ -449,12 +450,19 @@ export default function Book() {
               {/* Sky preview + coordinates */}
               <div>
                 {framing.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={framing.image}
-                    alt={`Framing preview for ${current.name}`}
-                    className="w-full rounded-lg ring-1 ring-hairline"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setZoomed(true)}
+                    className="group block w-full cursor-zoom-in overflow-hidden rounded-lg ring-1 ring-hairline"
+                    aria-label="View framing preview full size"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={framing.image}
+                      alt={`Framing preview for ${current.name}`}
+                      className="w-full transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                  </button>
                 ) : (
                   <div className="flex aspect-[16/10] items-center justify-center rounded-lg bg-surface-2 p-6 text-center text-xs text-muted ring-1 ring-hairline">
                     Framing saved. Preview unavailable.
@@ -537,7 +545,7 @@ export default function Book() {
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
                 >
-                  See real captures on AstroBin with a {TELESCOPE_SEARCH} ↗
+                  See real captures on AstroBin ↗
                 </a>
               </div>
             </div>
@@ -828,6 +836,32 @@ export default function Book() {
             </div>
             <iframe src={framerUrl} title="ScopeBnB framing tool" className="w-full flex-1 border-0" />
           </div>
+        </div>
+      )}
+
+      {/* Framing preview lightbox — full-size view of the captured framing. */}
+      {zoomed && framing?.image && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4 sm:p-8"
+          onClick={() => setZoomed(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setZoomed(false)}
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white"
+          >
+            ✕
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={framing.image}
+            alt={`Framing preview for ${current?.name ?? "target"}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-full max-w-full cursor-zoom-out rounded-lg ring-1 ring-white/10"
+          />
         </div>
       )}
     </Section>

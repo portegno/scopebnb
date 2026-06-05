@@ -20,16 +20,17 @@ export default function Home() {
         <HeroBackground />
         <div className="relative z-10 mx-auto w-full max-w-6xl">
           <div className="max-w-2xl">
-            <div className="relative mb-8 w-fit">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -inset-12 blur-3xl"
-                style={{
-                  background:
-                    "radial-gradient(55% 75% at 45% 50%, rgba(5,7,15,0.9), rgba(5,7,15,0.55) 55%, transparent 80%)",
-                }}
-              />
-              <HomeLogo className="relative h-16 w-auto sm:h-24" />
+            {/* Dark drop-shadow hugs the logo's letterforms so it separates from
+                the photo on any background (bright or dark) — more effective
+                than a blurred halo behind it. */}
+            <div
+              className="mb-8 w-fit"
+              style={{
+                filter:
+                  "drop-shadow(0 0 12px rgba(0,0,0,0.8)) drop-shadow(0 0 30px rgba(0,0,0,0.6)) drop-shadow(0 0 60px rgba(0,0,0,0.45))",
+              }}
+            >
+              <HomeLogo className="h-16 w-auto sm:h-24" />
             </div>
             <span className="inline-flex items-center gap-2 rounded-full bg-background/50 px-3 py-1 text-xs text-muted ring-1 ring-hairline backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />

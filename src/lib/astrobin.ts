@@ -1,13 +1,20 @@
 /**
- * Links to AstroBin showing a deep-sky object captured with a telescope like
- * ours. AstroBin's search is full-text, so we combine the catalog designation
- * (e.g. "M 42") with the scope's short name to surface comparable images.
+ * Link to AstroBin images of a deep-sky object (simple subject search).
+ * AstroBin's `?q=` entry point resolves to its subject-filtered results.
  */
 
-// Short, searchable name of our optical tube (from the William Optics RedCat 91 WIFD).
-export const TELESCOPE_SEARCH = "RedCat 91";
+/**
+ * Use just the catalog designation (drop any "· Common Name" suffix) and
+ * normalise to AstroBin's canonical spacing, e.g. "M27" → "M 27",
+ * "NGC4565" → "NGC 4565", so the subject actually matches.
+ */
+function cleanSubject(s: string): string {
+  return s
+    .split("·")[0]
+    .trim()
+    .replace(/^(M|NGC|IC)\s*0*(\d)/i, (_m, p, d) => `${p.toUpperCase()} ${d}`);
+}
 
-export function astrobinUrl(catalog: string): string {
-  const q = `${catalog} ${TELESCOPE_SEARCH}`;
-  return `https://www.astrobin.com/search/?q=${encodeURIComponent(q)}`;
+export function astrobinUrl(subject: string): string {
+  return `https://www.astrobin.com/search/?q=${encodeURIComponent(cleanSubject(subject))}`;
 }

@@ -332,7 +332,11 @@
               });
               aladin.addCatalog(cat);
               cat.addSources((d.objects || []).map((o) =>
-                A.source(o.ra, o.dec, { name: o.common ? `${o.name} · ${o.common}` : o.name })));
+                A.source(o.ra, o.dec, {
+                  name: o.common ? `${o.name} · ${o.common}` : o.name,
+                  cra: o.ra,
+                  cdec: o.dec,
+                })));
               labelsCat = cat;
             } catch (e) {
               /* catalog API unavailable */
@@ -395,8 +399,11 @@
           .then((r) => (r.ok ? r.json() : null))
           .then((d) => {
             if (d && d.name) {
-              targetName = d.name;
-              identEl.textContent = d.name;
+              // Adopt the combined name, popular too when known:
+              // "M 42 · Orion Nebula".
+              const label = d.common ? `${d.name} · ${d.common}` : d.name;
+              targetName = label;
+              identEl.textContent = label;
             } else {
               const s = fmtCoords(c[0], c[1]);
               targetName = s;
@@ -661,6 +668,17 @@
             updateScore();
             scheduleIdentify();
             scheduleLabels();
+          });
+          // Click a label (annotated object) → recenter the framing on it and
+          // adopt its name (e.g. "NGC 4565 · Needle Galaxy"), instead of leaving
+          // the centre on empty sky and falling back to coordinates.
+          aladin.on("objectClicked", (obj) => {
+            const data = obj && (obj.data || (obj.source && obj.source.data));
+            if (!data || !data.name) return; // only our annotated labels
+            const ra = data.cra !== undefined ? data.cra : obj.ra;
+            const dec = data.cdec !== undefined ? data.cdec : obj.dec;
+            if (ra === undefined || dec === undefined) return;
+            gotoSky(data.name, ra, dec);
           });
         }
         // Fallback in case events fire before Aladin is fully ready.

@@ -7,14 +7,16 @@
    `from` starts at rotate(0) so the un-zoomed frame never reveals corners. */
 .hero-kb {
   will-change: transform;
-  animation: heroDriftOnce 7s linear forwards;
+  /* Longer than interval (7s) + fade (1.5s) so the photo is always still in
+     motion while it fades out — momentum is never lost mid-cross-fade. */
+  animation: heroDriftOnce 10s linear forwards;
 }
 @keyframes heroDriftOnce {
   from {
     transform: scale(1) rotate(0deg);
   }
   to {
-    transform: scale(1.22) rotate(3deg);
+    transform: scale(1.28) rotate(3.5deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {

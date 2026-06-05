@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
+import { commonNameFor } from "@/data/commonNames";
 
 /**
  * Reverse-lookup: given sky coordinates, return the nearest *notable* deep-sky
  * object (Messier / NGC / IC / Sharpless / …) via SIMBAD (CDS Strasbourg).
  * Obscure survey designations (SDSS, LEDA, 2MASX…) are ignored so the framer
- * names famous regions and falls back to coordinates elsewhere.
+ * names famous regions and falls back to coordinates elsewhere. When the object
+ * has a popular name (M 42 → Orion Nebula) it's returned as `common`.
  */
 export const runtime = "nodejs";
 
-type Ident = { name: string; otype: string; sep: number } | { name: null };
+type Ident =
+  | { name: string; common: string | null; otype: string; sep: number }
+  | { name: null };
 
 const cache = new Map<string, Ident>();
 
@@ -55,7 +59,7 @@ export async function GET(request: Request) {
     for (const [mainId, otype, d] of rows) {
       const name = clean(mainId);
       if (FAMOUS.test(name)) {
-        result = { name, otype, sep: +(+d).toFixed(3) };
+        result = { name, common: commonNameFor(name), otype, sep: +(+d).toFixed(3) };
         break;
       }
     }

@@ -42,6 +42,15 @@ const CURATED: Record<string, string> = {
   "M101": "Pinwheel Galaxy",
   "M104": "Sombrero Galaxy",
   "M108": "Surfboard Galaxy",
+  "M6": "Butterfly Cluster",
+  "M7": "Ptolemy Cluster",
+  "M11": "Wild Duck Cluster",
+  "M13": "Hercules Cluster",
+  "M22": "Sagittarius Cluster",
+  "M77": "Cetus A",
+  "M83": "Southern Pinwheel Galaxy",
+  "M87": "Virgo A",
+  "M94": "Cat's Eye Galaxy",
   // NGC / IC
   "NGC224": "Andromeda Galaxy",
   "NGC253": "Sculptor Galaxy",
@@ -74,6 +83,14 @@ const CURATED: Record<string, string> = {
   "IC1848": "Soul Nebula",
   "IC5070": "Pelican Nebula",
   "IC5146": "Cocoon Nebula",
+  "IC410": "Tadpoles Nebula",
+  "IC443": "Jellyfish Nebula",
+  "IC2118": "Witch Head Nebula",
+  "NGC4594": "Sombrero Galaxy",
+  "NGC5139": "Omega Centauri",
+  "NGC104": "47 Tucanae",
+  "NGC891": "Outer Limits Galaxy",
+  "Sh2-155": "Cave Nebula",
 };
 
 // Build the lookup once: curated names take priority, then fill gaps from the
