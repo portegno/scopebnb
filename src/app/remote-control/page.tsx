@@ -28,7 +28,7 @@ export default function RemoteControl() {
           under some of the darkest skies on Earth.
         </p>
         <div className="mt-8">
-          <CTA href="/book">Reserve a slot</CTA>
+          <CTA href="/remote-control/book">Reserve a night</CTA>
         </div>
       </Section>
 

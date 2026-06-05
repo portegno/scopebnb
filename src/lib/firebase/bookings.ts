@@ -3,20 +3,22 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "./client";
 
-/** A managed-imaging booking, as stored in Firestore. */
+/** A booking, as stored in Firestore. Target/framing fields apply to Managed
+ *  Imaging only; Remote Control bookings are just a night + price. */
 export type BookingInput = {
-  // Target + framing
-  targetName: string;
-  ra: number;
-  dec: number;
-  rotation: number;
+  product?: "managed" | "remote"; // defaults to "managed"
+  // Target + framing (Managed Imaging only)
+  targetName?: string;
+  ra?: number;
+  dec?: number;
+  rotation?: number;
   previewImage?: string; // sky preview data URL (later: Storage path)
   mosaic?: { cols: number; rows: number; overlap: number; panels: { ra: number; dec: number }[] } | null;
   // Night + session
   date: string; // YYYY-MM-DD
-  sessionStart: number; // local hour
-  sessionEnd: number;
-  durationHours: number;
+  sessionStart?: number; // local hour
+  sessionEnd?: number;
+  durationHours?: number;
   // Pricing snapshot (scaled by night tier)
   priceUsd?: number;
   nightTier?: string; // "dark" | "good" | "bright" | "full"
@@ -38,9 +40,10 @@ export async function createBooking(input: BookingInput): Promise<string> {
   const uid = auth?.currentUser?.uid;
   if (!uid) throw new Error("Not signed in");
 
+  const { product = "managed", ...rest } = input;
   const ref = await addDoc(collection(db, "bookings"), {
-    ...input,
-    product: "managed",
+    ...rest,
+    product,
     userId: uid,
     status: "requested",
     createdAt: serverTimestamp(),

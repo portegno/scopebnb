@@ -24,6 +24,6 @@ export const faqs: Faq[] = [
   },
   {
     q: "Is there a subscription?",
-    a: "No subscription. You only pay when you book a session, or buy multi-night packages for better per-night value.",
+    a: "No subscription. You only pay when you book a night, priced by how dark the sky is that evening.",
   },
 ];

@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${site.name}: Rent a telescope under Bortle 1 skies`,
-    template: `%s · ${site.name}`,
+    default: "scopebnb",
+    template: "%s · scopebnb",
   },
   description: site.tagline,
 };
@@ -35,6 +35,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <div className="aurora" aria-hidden />
         <div className="starfield" aria-hidden />
         <WarpTransition />
         <SiteHeader />

@@ -36,3 +36,14 @@ export function nightTier(illum: number): NightTier {
 export function fmtPrice(usd: number): string {
   return `$${usd.toLocaleString("en-US")}`;
 }
+
+/**
+ * Remote Control rents the rig itself (the user drives it), priced 10% above
+ * the managed-imaging "we take the photo" rate. Derived so it tracks any change
+ * to the base tier prices.
+ */
+export const REMOTE_SURCHARGE = 1.1;
+
+export function remotePrice(usd: number): number {
+  return Math.round(usd * REMOTE_SURCHARGE);
+}

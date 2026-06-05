@@ -52,7 +52,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/book"
-            className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-background hover:bg-accent/90"
+            className="inline-flex h-9 items-center rounded-lg bg-gold px-4 text-sm font-semibold text-background hover:bg-gold/90"
           >
             Book a night
           </Link>
@@ -83,7 +83,7 @@ export function SiteHeader() {
           <Link
             href="/book"
             onClick={() => setOpen(false)}
-            className="mt-2 inline-flex h-10 items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-background"
+            className="mt-2 inline-flex h-10 items-center justify-center rounded-lg bg-gold px-4 text-sm font-semibold text-background"
           >
             Book a night
           </Link>

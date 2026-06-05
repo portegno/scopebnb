@@ -3,19 +3,12 @@ import { footerSections, site } from "@/config/site";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto bg-surface ring-1 ring-hairline">
+    <footer className="mt-auto bg-surface/70 ring-1 ring-hairline backdrop-blur-sm">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-12 sm:grid-cols-2 md:grid-cols-4">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-white.svg" alt={site.name} className="h-5 w-auto" />
           <p className="mt-3 max-w-xs text-sm text-muted">{site.tagline}</p>
-          <address className="mt-4 text-xs not-italic leading-relaxed text-muted">
-            {site.location.address.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-          </address>
         </div>
 
         {footerSections.map((section) => (

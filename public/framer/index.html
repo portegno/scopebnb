@@ -21,9 +21,10 @@
       header .go { height:32px; padding:0 12px; border:0; border-radius:8px; background:var(--surface); color:var(--fg); border:1px solid var(--hairline); cursor:pointer; font-size:13px; }
       #map { flex:1; position:relative; overflow:hidden; }
       #aladin-lite-div { position:absolute; inset:0; }
-      /* Hide Aladin's native chrome — we only want the sky + our own camera frame. */
+      /* Hide Aladin's native chrome — we only want the sky + our own camera frame.
+         NOTE: the Aladin Lite logo (.aladin-logo-container) is kept visible on
+         purpose — CDS Strasbourg's licence requires the attribution to stay. */
       .aladin-widgets-toolbar,
-      .aladin-logo-container,
       .aladin-status-bar,
       .aladin-cooFrame,
       .aladin-location,
@@ -34,6 +35,8 @@
       .aladin-projection-control,
       .aladin-fullScreen-control,
       .aladin-stack-control { display: none !important; }
+      /* Keep the Aladin Lite attribution legible above our own overlays. */
+      .aladin-logo-container { z-index: 20 !important; opacity: 0.85; }
       /* Camera field-of-view box: screen-space, always centered on the view, rotates with the camera. */
       /* Camera frame / mosaic: a zero-size point at the view centre, rotated by the
          camera angle; panel rectangles are placed relative to it. */
