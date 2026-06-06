@@ -63,6 +63,27 @@ function altitude(raDeg: number, decDeg: number, latDeg: number, lonDeg: number,
   return Math.asin(Math.max(-1, Math.min(1, sinAlt))) / DEG;
 }
 
+/** Sun-altitude limit for "imaging night available". Looser than full
+ *  astronomical dark (−18°) since usable imaging already starts in late
+ *  (nautical) twilight; −12° widens the window without including bright sky. */
+export const IMAGING_NIGHT_SUN_ALT = -10;
+
+/**
+ * True when the Sun is below `sunBelowDeg` at the given instant and location —
+ * i.e. it's dark enough to image. Defaults to nautical twilight (−12°); pass
+ * −18 for strict astronomical darkness. Varies with season and latitude:
+ * short summer nights, long winter nights.
+ */
+export function isImagingNight(
+  date: Date,
+  loc: ObservatoryLoc,
+  sunBelowDeg: number = IMAGING_NIGHT_SUN_ALT,
+): boolean {
+  const jd = toJD(date);
+  const sun = sunEqu(jd);
+  return altitude(sun.ra, sun.dec, loc.latitude, loc.longitude, jd) < sunBelowDeg;
+}
+
 /** UTC milliseconds for a local wall-clock hour on a local calendar date. */
 function localToUtcMs(y: number, m: number, d: number, hour: number, utcOffset: number): number {
   return Date.UTC(y, m, d, 0, 0, 0, 0) + (hour - utcOffset) * 3600000;

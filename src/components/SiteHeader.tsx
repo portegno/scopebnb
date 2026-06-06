@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navLinks, site } from "@/config/site";
 import { Wordmark } from "@/components/Wordmark";
+import { ForecastNavIcon } from "@/components/ForecastNavIcon";
 import { useAuth } from "@/lib/firebase/useAuth";
 
 export function SiteHeader() {
@@ -12,6 +13,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const { user, loading } = useAuth();
 
   useEffect(() => {
@@ -45,17 +47,28 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`text-sm transition-colors ${
-                transparent ? "text-white/90 hover:text-gold" : "text-muted hover:text-foreground"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
+          {navLinks.map((l) => {
+            const active = isActive(l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={active ? "page" : undefined}
+                className={`text-sm transition-colors ${
+                  transparent
+                    ? active
+                      ? "font-medium text-gold"
+                      : "text-white/90 hover:text-gold"
+                    : active
+                      ? "font-medium text-accent"
+                      : "text-muted hover:text-foreground"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+          <ForecastNavIcon transparent={transparent} active={isActive("/forecast")} />
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
@@ -97,16 +110,28 @@ export function SiteHeader() {
 
       {open && (
         <nav className="flex flex-col gap-1 px-6 pb-4 md:hidden">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="rounded-lg px-2 py-2 text-sm text-muted hover:bg-surface hover:text-foreground"
-            >
-              {l.label}
-            </Link>
-          ))}
+          {navLinks.map((l) => {
+            const active = isActive(l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
+                className={`rounded-lg px-2 py-2 text-sm hover:bg-surface ${
+                  active ? "font-medium text-accent" : "text-muted hover:text-foreground"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+          <ForecastNavIcon
+            onClick={() => setOpen(false)}
+            className={`inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-surface ${
+              isActive("/forecast") ? "font-medium text-accent" : "text-muted hover:text-foreground"
+            }`}
+          />
           {!loading &&
             (user ? (
               <Link

@@ -7,6 +7,8 @@
  * (stable across renders/SSR); curves are sine-shaped so cells read naturally.
  */
 import type { ForecastDay, ForecastHour } from "@/lib/weather";
+import { isImagingNight } from "@/lib/visibility";
+import { site } from "@/config/site";
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const PHASES = ["Waxing crescent", "First quarter", "Waxing gibbous", "Full moon", "Waning gibbous", "Last quarter", "Waning crescent"];
@@ -17,7 +19,11 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 
 function makeHour(dayIdx: number, hour: number): ForecastHour {
   const n = Math.abs(wob(dayIdx + 1, hour + 1));
-  const night = hour >= 21 || hour < 6;
+  // Real UTC instant for this local hour at the observatory, so darkness is the
+  // genuine astronomical night for the date (short, since the demo week is June).
+  const epoch =
+    Date.UTC(2026, 5, 5 + dayIdx) + (hour - site.location.utcOffset) * 3_600_000;
+  const night = isImagingNight(new Date(epoch), site.location);
   // Clearer skies at night on the better days; a cloudy patch mid-week.
   const cloudBias = dayIdx === 2 ? 70 : dayIdx === 5 ? 45 : 12;
   const cloudTotal = clamp(Math.round(cloudBias + (night ? -18 : 14) + n * 30 - 10), 0, 100);
@@ -25,7 +31,7 @@ function makeHour(dayIdx: number, hour: number): ForecastHour {
   const humidity = clamp(Math.round(58 + (night ? 16 : -6) + n * 18), 20, 99);
 
   return {
-    epoch: dayIdx * 86_400_000 + hour * 3_600_000,
+    epoch,
     hour: String(hour).padStart(2, "0"),
     cloudTotal,
     cloudLow: clamp(Math.round(cloudTotal * 0.5 + n * 10), 0, 100),

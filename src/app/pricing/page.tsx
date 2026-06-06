@@ -93,8 +93,6 @@ export default function Pricing() {
           cost.
         </p>
       </div>
-
-      <p className="mt-6 text-xs text-muted">Draft pricing. Final ScopeBnB rates to be confirmed.</p>
     </Section>
   );
 }

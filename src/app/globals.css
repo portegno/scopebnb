@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Hide the scrollbar but keep scrolling (used by the sky-forecast grid, which
+   shows its own arrows + edge fades as the scroll affordance). */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important; /* Chrome / Safari */
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 /* Hero photos: each one zooms in and rotates the SAME way, monotonically, the
    whole time it's shown (no back-and-forth "pulse"). It resets to the start
    only while hidden, so the motion always reads as a forward drift through the

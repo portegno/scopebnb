@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { heroImages } from "@/data/heroImages";
 
 /**
@@ -8,40 +8,46 @@ import { heroImages } from "@/data/heroImages";
  * each one drifting (monotonic Ken-Burns zoom + rotation) the whole time it's
  * on screen. Pure presentation — the image list lives in @/data/heroImages.
  *
- * Momentum through the fade: the drift is a one-shot CSS animation (`.hero-kb`)
- * that runs longer than a slide's on-screen life, so a photo is still moving
- * while it fades out. We restart the drift only on the photo that JUST became
- * active by remounting it (bumping its key) — at that instant it's at opacity 0,
- * so the reset is invisible, and the outgoing photo (key unchanged) keeps its
- * momentum instead of freezing. Honors prefers-reduced-motion.
+ * The cross-fade is a plain opacity transition on PERSISTENT <img> elements
+ * (stable keys), so each photo fades in/out smoothly. To restart the drift on
+ * the photo that just became active (so it grows from scale 1) we reset its
+ * animation imperatively — never remounting — which keeps the fade intact while
+ * the outgoing photo keeps its momentum. Honors prefers-reduced-motion.
  */
 export function HeroBackground({ intervalMs = 7000 }: { intervalMs?: number }) {
-  // `index` = visible photo; `gen` = per-slot remount counter (bumping the
-  // incoming slot restarts its drift). Kept in one state to avoid extra renders.
-  const [{ index, gen }, setState] = useState<{ index: number; gen: number[] }>(
-    () => ({ index: 0, gen: heroImages.map(() => 0) }),
-  );
+  const [index, setIndex] = useState(0);
+  const refs = useRef<(HTMLImageElement | null)[]>([]);
 
   useEffect(() => {
     if (heroImages.length < 2) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-    const id = setInterval(() => {
-      setState((prev) => {
-        const next = (prev.index + 1) % heroImages.length;
-        const g = prev.gen.slice();
-        g[next] += 1; // remount → restart drift on the incoming photo only
-        return { index: next, gen: g };
-      });
-    }, intervalMs);
+    const id = setInterval(
+      () => setIndex((i) => (i + 1) % heroImages.length),
+      intervalMs,
+    );
     return () => clearInterval(id);
   }, [intervalMs]);
+
+  // Restart the Ken-Burns drift on the newly-active photo (back to scale 1)
+  // without remounting it — so the opacity cross-fade still runs and the
+  // outgoing photo (untouched) keeps drifting through its fade-out.
+  useEffect(() => {
+    const el = refs.current[index];
+    if (!el) return;
+    el.style.animation = "none";
+    void el.offsetWidth; // reflow so the browser registers the cancel
+    el.style.animation = "";
+  }, [index]);
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-background">
       {heroImages.map((img, i) => (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          key={`${i}-${gen[i]}`}
+          key={img.src}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
           src={img.src}
           alt={i === index ? img.alt : ""}
           aria-hidden={i !== index}

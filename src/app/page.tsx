@@ -8,7 +8,7 @@ import { products } from "@/data/products";
 import { equipment, fieldOfView } from "@/data/equipment";
 
 export default function Home() {
-  // Break the hero subtitle before "under" so it reads as two balanced lines.
+  // Break the hero subtitle after "under" so it reads as two balanced lines.
   const [taglineLead, taglineUnder] = site.tagline.split(/\sunder\s/i);
   return (
     <>
@@ -42,9 +42,9 @@ export default function Home() {
             <p className="mt-5 max-w-xl text-sm font-semibold uppercase tracking-[0.2em] text-gold-soft">
               {taglineUnder ? (
                 <>
-                  {taglineLead}
+                  {taglineLead} under
                   <br />
-                  under {taglineUnder}
+                  {taglineUnder}
                 </>
               ) : (
                 site.tagline

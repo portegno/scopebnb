@@ -14,7 +14,7 @@
  * hands the raw JSON to `buildForecast`. Keep thresholds/colours here — tweak
  * imaging quality rules in one place, not in components.
  */
-import { moonIllumination } from "@/lib/visibility";
+import { moonIllumination, isImagingNight, type ObservatoryLoc } from "@/lib/visibility";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Normalised model (the only shape the UI knows about)
@@ -188,6 +188,22 @@ export const METRIC_ROWS: MetricRow[] = [
   },
 ];
 
+/** Hover explanation per metric — what's good and what to expect. Keyed by row key. */
+export const METRIC_HELP: Record<string, string> = {
+  cloudTotal: "Total cloud cover (%). Lower is better — under ~20% is clear; over 60% usually kills the night.",
+  cloudLow: "Low-altitude cloud (%). The most disruptive layer — even 20–30% can block your target.",
+  cloudMid: "Mid-level cloud (%). Lower is better; thick mid cloud hides faint detail.",
+  cloudHigh: "High thin cloud (%). Less blocking than low cloud, but softens contrast.",
+  seeing: "Atmospheric steadiness (1–8, lower is better). 1–2 = sharp, sub-arcsecond; 5+ = blurry, poor for planets & small galaxies.",
+  transparency: "Sky clarity / darkness (1–8, lower is better). 1–2 = very transparent for faint nebulae; 5+ = hazy.",
+  visibilityKm: "Horizontal visibility (km, higher is better). 20+ km is crisp; under 5 km means haze or fog.",
+  windKmh: "Wind speed (km/h). Under 10 is ideal; over ~35 shakes the scope and trails stars.",
+  humidity: "Relative humidity (%). Under ~70% is good; over ~90% risks dew forming on the optics.",
+  dewPointC: "Dew point (°C). The closer the air temperature gets to it, the higher the dew/condensation risk on the optics.",
+  tempC: "Air temperature (°C). Informational — affects cooling and dew, not image quality directly.",
+  precipProb: "Chance of precipitation (%). Anything above a few % is a red flag for the session.",
+};
+
 /** Cell colours per tier — echo the Clear Outside green→red, on the dark theme. */
 export const TIER_STYLE: Record<Tier, { bg: string; fg: string }> = {
   excellent: { bg: "#1f9d57", fg: "#04140b" },
@@ -288,15 +304,17 @@ const toJD = (epochMs: number) => epochMs / 86400000 + 2440587.5;
 
 /**
  * Merge the two sources into `ForecastDay[]`, grouped by the observatory's
- * local calendar day. `darkHours` (local) marks which slots count as
- * astronomical darkness so the UI can dim daytime columns.
+ * local calendar day. Each slot's `isDark` flag marks astronomical darkness so
+ * the UI can dim daytime columns. Pass `loc` to compute REAL astronomical night
+ * (Sun below −18°) — it shifts and widens/narrows with the season; without it
+ * we fall back to a fixed local-hour window.
  */
 export function buildForecast(
   openMeteo: OpenMeteoRaw,
   sevenTimer: SevenTimerRaw | null,
-  opts: { darkFrom?: number; darkTo?: number } = {},
+  opts: { darkFrom?: number; darkTo?: number; loc?: ObservatoryLoc } = {},
 ): ForecastDay[] {
-  const { darkFrom = 21, darkTo = 6 } = opts; // local hours considered "dark"
+  const { darkFrom = 21, darkTo = 6, loc } = opts; // fixed-window fallback hours
   const offsetMs = openMeteo.utc_offset_seconds * 1000;
   const astro = sevenTimerIndex(sevenTimer);
   const H = openMeteo.hourly;
@@ -331,7 +349,11 @@ export function buildForecast(
       precipProb: at(H.precipitation_probability, i),
       seeing: a.seeing,
       transparency: a.transparency,
-      isDark: darkFrom > darkTo ? localHour >= darkFrom || localHour < darkTo : localHour >= darkFrom && localHour < darkTo,
+      isDark: loc
+        ? isImagingNight(new Date(epoch), loc)
+        : darkFrom > darkTo
+          ? localHour >= darkFrom || localHour < darkTo
+          : localHour >= darkFrom && localHour < darkTo,
     };
 
     let day = byDate.get(dateKey);

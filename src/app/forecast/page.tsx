@@ -1,10 +1,9 @@
-import { SkyForecast } from "@/components/SkyForecast";
-import { demoForecast } from "@/data/demoForecast";
+import { LiveForecast } from "@/components/LiveForecast";
 import { Section, Eyebrow } from "@/components/ui";
 
 /**
- * Preview of the weekly sky-forecast grid (demo data).
- * Swap `demoForecast` for live data by fetching /api/forecast.
+ * Weekly sky-forecast page. Renders REAL conditions for the observatory via
+ * <LiveForecast> (fetches /api/forecast: Open-Meteo + 7Timer + local moon).
  */
 export default function ForecastPage() {
   return (
@@ -15,7 +14,7 @@ export default function ForecastPage() {
           When to shoot this week
         </h1>
       </div>
-      <SkyForecast days={demoForecast} />
+      <LiveForecast />
     </Section>
   );
 }

@@ -310,9 +310,33 @@ export default function Book() {
             />
           </div>
 
-          {/* Color-coded pricing — scaled by night darkness */}
-          <div className="flex w-full flex-col rounded-xl bg-surface p-6 ring-1 ring-hairline sm:w-80">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Price per night</h3>
+          {/* Right column: sky-forecast shortcut + color-coded pricing */}
+          <div className="flex w-full flex-col gap-4 sm:w-80">
+            <Link
+              href="/forecast"
+              className="flex items-center justify-between gap-2 rounded-xl bg-surface px-5 py-3.5 ring-1 ring-hairline transition-colors hover:bg-surface-2"
+            >
+              <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-accent"
+                >
+                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                </svg>
+                Check the sky forecast
+              </span>
+              <span className="text-accent">→</span>
+            </Link>
+
+            <div className="flex w-full flex-1 flex-col rounded-xl bg-surface p-6 ring-1 ring-hairline">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Price per night</h3>
             <ul className="mt-5 flex-1 divide-y divide-hairline">
               {NIGHT_TIERS.map((t) => {
                 const dimmed = tier ? t.key !== tier.key : false;
@@ -335,6 +359,7 @@ export default function Book() {
             <p className="mt-5 text-xs leading-relaxed text-muted">
               Darker (new-moon) nights image fainter targets, so they&apos;re priced highest.
             </p>
+            </div>
           </div>
         </div>
       )}

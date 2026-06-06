@@ -50,7 +50,15 @@ export async function GET() {
       }
     }
 
-    const days = buildForecast(openMeteo, sevenTimer);
+    const days = buildForecast(openMeteo, sevenTimer, {
+      // Real astronomical night (Sun below −18°) for the observatory — shifts
+      // and widens/narrows with the season instead of a fixed hour window.
+      loc: {
+        latitude: site.location.latitude,
+        longitude: site.location.longitude,
+        utcOffset: site.location.utcOffset,
+      },
+    });
     return NextResponse.json({ days, generatedAt: Date.now(), source: "open-meteo + 7timer" });
   } catch {
     return NextResponse.json({ error: "forecast failed" }, { status: 500 });
