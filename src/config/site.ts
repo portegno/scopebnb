@@ -21,27 +21,24 @@ export const site = {
 
 /** Primary navigation shown in the header. */
 export const navLinks = [
-  { href: "/imaging", label: "Managed Imaging" },
-  { href: "/remote-control", label: "Remote Control" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/how-it-works", label: "How it works" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/faq", label: "FAQ" },
 ] as const;
 
 /** Footer link groups. */
 export const footerSections = [
   {
-    title: "Products",
+    title: "Booking",
     links: [
-      { href: "/imaging", label: "Managed Imaging" },
-      { href: "/remote-control", label: "Remote Control (NINA)" },
+      { href: "/book", label: "Book a night" },
+      { href: "/pricing", label: "Pricing" },
     ],
   },
   {
     title: "Learn",
     links: [
       { href: "/how-it-works", label: "How it works" },
-      { href: "/pricing", label: "Pricing" },
       { href: "/faq", label: "FAQ" },
     ],
   },

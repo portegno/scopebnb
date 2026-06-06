@@ -43,7 +43,7 @@ export default function Pricing() {
           <TierTable />
           <p className="mt-4 text-xs text-muted">Flat price for the whole imageable night.</p>
           <div className="mt-6">
-            <CTA href="/book">Book a night</CTA>
+            <CTA href="/book?mode=managed">Book a night</CTA>
           </div>
         </Card>
 
@@ -61,7 +61,7 @@ export default function Pricing() {
           <TierTable remote />
           <p className="mt-4 text-xs text-muted">Per night, hands-on. 10% above the managed rate.</p>
           <div className="mt-6">
-            <CTA href="/remote-control/book" variant="secondary">
+            <CTA href="/book?mode=remote" variant="secondary">
               Reserve a night
             </CTA>
           </div>

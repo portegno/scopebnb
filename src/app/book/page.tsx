@@ -23,7 +23,7 @@ import {
   type Assessment,
   type AltitudeCurve,
 } from "@/lib/visibility";
-import { nightTier, fmtPrice, NIGHT_TIERS } from "@/lib/pricing";
+import { nightTier, fmtPrice, remotePrice, NIGHT_TIERS } from "@/lib/pricing";
 
 type Mosaic = { cols: number; rows: number; overlap: number; panels: { ra: number; dec: number }[] };
 type Framing = { ra: number; dec: number; rotation: number; targetName: string; image?: string; mosaic?: Mosaic };
@@ -76,6 +76,7 @@ function ymd(d: Date) {
 }
 
 export default function Book() {
+  const [mode, setMode] = useState<"managed" | "remote" | null>(null);
   const [framing, setFraming] = useState<Framing | null>(null);
   const [framingName, setFramingName] = useState(""); // user-editable label for the saved framing
   const [zoomed, setZoomed] = useState(false); // framing preview open in a full-size lightbox
@@ -139,11 +140,37 @@ export default function Book() {
     }
   }
 
+  // Remote Control: the rig is yours for the whole night, no target/framing needed.
+  async function confirmRemote() {
+    if (!selectedDate || !night) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    setBooking({ busy: true });
+    try {
+      const id = await createBooking({
+        product: "remote",
+        date: selectedDate,
+        priceUsd: remotePrice(night.tier.price),
+        nightTier: night.tier.key,
+        moon: { illumPct: night.illumPct, separationDeg: 0, phase: night.phase },
+        contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
+      });
+      setBooking({ id });
+    } catch (e) {
+      setBooking({ error: e instanceof Error ? e.message.replace(/^Firebase:\s*/, "") : "Could not save booking" });
+    }
+  }
+
   // Default to the observatory's current local date.
   useEffect(() => {
     const local = new Date(Date.now() + site.location.utcOffset * 3600000);
     setToday(ymd(local));
     // No date pre-selected — the visitor picks a night from the calendar first.
+    // Deep-link support: /book?mode=managed|remote preselects the modality.
+    const m = new URLSearchParams(window.location.search).get("mode");
+    if (m === "managed" || m === "remote") setMode(m);
   }, []);
 
   const ranked: RankedTarget[] = useMemo(
@@ -167,14 +194,18 @@ export default function Book() {
   // DEMO: nights that are already booked (swap for a real Firestore query later).
   const reservedNights = useMemo(() => (today ? demoReservedNights(today) : new Set<string>()), [today]);
 
-  // Pricing tier of the chosen night — matched to the calendar dot (moon at local midnight).
-  const tier = useMemo(() => {
+  // The chosen night's moon — pricing tier + illumination, matched to the calendar dot (moon at local midnight).
+  const night = useMemo(() => {
     if (!selectedDate) return null;
     const [y, m, d] = selectedDate.split("-").map(Number);
     const ms = Date.UTC(y, m - 1, d, 0, 0, 0, 0) + (24 - site.location.utcOffset) * 3600000;
     const jd = ms / 86400000 + 2440587.5;
-    return nightTier(moonIllumination(jd).fraction);
+    const moon = moonIllumination(jd);
+    return { tier: nightTier(moon.fraction), illumPct: Math.round(moon.fraction * 100), phase: moon.phase };
   }, [selectedDate]);
+  const tier = night?.tier ?? null;
+  // Remote nights cost 10% more than managed — the price shown follows the chosen modality.
+  const priceOf = (base: number) => (mode === "remote" ? remotePrice(base) : base);
 
   function computeCurrent(name: string, ra: number, dec: number) {
     const w = whenRef.current ?? new Date();
@@ -265,12 +296,20 @@ export default function Book() {
     return () => ctrl.abort();
   }, [current?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Choosing a target encompasses framing + night validation as sub-sections.
-  const steps = [
-    { n: 1, label: "Pick your night", done: !!selectedDate, anchor: "step-night" },
-    { n: 2, label: "Choose a target", done: !!framing, anchor: "step-target" },
-    { n: 3, label: "Confirm booking", done: !!booking.id, anchor: "step-confirm" },
-  ];
+  // Steps depend on the chosen modality: managed frames a target; remote jumps to confirm.
+  const steps =
+    mode === "remote"
+      ? [
+          { n: 1, label: "How you'll shoot", done: !!mode, anchor: "step-mode", reachable: true },
+          { n: 2, label: "Pick your night", done: !!selectedDate, anchor: "step-night", reachable: !!mode },
+          { n: 3, label: "Confirm booking", done: !!booking.id, anchor: "step-confirm", reachable: !!selectedDate },
+        ]
+      : [
+          { n: 1, label: "How you'll shoot", done: !!mode, anchor: "step-mode", reachable: true },
+          { n: 2, label: "Pick your night", done: !!selectedDate, anchor: "step-night", reachable: !!mode },
+          { n: 3, label: "Choose a target", done: !!framing, anchor: "step-target", reachable: !!selectedDate },
+          { n: 4, label: "Confirm booking", done: !!booking.id, anchor: "step-confirm", reachable: !!framing },
+        ];
   const activeStep = steps.find((s) => !s.done)?.n ?? steps.length;
   const goToStep = (anchor: string) =>
     document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -288,12 +327,57 @@ export default function Book() {
     <Section>
       <div className="lg:flex lg:gap-12">
         <div className="min-w-0 lg:flex-1">
-      <Eyebrow>Managed Imaging · booking</Eyebrow>
+      <Eyebrow>Booking</Eyebrow>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">Book a night</h1>
+      <p className="mt-3 max-w-2xl text-sm text-muted">
+        One rig, two ways to shoot it. Start by choosing how you want to work tonight.
+      </p>
 
-      {/* 1 · Pick your night */}
-      <h2 id="step-night" className="mt-8 scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
-        1 · Pick your night
+      {/* 1 · How you'll shoot it */}
+      <h2 id="step-mode" className="mt-8 scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
+        1 · How you&apos;ll shoot it
+      </h2>
+      <div className="mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
+        {([
+          {
+            key: "managed",
+            title: "Request an image",
+            tag: "Managed",
+            desc: "We frame and capture it for you. Calibrated FITS within 24h — no remote-control skills needed.",
+          },
+          {
+            key: "remote",
+            title: "Take control",
+            tag: "Remote · N.I.N.A.",
+            desc: "Rent the rig and drive it yourself for the whole night, pointing it at any target you like.",
+          },
+        ] as const).map((m) => {
+          const active = mode === m.key;
+          return (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => setMode(m.key)}
+              className={`flex h-full flex-col rounded-xl bg-surface p-6 text-left transition-colors ${
+                active ? "ring-2 ring-accent" : "ring-1 ring-hairline hover:bg-surface-2"
+              }`}
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-accent">{m.tag}</span>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{m.title}</h3>
+              <p className="mt-3 flex-1 text-sm text-muted">{m.desc}</p>
+              <span className={`mt-5 text-sm font-semibold ${active ? "text-accent" : "text-muted"}`}>
+                {active ? "Selected ✓" : "Choose →"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {mode && (
+        <>
+      {/* 2 · Pick your night */}
+      <h2 id="step-night" className="mt-12 scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
+        2 · Pick your night
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-muted">
         Nights are graded by moon darkness. New-moon nights are best for faint targets.
@@ -351,7 +435,7 @@ export default function Book() {
                       <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.color }} />
                       {t.key === "dark" ? "Dark (new moon)" : t.label}
                     </span>
-                    <span className="text-2xl font-semibold text-gold">{fmtPrice(t.price)}</span>
+                    <span className="text-2xl font-semibold text-gold">{fmtPrice(priceOf(t.price))}</span>
                   </li>
                 );
               })}
@@ -366,16 +450,18 @@ export default function Book() {
 
       {!selectedDate && (
         <p className="mt-8 text-sm text-muted">
-          Pick a night above to see the targets best placed that evening.
+          {mode === "remote"
+            ? "Pick a night above to reserve the rig for the evening."
+            : "Pick a night above to see the targets best placed that evening."}
         </p>
       )}
 
-      {selectedDate && (
+      {mode === "managed" && selectedDate && (
         <>
-      {/* 2 · Targets carousel */}
+      {/* 3 · Targets carousel */}
       <div className="mt-12 flex items-baseline justify-between">
         <h2 id="step-target" className="scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
-          2 · Choose a target <span className="font-normal normal-case tracking-normal text-muted">· night of {nightLabel}</span>
+          3 · Choose a target <span className="font-normal normal-case tracking-normal text-muted">· night of {nightLabel}</span>
         </h2>
         <div className="flex items-center gap-3">
           {ranked.length > 0 && <span className="text-xs text-muted">{visibleCount} up this night</span>}
@@ -403,7 +489,7 @@ export default function Book() {
       </div>
       <div
         ref={carouselRef}
-        className="mt-4 -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mt-4 -mx-2 flex snap-x scroll-pl-2 gap-4 overflow-x-auto px-2 pb-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {ranked.map((t) => {
           const active = current?.name === t.name;
@@ -747,7 +833,7 @@ export default function Book() {
         <div className="mt-12">
           {current.assessment.visible && (
             <h2 id="step-confirm" className="mb-4 scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
-              3 · Confirm booking
+              4 · Confirm booking
             </h2>
           )}
           {!current.assessment.visible ? (
@@ -790,6 +876,104 @@ export default function Book() {
       )}
         </>
       )}
+
+      {/* 3 · Confirm booking (Remote) — the whole night is yours, no target/framing */}
+      {mode === "remote" && selectedDate && night && (
+        <>
+          <h2 id="step-confirm" className="mt-12 scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
+            3 · Confirm booking
+          </h2>
+
+          <Card className="mt-4 max-w-3xl">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted">Your night</p>
+                <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{nightLabel}</p>
+                <p className="mt-2 text-sm text-muted">
+                  {night.phase} · {night.illumPct}% lit · dusk-to-dawn, the rig is yours
+                </p>
+              </div>
+              <div className="text-right">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  style={{ background: `${night.tier.color}22`, color: night.tier.color }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: night.tier.color }} />
+                  {night.tier.label} night
+                </span>
+                <p className="mt-1 text-4xl font-semibold leading-none tracking-tight text-gold sm:text-5xl">
+                  {fmtPrice(remotePrice(night.tier.price))}
+                </p>
+                <p className="mt-1 text-xs text-muted">flat, whole night</p>
+              </div>
+            </div>
+            <p className="mt-5 text-sm text-muted">
+              You drive the rig yourself with N.I.N.A. for the whole night — point it at any target you like. No
+              target selection or framing needed here.
+            </p>
+          </Card>
+
+          {/* Weather guarantee */}
+          <div className="mt-8 flex items-center gap-4 rounded-xl bg-accent/10 p-4 text-accent ring-1 ring-hairline">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" className="shrink-0">
+              <path
+                d="M7 18a4.5 4.5 0 0 1-.5-8.97 5.5 5.5 0 0 1 10.74-1.06A4 4 0 0 1 17 18"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12.5 13l-2.2 3.2h2.4L10.8 20"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="shrink-0 text-xs font-semibold uppercase tracking-wider">Weather guarantee</span>
+            <span className="h-9 w-px shrink-0 bg-accent/30" aria-hidden="true" />
+            <p className="text-sm leading-relaxed text-accent/90">
+              In the event of unsuitable weather conditions, we&apos;ll gladly reschedule your session at no extra
+              cost.
+            </p>
+          </div>
+
+          <div className="mt-6">
+            {booking.id ? (
+              <div className="rounded-xl bg-emerald-500/10 p-4 ring-1 ring-hairline">
+                <p className="text-sm">
+                  Remote Control night requested for{" "}
+                  <span className="font-semibold text-gold-soft">{nightLabel}</span> ·{" "}
+                  <span className="font-semibold text-gold-soft">{fmtPrice(remotePrice(night.tier.price))}</span>.
+                  We&apos;ll send your remote-desktop access details.
+                </p>
+                <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
+                  View in your dashboard →
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={confirmRemote}
+                  disabled={booking.busy}
+                  className="inline-flex h-11 items-center justify-center rounded-lg bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
+                >
+                  {booking.busy ? "Saving…" : user ? "Confirm booking →" : "Log in to book →"}
+                </button>
+                <span className="text-sm text-muted">
+                  <span className="font-medium text-gold-soft">{nightLabel}</span> · whole night ·{" "}
+                  <span className="font-semibold text-gold">{fmtPrice(remotePrice(night.tier.price))}</span>
+                </span>
+                {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+        </>
+      )}
         </div>
 
         {/* Progress tracker — sticky on the right so it stays as you advance */}
@@ -801,8 +985,7 @@ export default function Book() {
             <ol className="mt-4 space-y-1">
               {steps.map((s) => {
                 const active = s.n === activeStep;
-                const reachable =
-                  s.n === 1 || (s.n === 2 && !!selectedDate) || (s.n === 3 && !!framing);
+                const reachable = s.reachable;
                 return (
                   <li key={s.n}>
                     <button

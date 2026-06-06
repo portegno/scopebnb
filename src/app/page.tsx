@@ -126,7 +126,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/imaging" className="mt-4 inline-block text-sm font-semibold text-accent hover:underline">
+            <Link href="/how-it-works" className="mt-4 inline-block text-sm font-semibold text-accent hover:underline">
               Full specs →
             </Link>
           </Card>

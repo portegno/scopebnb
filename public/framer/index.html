@@ -82,7 +82,16 @@
       label { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
       input[type=range] { accent-color: var(--accent); }
       .val { font-variant-numeric: tabular-nums; color:var(--fg); min-width:46px; }
-      footer select { height:30px; background:var(--surface); color:var(--fg); border:1px solid var(--hairline); border-radius:6px; padding:0 6px; font-size:12px; cursor:pointer; }
+      .mosaic-control { display:flex; align-items:center; gap:10px; }
+      #mosaic-btn { height:32px; padding:0 14px; border:0; border-radius:10px; background:rgba(255,255,255,.06); color:var(--muted); cursor:pointer; font-size:13px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; transition:background .15s ease, color .15s ease; }
+      #mosaic-btn:hover { background:rgba(255,255,255,.10); color:var(--fg); }
+      #mosaic-btn.active { background:rgba(110,168,254,.16); color:var(--accent); }
+      #mosaic-opts { display:none; align-items:center; gap:2px; padding:3px; border-radius:12px; background:rgba(255,255,255,.05); }
+      #mosaic-opts.open { display:flex; animation:mosaicIn .2s ease; }
+      @keyframes mosaicIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:none; } }
+      .mopt { height:26px; padding:0 12px; border:0; border-radius:9px; background:transparent; color:var(--muted); cursor:pointer; font-size:12px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; transition:background .15s ease, color .15s ease; }
+      .mopt:hover { color:var(--fg); }
+      .mopt.active { background:rgba(110,168,254,.18); color:var(--accent); font-weight:600; }
       button#use { height:36px; padding:0 16px; border:0; border-radius:8px; background:var(--accent); color:var(--bg); font-weight:600; font-size:13px; cursor:pointer; margin-left:auto; }
       button#use:hover { opacity:.9; }
       button#use.disabled { background:#1b2030; color:var(--muted); cursor:not-allowed; opacity:1; }
@@ -153,15 +162,14 @@
         <input id="rot" type="range" min="0" max="359" value="0" />
         <span class="val" id="rot-val">0°</span>
       </label>
-      <label>
-        Mosaic
-        <select id="mosaic">
-          <option value="1x1">Single</option>
-          <option value="2x1">2 × 1</option>
-          <option value="1x2">1 × 2</option>
-          <option value="2x2">2 × 2</option>
-        </select>
-      </label>
+      <div class="mosaic-control">
+        <button id="mosaic-btn" type="button" title="Split the frame into a multi-panel mosaic">Mosaic</button>
+        <div id="mosaic-opts" role="group" aria-label="Mosaic grid">
+          <button type="button" class="mopt" data-grid="2x1">2 × 1</button>
+          <button type="button" class="mopt" data-grid="1x2">1 × 2</button>
+          <button type="button" class="mopt" data-grid="2x2">2 × 2</button>
+        </div>
+      </div>
       <span class="target" id="fov-label">FOV ≈ 3.02° × 2.02°</span>
       <button id="use">Use this framing →</button>
     </footer>
@@ -296,7 +304,9 @@
       const rotInput = document.getElementById("rot");
       const rotVal = document.getElementById("rot-val");
       const fovGroup = document.getElementById("fov-group");
-      const mosaicSel = document.getElementById("mosaic");
+      const mosaicBtn = document.getElementById("mosaic-btn");
+      const mosaicOpts = document.getElementById("mosaic-opts");
+      const mopts = [...mosaicOpts.querySelectorAll(".mopt")];
       const labelsBtn = document.getElementById("labels-btn");
       const fovLabel = document.getElementById("fov-label");
       let labelsOn = false;
@@ -698,12 +708,40 @@
           updateBox();
         });
 
-        mosaicSel.addEventListener("change", () => {
-          const [cols, rows] = mosaicSel.value.split("x").map(Number);
+        // Keep the Mosaic button reflecting state: accent when a mosaic is on,
+        // labelled with the active grid.
+        function syncMosaicBtn() {
+          const multi = mCols * mRows > 1;
+          mosaicBtn.classList.toggle("active", multi);
+          mosaicBtn.textContent = multi ? `Mosaic · ${mCols} × ${mRows}` : "Mosaic";
+        }
+
+        // Apply a grid from one of the option buttons.
+        function applyGrid(b) {
+          const [cols, rows] = b.dataset.grid.split("x").map(Number);
           mCols = cols;
           mRows = rows;
+          mopts.forEach((x) => x.classList.toggle("active", x === b));
+          syncMosaicBtn();
           updateBox();
+        }
+
+        // The Mosaic button is a real toggle: opening it turns on a mosaic
+        // (defaulting to the smallest 2×1), closing it reverts to a single frame.
+        mosaicBtn.addEventListener("click", () => {
+          const open = mosaicOpts.classList.toggle("open");
+          if (open) {
+            if (mCols * mRows <= 1) applyGrid(mopts.find((x) => x.dataset.grid === "2x1"));
+          } else {
+            mCols = 1;
+            mRows = 1;
+            mopts.forEach((x) => x.classList.remove("active"));
+            syncMosaicBtn();
+            updateBox();
+          }
         });
+
+        mopts.forEach((b) => b.addEventListener("click", () => applyGrid(b)));
 
         labelsBtn.addEventListener("click", () => {
           labelsOn = !labelsOn;

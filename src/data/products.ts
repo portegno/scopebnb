@@ -15,7 +15,7 @@ export const products: Product[] = [
     id: "managed",
     name: "Managed Imaging",
     audience: "For beginners, no remote-control skills needed",
-    href: "/imaging",
+    href: "/how-it-works#managed",
     blurb:
       "Pick a target that's visible on your chosen night, frame it with a live sky preview, and our team captures the data for you.",
     bullets: [
@@ -28,7 +28,7 @@ export const products: Product[] = [
     id: "remote",
     name: "Remote Control (NINA)",
     audience: "For advanced imagers",
-    href: "/remote-control",
+    href: "/how-it-works#remote",
     blurb:
       "Rent the rig and drive it yourself remotely with N.I.N.A., with full control of the sequence, just like it's in your backyard.",
     bullets: [

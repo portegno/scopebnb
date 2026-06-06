@@ -52,12 +52,14 @@ export function CTA({
 export function Card({
   children,
   className = "",
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
-    <div className={`rounded-xl bg-surface p-6 ring-1 ring-hairline ${className}`}>
+    <div id={id} className={`rounded-xl bg-surface p-6 ring-1 ring-hairline ${className}`}>
       {children}
     </div>
   );
