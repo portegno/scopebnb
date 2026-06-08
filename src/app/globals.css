@@ -36,6 +36,10 @@
   .hero-kb {
     animation: none;
   }
+  /* Don't animate anchor scrolling for users who opt out of motion. */
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* ScopeBnB — deep-space dark theme.

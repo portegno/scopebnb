@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Section, Eyebrow, CTA, Card } from "@/components/ui";
 import { HeroBackground } from "@/components/HeroBackground";
 import { HomeLogo } from "@/components/HomeLogo";
+import { HowItWorksVideo } from "@/components/HowItWorksVideo";
 import { site } from "@/config/site";
 import { products } from "@/data/products";
 import { equipment, fieldOfView } from "@/data/equipment";
@@ -52,7 +53,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <CTA href="/book">Book a night</CTA>
-              <CTA href="/how-it-works" variant="secondary">
+              <CTA href="#how-it-works" variant="secondary">
                 How it works
               </CTA>
             </div>
@@ -63,8 +64,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Products */}
-      <Section>
+      {/* How it works — explainer the hero CTA scrolls to. */}
+      <Section id="how-it-works" className="scroll-mt-20">
+        {site.explainerVideoPlaybackId && (
+          <div className="mb-16 text-center">
+            <Eyebrow>Step 1 — Watch how it works</Eyebrow>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight">
+              See a full session, start to finish
+            </h2>
+            <div className="mx-auto mt-8 w-full max-w-5xl">
+              <HowItWorksVideo playbackId={site.explainerVideoPlaybackId} />
+            </div>
+          </div>
+        )}
+
         <Eyebrow>Two ways to image</Eyebrow>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight">Pick your path</h2>
         <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -85,7 +98,7 @@ export default function Home() {
                 href={p.href}
                 className="mt-6 text-sm font-semibold text-accent hover:underline"
               >
-                Learn more →
+                Book a night →
               </Link>
             </Card>
           ))}
@@ -126,7 +139,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/how-it-works" className="mt-4 inline-block text-sm font-semibold text-accent hover:underline">
+            <Link href="/#how-it-works" className="mt-4 inline-block text-sm font-semibold text-accent hover:underline">
               Full specs →
             </Link>
           </Card>

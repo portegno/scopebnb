@@ -17,11 +17,14 @@ export const site = {
     // Central Time. CDT (UTC-5) in summer DST, CST (UTC-6) otherwise.
     utcOffset: -5,
   },
+  // Mux PLAYBACK ID (public) of the explainer video shown below the hero.
+  // NOT the Asset ID — get it from Mux dashboard → Asset → "Playback IDs" (public).
+  // Empty string hides the video block until a real ID is set.
+  explainerVideoPlaybackId: "mnB8uwuYKDe9IcgCvdvPx1nIQJpkXCk1l6RNUrsG401w",
 } as const;
 
 /** Primary navigation shown in the header. */
 export const navLinks = [
-  { href: "/how-it-works", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
   { href: "/faq", label: "FAQ" },
 ] as const;
@@ -38,7 +41,7 @@ export const footerSections = [
   {
     title: "Learn",
     links: [
-      { href: "/how-it-works", label: "How it works" },
+      { href: "/#how-it-works", label: "How it works" },
       { href: "/faq", label: "FAQ" },
     ],
   },
