@@ -25,6 +25,7 @@ export const site = {
 
 /** Primary navigation shown in the header. */
 export const navLinks = [
+  { href: "/#how-it-works", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
   { href: "/faq", label: "FAQ" },
 ] as const;

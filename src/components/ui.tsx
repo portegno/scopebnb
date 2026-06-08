@@ -1,5 +1,7 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { CTA } from "@/components/CTA";
+
+export { CTA };
 
 /** A vertically padded page section with a centered max-width container. */
 export function Section({
@@ -24,29 +26,6 @@ export function Eyebrow({ children }: { children: ReactNode }) {
     <span className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
       {children}
     </span>
-  );
-}
-
-/** Primary / secondary call-to-action link. */
-export function CTA({
-  href,
-  children,
-  variant = "primary",
-}: {
-  href: string;
-  children: ReactNode;
-  variant?: "primary" | "secondary";
-}) {
-  const base =
-    "inline-flex h-11 items-center justify-center rounded-[4px] px-5 text-sm font-semibold transition-colors";
-  const styles =
-    variant === "primary"
-      ? "bg-accent text-background hover:bg-accent/90"
-      : "bg-surface-2 text-foreground hover:bg-surface-2/70";
-  return (
-    <Link href={href} className={`${base} ${styles}`}>
-      {children}
-    </Link>
   );
 }
 

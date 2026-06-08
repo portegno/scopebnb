@@ -145,7 +145,7 @@ export default function Signup() {
           </h2>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
             Book remote imaging time on a world-class rig in {site.location.address[2]},
-            under Bortle 1 skies — no gear, no setup, no light pollution.
+            under Bortle 1 skies. No gear, no setup, no light pollution.
           </p>
 
           <dl className="mt-8 grid max-w-md grid-cols-2 gap-4">
@@ -161,7 +161,7 @@ export default function Signup() {
             <p className="text-sm font-semibold">📡 Never lose a clear night</p>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               Weather can force the observatory roof to close mid-session. We&apos;ll
-              alert you by WhatsApp or SMS the moment it happens — so a sudden
+              alert you by WhatsApp or SMS the moment it happens, so a sudden
               cloud-out never costs you a booking without warning.
             </p>
           </div>

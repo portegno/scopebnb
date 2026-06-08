@@ -343,7 +343,7 @@ export default function Book() {
             key: "managed",
             title: "Request an image",
             tag: "Managed",
-            desc: "We frame and capture it for you. Calibrated FITS within 24h — no remote-control skills needed.",
+            desc: "We frame and capture it for you. Calibrated FITS within 24h. No remote-control skills needed.",
           },
           {
             key: "remote",
@@ -908,7 +908,7 @@ export default function Book() {
               </div>
             </div>
             <p className="mt-5 text-sm text-muted">
-              You drive the rig yourself with N.I.N.A. for the whole night — point it at any target you like. No
+              You drive the rig yourself with N.I.N.A. for the whole night, and point it at any target you like. No
               target selection or framing needed here.
             </p>
           </Card>

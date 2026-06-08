@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navLinks, site } from "@/config/site";
+import { scrollToHash } from "@/lib/scrollToHash";
 import { Wordmark } from "@/components/Wordmark";
 import { ForecastNavIcon } from "@/components/ForecastNavIcon";
 import { useAuth } from "@/lib/firebase/useAuth";
@@ -53,6 +54,9 @@ export function SiteHeader() {
               <Link
                 key={l.href}
                 href={l.href}
+                onClick={(e) => {
+                  if (scrollToHash(l.href)) e.preventDefault();
+                }}
                 aria-current={active ? "page" : undefined}
                 className={`text-sm transition-colors ${
                   transparent
@@ -116,7 +120,10 @@ export function SiteHeader() {
               <Link
                 key={l.href}
                 href={l.href}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  if (scrollToHash(l.href)) e.preventDefault();
+                  setOpen(false);
+                }}
                 aria-current={active ? "page" : undefined}
                 className={`rounded-lg px-2 py-2 text-sm hover:bg-surface ${
                   active ? "font-medium text-accent" : "text-muted hover:text-foreground"

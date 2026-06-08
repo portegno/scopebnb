@@ -68,10 +68,14 @@ export default function Home() {
       <Section id="how-it-works" className="scroll-mt-20">
         {site.explainerVideoPlaybackId && (
           <div className="mb-16 text-center">
-            <Eyebrow>Step 1 — Watch how it works</Eyebrow>
+            <Eyebrow>Watch how it works</Eyebrow>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-              See a full session, start to finish
+              Great skies and pro gear, from wherever you live
             </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-muted">
+              Bad weather, light pollution, or no access to a pro telescope where you
+              live? This video shows the two ways to image with ScopeBnB.
+            </p>
             <div className="mx-auto mt-8 w-full max-w-5xl">
               <HowItWorksVideo playbackId={site.explainerVideoPlaybackId} />
             </div>

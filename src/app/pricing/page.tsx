@@ -55,7 +55,7 @@ export default function Pricing() {
           </div>
           <h2 className="mt-1 text-lg font-semibold">You drive the rig yourself</h2>
           <p className="mt-1 text-sm text-muted">
-            Rent the telescope for the whole night and operate it remotely with N.I.N.A. — point it at
+            Rent the telescope for the whole night and operate it remotely with N.I.N.A., pointing it at
             anything you like.
           </p>
           <TierTable remote />

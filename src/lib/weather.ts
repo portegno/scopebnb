@@ -190,8 +190,8 @@ export const METRIC_ROWS: MetricRow[] = [
 
 /** Hover explanation per metric — what's good and what to expect. Keyed by row key. */
 export const METRIC_HELP: Record<string, string> = {
-  cloudTotal: "Total cloud cover (%). Lower is better — under ~20% is clear; over 60% usually kills the night.",
-  cloudLow: "Low-altitude cloud (%). The most disruptive layer — even 20–30% can block your target.",
+  cloudTotal: "Total cloud cover (%). Lower is better: under ~20% is clear; over 60% usually kills the night.",
+  cloudLow: "Low-altitude cloud (%). The most disruptive layer: even 20–30% can block your target.",
   cloudMid: "Mid-level cloud (%). Lower is better; thick mid cloud hides faint detail.",
   cloudHigh: "High thin cloud (%). Less blocking than low cloud, but softens contrast.",
   seeing: "Atmospheric steadiness (1–8, lower is better). 1–2 = sharp, sub-arcsecond; 5+ = blurry, poor for planets & small galaxies.",
@@ -200,7 +200,7 @@ export const METRIC_HELP: Record<string, string> = {
   windKmh: "Wind speed (km/h). Under 10 is ideal; over ~35 shakes the scope and trails stars.",
   humidity: "Relative humidity (%). Under ~70% is good; over ~90% risks dew forming on the optics.",
   dewPointC: "Dew point (°C). The closer the air temperature gets to it, the higher the dew/condensation risk on the optics.",
-  tempC: "Air temperature (°C). Informational — affects cooling and dew, not image quality directly.",
+  tempC: "Air temperature (°C). Informational: affects cooling and dew, not image quality directly.",
   precipProb: "Chance of precipitation (%). Anything above a few % is a red flag for the session.",
 };
 

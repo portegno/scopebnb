@@ -93,7 +93,7 @@ export function NightCalendar({
               onClick={() => onSelect(ymd)}
               title={
                 isToday
-                  ? "Too soon — same-day bookings can't be processed"
+                  ? "Too soon: same-day bookings can't be processed"
                   : tooSoon
                     ? "Past"
                     : booked

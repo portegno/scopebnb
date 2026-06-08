@@ -79,7 +79,7 @@ export function ForecastNavIcon({
     <Link
       href="/forecast"
       onClick={onClick}
-      title={now ? `Sky forecast — ${LABEL[now.cond]} now` : "Sky forecast"}
+      title={now ? `Sky forecast: ${LABEL[now.cond]} now` : "Sky forecast"}
       className={
         className ??
         `inline-flex items-center gap-1.5 text-sm leading-none transition-colors ${

@@ -13,9 +13,9 @@
 export type HeroImage = { src: string; alt: string };
 
 export const heroImages: HeroImage[] = [
-  { src: "/images/hero/foto1.jpg", alt: "Orion Nebula (M42) — shot on our rig" },
-  { src: "/images/hero/foto2.jpg", alt: "Carina Nebula (NGC 3372) — shot on our rig" },
-  { src: "/images/hero/foto3.jpg", alt: "Emission nebula — shot on our rig" },
+  { src: "/images/hero/foto1.jpg", alt: "Orion Nebula (M42), shot on our rig" },
+  { src: "/images/hero/foto2.jpg", alt: "Carina Nebula (NGC 3372), shot on our rig" },
+  { src: "/images/hero/foto3.jpg", alt: "Emission nebula, shot on our rig" },
 ];
 
 // ── Fallback: real DSS2 sky imagery (no local files needed). To use it, replace

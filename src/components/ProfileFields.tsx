@@ -97,7 +97,7 @@ export function ProfileFields({
           />
         </div>
         <p className="mt-1 text-xs text-muted">
-          Used only for urgent alerts — like a roof closure due to weather.
+          Used only for urgent alerts, like a roof closure due to weather.
         </p>
       </div>
 
