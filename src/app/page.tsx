@@ -100,7 +100,7 @@ export default function Home() {
               </ul>
               <Link
                 href={p.href}
-                className="mt-6 text-sm font-semibold text-accent hover:underline"
+                className="mt-6 text-sm font-semibold text-gold hover:text-gold-soft hover:underline"
               >
                 Book a night →
               </Link>
