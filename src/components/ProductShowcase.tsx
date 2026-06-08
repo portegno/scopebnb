@@ -132,7 +132,7 @@ export function ProductShowcase() {
               />
               <div
                 data-parallax="-1.6"
-                className="relative mx-auto aspect-square w-full max-w-xl overflow-hidden rounded-3xl ring-1 ring-hairline"
+                className="relative mx-auto aspect-square w-full max-w-xl overflow-hidden rounded-[4px] ring-1 ring-hairline"
               >
                 <Image
                   src={h.image}

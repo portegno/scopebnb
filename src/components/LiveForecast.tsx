@@ -31,7 +31,7 @@ export function LiveForecast() {
 
   if (!days && !failed) {
     return (
-      <div className="rounded-xl bg-surface p-10 text-center text-sm text-muted ring-1 ring-hairline">
+      <div className="rounded-[4px] bg-surface p-10 text-center text-sm text-muted ring-1 ring-hairline">
         Loading live forecast…
       </div>
     );

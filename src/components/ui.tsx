@@ -36,7 +36,7 @@ export function CTA({
   variant?: "primary" | "secondary";
 }) {
   const base =
-    "inline-flex h-11 items-center justify-center rounded-lg px-5 text-sm font-semibold transition-colors";
+    "inline-flex h-11 items-center justify-center rounded-[4px] px-5 text-sm font-semibold transition-colors";
   const styles =
     variant === "primary"
       ? "bg-accent text-background hover:bg-accent/90"
@@ -59,7 +59,7 @@ export function Card({
   id?: string;
 }) {
   return (
-    <div id={id} className={`rounded-xl bg-surface p-6 ring-1 ring-hairline ${className}`}>
+    <div id={id} className={`rounded-[4px] bg-surface p-6 ring-1 ring-hairline ${className}`}>
       {children}
     </div>
   );
@@ -68,7 +68,7 @@ export function Card({
 /** Placeholder block for routes whose content is still being defined. */
 export function ComingSoon({ note }: { note?: string }) {
   return (
-    <div className="rounded-xl bg-surface p-10 text-center ring-1 ring-hairline">
+    <div className="rounded-[4px] bg-surface p-10 text-center ring-1 ring-hairline">
       <p className="text-sm font-medium text-muted">
         {note ?? "This page is scaffolded. Content coming next."}
       </p>

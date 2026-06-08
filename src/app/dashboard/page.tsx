@@ -135,7 +135,7 @@ export default function Dashboard() {
             key={b.id}
             type="button"
             onClick={() => setSelected(b)}
-            className="group block overflow-hidden rounded-xl bg-surface text-left ring-1 ring-hairline transition-colors hover:ring-accent/40"
+            className="group block overflow-hidden rounded-[4px] bg-surface text-left ring-1 ring-hairline transition-colors hover:ring-accent/40"
           >
             {b.previewImage && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -179,7 +179,7 @@ export default function Dashboard() {
           aria-modal="true"
         >
           <div
-            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface ring-1 ring-hairline"
+            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[4px] bg-surface ring-1 ring-hairline"
             onClick={(e) => e.stopPropagation()}
           >
             <button

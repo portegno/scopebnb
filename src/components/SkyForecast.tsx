@@ -144,7 +144,7 @@ export function SkyForecast({
     scrollRef.current?.scrollBy({ left: dir * scrollRef.current.clientWidth * 0.8, behavior: "smooth" });
 
   return (
-    <div className="rounded-xl bg-surface p-5 ring-1 ring-hairline">
+    <div className="rounded-[4px] bg-surface p-5 ring-1 ring-hairline">
       {/* Header: title (left) · metric explanation (center, on hover) · legend (right) */}
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="shrink-0">
@@ -272,7 +272,7 @@ export function SkyForecast({
           Sources
           <span
             role="tooltip"
-            className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 w-72 rounded-lg bg-surface-2 px-3 py-2 text-left text-[11px] leading-snug text-foreground/90 opacity-0 shadow-xl ring-1 ring-hairline transition-opacity duration-150 group-hover:opacity-100"
+            className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 w-72 rounded-[4px] bg-surface-2 px-3 py-2 text-left text-[11px] leading-snug text-foreground/90 opacity-0 shadow-xl ring-1 ring-hairline transition-opacity duration-150 group-hover:opacity-100"
           >
             Cloud, wind, humidity, dew &amp; visibility from <strong className="font-semibold text-foreground">Open-Meteo</strong> · seeing &amp; transparency from <strong className="font-semibold text-foreground">7Timer</strong> · moon computed locally. Updated hourly.
           </span>

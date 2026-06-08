@@ -358,7 +358,7 @@ export default function Book() {
               key={m.key}
               type="button"
               onClick={() => setMode(m.key)}
-              className={`flex h-full flex-col rounded-xl bg-surface p-6 text-left transition-colors ${
+              className={`flex h-full flex-col rounded-[4px] bg-surface p-6 text-left transition-colors ${
                 active ? "ring-2 ring-accent" : "ring-1 ring-hairline hover:bg-surface-2"
               }`}
             >
@@ -398,7 +398,7 @@ export default function Book() {
           <div className="flex w-full flex-col gap-4 sm:w-80">
             <Link
               href="/forecast"
-              className="flex items-center justify-between gap-2 rounded-xl bg-surface px-5 py-3.5 ring-1 ring-hairline transition-colors hover:bg-surface-2"
+              className="flex items-center justify-between gap-2 rounded-[4px] bg-surface px-5 py-3.5 ring-1 ring-hairline transition-colors hover:bg-surface-2"
             >
               <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
                 <svg
@@ -419,7 +419,7 @@ export default function Book() {
               <span className="text-accent">→</span>
             </Link>
 
-            <div className="flex w-full flex-1 flex-col rounded-xl bg-surface p-6 ring-1 ring-hairline">
+            <div className="flex w-full flex-1 flex-col rounded-[4px] bg-surface p-6 ring-1 ring-hairline">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Price per night</h3>
             <ul className="mt-5 flex-1 divide-y divide-hairline">
               {NIGHT_TIERS.map((t) => {
@@ -507,7 +507,7 @@ export default function Book() {
                     src={skyThumb(t.ra, t.dec)}
                     alt={t.name}
                     loading="lazy"
-                    className="mb-3 aspect-[16/10] w-full rounded-lg bg-surface-2 object-cover ring-1 ring-hairline"
+                    className="mb-3 aspect-[16/10] w-full rounded-[4px] bg-surface-2 object-cover ring-1 ring-hairline"
                   />
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -542,7 +542,7 @@ export default function Book() {
                 <button
                   type="button"
                   onClick={() => openFramer(t)}
-                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-accent/40 bg-transparent px-4 text-sm font-semibold text-accent transition-colors hover:border-accent/60 hover:bg-accent/10"
+                  className="mt-3 inline-flex h-9 items-center justify-center rounded-[4px] border border-accent/40 bg-transparent px-4 text-sm font-semibold text-accent transition-colors hover:border-accent/60 hover:bg-accent/10"
                 >
                   Frame this target →
                 </button>
@@ -564,7 +564,7 @@ export default function Book() {
                   <button
                     type="button"
                     onClick={() => setZoomed(true)}
-                    className="group block w-full cursor-zoom-in overflow-hidden rounded-lg ring-1 ring-hairline"
+                    className="group block w-full cursor-zoom-in overflow-hidden rounded-[4px] ring-1 ring-hairline"
                     aria-label="View framing preview full size"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -575,7 +575,7 @@ export default function Book() {
                     />
                   </button>
                 ) : (
-                  <div className="flex aspect-[16/10] items-center justify-center rounded-lg bg-surface-2 p-6 text-center text-xs text-muted ring-1 ring-hairline">
+                  <div className="flex aspect-[16/10] items-center justify-center rounded-[4px] bg-surface-2 p-6 text-center text-xs text-muted ring-1 ring-hairline">
                     Framing saved. Preview unavailable.
                   </div>
                 )}
@@ -671,7 +671,7 @@ export default function Book() {
             Night validation · {current.name}
           </h2>
           <div
-            className={`mt-4 flex flex-wrap items-center gap-3 rounded-xl p-4 ring-1 ring-hairline ${current.assessment.visible ? "bg-surface" : "bg-red-500/10"}`}
+            className={`mt-4 flex flex-wrap items-center gap-3 rounded-[4px] p-4 ring-1 ring-hairline ${current.assessment.visible ? "bg-surface" : "bg-red-500/10"}`}
           >
             <span className={`rounded-md px-2.5 py-1 text-xs font-semibold capitalize ${qualityStyles[current.assessment.rating]}`}>
               {current.assessment.rating}
@@ -783,7 +783,7 @@ export default function Book() {
               </ul>
 
               {framing?.mosaic && framing.mosaic.panels.length > 1 && (
-                <div className="mt-4 rounded-lg bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200/90 ring-1 ring-hairline">
+                <div className="mt-4 rounded-[4px] bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200/90 ring-1 ring-hairline">
                   <strong className="text-amber-200">
                     {framing.mosaic.panels.length}-panel mosaic · signal-to-noise note.
                   </strong>{" "}
@@ -801,7 +801,7 @@ export default function Book() {
 
       {/* Weather guarantee */}
       {framing && current && current.assessment.visible && (
-        <div className="mt-8 flex items-center gap-4 rounded-xl bg-accent/10 p-4 text-accent ring-1 ring-hairline">
+        <div className="mt-8 flex items-center gap-4 rounded-[4px] bg-accent/10 p-4 text-accent ring-1 ring-hairline">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" className="shrink-0">
             {/* storm cloud with lightning bolt */}
             <path
@@ -837,11 +837,11 @@ export default function Book() {
             </h2>
           )}
           {!current.assessment.visible ? (
-            <p className="rounded-xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-hairline">
+            <p className="rounded-[4px] bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-hairline">
               {current.name} isn&apos;t imageable on {nightLabel} from this site. Pick another target or date.
             </p>
           ) : booking.id ? (
-            <div className="rounded-xl bg-emerald-500/10 p-4 ring-1 ring-hairline">
+            <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
               <p className="text-sm">
                 Booking requested for <span className="font-semibold">{framingName.trim() || current.name}</span> on{" "}
                 <span className="font-semibold text-gold-soft">{nightLabel}</span>
@@ -858,7 +858,7 @@ export default function Book() {
                 type="button"
                 onClick={continueToCheckout}
                 disabled={booking.busy}
-                className="inline-flex h-11 items-center justify-center rounded-lg bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center rounded-[4px] bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
               >
                 {booking.busy ? "Saving…" : user ? "Confirm booking →" : "Log in to book →"}
               </button>
@@ -914,7 +914,7 @@ export default function Book() {
           </Card>
 
           {/* Weather guarantee */}
-          <div className="mt-8 flex items-center gap-4 rounded-xl bg-accent/10 p-4 text-accent ring-1 ring-hairline">
+          <div className="mt-8 flex items-center gap-4 rounded-[4px] bg-accent/10 p-4 text-accent ring-1 ring-hairline">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" className="shrink-0">
               <path
                 d="M7 18a4.5 4.5 0 0 1-.5-8.97 5.5 5.5 0 0 1 10.74-1.06A4 4 0 0 1 17 18"
@@ -941,7 +941,7 @@ export default function Book() {
 
           <div className="mt-6">
             {booking.id ? (
-              <div className="rounded-xl bg-emerald-500/10 p-4 ring-1 ring-hairline">
+              <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
                 <p className="text-sm">
                   Remote Control night requested for{" "}
                   <span className="font-semibold text-gold-soft">{nightLabel}</span> ·{" "}
@@ -958,7 +958,7 @@ export default function Book() {
                   type="button"
                   onClick={confirmRemote}
                   disabled={booking.busy}
-                  className="inline-flex h-11 items-center justify-center rounded-lg bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
+                  className="inline-flex h-11 items-center justify-center rounded-[4px] bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
                 >
                   {booking.busy ? "Saving…" : user ? "Confirm booking →" : "Log in to book →"}
                 </button>
@@ -992,7 +992,7 @@ export default function Book() {
                       type="button"
                       onClick={() => goToStep(s.anchor)}
                       disabled={!reachable}
-                      className={`flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors ${
+                      className={`flex w-full items-center gap-3 rounded-[4px] px-2 py-2 text-left transition-colors ${
                         active ? "bg-surface" : reachable ? "hover:bg-surface/60" : ""
                       }`}
                     >
@@ -1028,7 +1028,7 @@ export default function Book() {
           onClick={() => setFramerUrl(null)}
         >
           <div
-            className="relative flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-background ring-1 ring-hairline"
+            className="relative flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-[4px] bg-background ring-1 ring-hairline"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-hairline px-4 py-2">
@@ -1068,7 +1068,7 @@ export default function Book() {
             src={framing.image}
             alt={`Framing preview for ${current?.name ?? "target"}`}
             onClick={(e) => e.stopPropagation()}
-            className="max-h-full max-w-full cursor-zoom-out rounded-lg ring-1 ring-white/10"
+            className="max-h-full max-w-full cursor-zoom-out rounded-[4px] ring-1 ring-white/10"
           />
         </div>
       )}

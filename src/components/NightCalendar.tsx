@@ -45,7 +45,7 @@ export function NightCalendar({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="rounded-xl bg-surface p-5 ring-1 ring-hairline">
+    <div className="rounded-[4px] bg-surface p-5 ring-1 ring-hairline">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{monthLabel}</h3>
         <div className="flex gap-2">

@@ -69,7 +69,7 @@ export default function Pricing() {
       </div>
 
       {/* Weather guarantee */}
-      <div className="mt-8 flex items-center gap-4 rounded-xl bg-accent/10 p-4 text-accent ring-1 ring-hairline">
+      <div className="mt-8 flex items-center gap-4 rounded-[4px] bg-accent/10 p-4 text-accent ring-1 ring-hairline">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" className="shrink-0">
           <path
             d="M7 18a4.5 4.5 0 0 1-.5-8.97 5.5 5.5 0 0 1 10.74-1.06A4 4 0 0 1 17 18"

@@ -80,6 +80,16 @@ button:not(:disabled),
   cursor: pointer;
 }
 
+/* Design convention: every button across the app uses a 4px corner radius.
+   This is unlayered, so it overrides Tailwind's rounded-* utilities on buttons
+   without !important (utilities live in the `utilities` cascade layer).
+   Note: link-styled buttons (<a>/<Link>) aren't <button> elements, so they set
+   rounded-[4px] explicitly in their markup. */
+button,
+[role="button"] {
+  border-radius: 4px;
+}
+
 /* Make the native date picker icon visible on the dark theme. */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);

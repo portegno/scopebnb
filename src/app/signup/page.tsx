@@ -150,14 +150,14 @@ export default function Signup() {
 
           <dl className="mt-8 grid max-w-md grid-cols-2 gap-4">
             {stats.map((s) => (
-              <div key={s.label} className="rounded-xl bg-surface p-4 ring-1 ring-hairline">
+              <div key={s.label} className="rounded-[4px] bg-surface p-4 ring-1 ring-hairline">
                 <dt className="text-2xl font-semibold tracking-tight">{s.value}</dt>
                 <dd className="mt-1 text-xs text-muted">{s.label}</dd>
               </div>
             ))}
           </dl>
 
-          <div className="mt-6 max-w-md rounded-xl bg-surface p-5 ring-1 ring-hairline">
+          <div className="mt-6 max-w-md rounded-[4px] bg-surface p-5 ring-1 ring-hairline">
             <p className="text-sm font-semibold">📡 Never lose a clear night</p>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               Weather can force the observatory roof to close mid-session. We&apos;ll

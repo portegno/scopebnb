@@ -107,7 +107,7 @@ export default function Home() {
         </p>
 
         <div className="mt-10 grid gap-10 md:grid-cols-2 md:items-stretch">
-          <div className="relative aspect-[7/5] overflow-hidden rounded-xl bg-black ring-1 ring-hairline">
+          <div className="relative aspect-[7/5] overflow-hidden rounded-[4px] bg-black ring-1 ring-hairline">
             <Image
               src="/images/equipment/redcat-91.jpg"
               alt="William Optics RedCat 91 WIFD"

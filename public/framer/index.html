@@ -13,12 +13,12 @@
       header { padding:10px 16px; border-bottom:1px solid var(--hairline); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
       header h1 { font-size:14px; margin:0; font-weight:600; white-space:nowrap; }
       #ident { font-size:13px; color:var(--accent); font-weight:600; white-space:nowrap; }
-      #labels-btn { margin-left:auto; height:32px; padding:0 12px; border:1px solid var(--hairline); border-radius:8px; background:var(--surface); color:var(--fg); cursor:pointer; font-size:13px; white-space:nowrap; }
+      #labels-btn { margin-left:auto; height:32px; padding:0 12px; border:1px solid var(--hairline); border-radius:4px; background:var(--surface); color:var(--fg); cursor:pointer; font-size:13px; white-space:nowrap; }
       #labels-btn:hover { background:rgba(255,255,255,.08); }
       #labels-btn.active { background:var(--accent); color:var(--bg); border-color:var(--accent); }
       header form { display:flex; gap:6px; }
       header input { height:32px; padding:0 10px; border:1px solid var(--hairline); border-radius:8px; background:var(--surface); color:var(--fg); font-size:13px; min-width:200px; }
-      header .go { height:32px; padding:0 12px; border:0; border-radius:8px; background:var(--surface); color:var(--fg); border:1px solid var(--hairline); cursor:pointer; font-size:13px; }
+      header .go { height:32px; padding:0 12px; border:0; border-radius:4px; background:var(--surface); color:var(--fg); border:1px solid var(--hairline); cursor:pointer; font-size:13px; }
       #map { flex:1; position:relative; overflow:hidden; }
       #aladin-lite-div { position:absolute; inset:0; }
       /* Hide Aladin's native chrome — we only want the sky + our own camera frame.
@@ -68,11 +68,11 @@
       #recos-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
       #recos-title { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
       #recos-nav { display:flex; gap:6px; }
-      #recos-nav button { width:24px; height:24px; border-radius:6px; border:1px solid var(--hairline); background:var(--bg); color:var(--fg); cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; }
+      #recos-nav button { width:24px; height:24px; border-radius:4px; border:1px solid var(--hairline); background:var(--bg); color:var(--fg); cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; }
       #recos-nav button:hover { background:rgba(255,255,255,.1); }
       #recos-track { display:flex; gap:8px; overflow-x:auto; scroll-behavior:smooth; padding-bottom:4px; scrollbar-width:none; }
       #recos-track::-webkit-scrollbar { display:none; }
-      .reco { flex:none; width:128px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid var(--hairline); border-radius:8px; overflow:hidden; }
+      .reco { flex:none; width:128px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid var(--hairline); border-radius:4px; overflow:hidden; }
       .reco:hover { background:rgba(255,255,255,.09); }
       .reco .thumb { width:100%; height:72px; object-fit:cover; display:block; background:#05070f; }
       .reco .nm { padding:6px 8px 0; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -83,16 +83,16 @@
       input[type=range] { accent-color: var(--accent); }
       .val { font-variant-numeric: tabular-nums; color:var(--fg); min-width:46px; }
       .mosaic-control { display:flex; align-items:center; gap:10px; }
-      #mosaic-btn { height:32px; padding:0 14px; border:0; border-radius:10px; background:rgba(255,255,255,.06); color:var(--muted); cursor:pointer; font-size:13px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; transition:background .15s ease, color .15s ease; }
+      #mosaic-btn { height:32px; padding:0 14px; border:0; border-radius:4px; background:rgba(255,255,255,.06); color:var(--muted); cursor:pointer; font-size:13px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; transition:background .15s ease, color .15s ease; }
       #mosaic-btn:hover { background:rgba(255,255,255,.10); color:var(--fg); }
       #mosaic-btn.active { background:rgba(110,168,254,.16); color:var(--accent); }
-      #mosaic-opts { display:none; align-items:center; gap:2px; padding:3px; border-radius:12px; background:rgba(255,255,255,.05); }
+      #mosaic-opts { display:none; align-items:center; gap:2px; padding:3px; border-radius:4px; background:rgba(255,255,255,.05); }
       #mosaic-opts.open { display:flex; animation:mosaicIn .2s ease; }
       @keyframes mosaicIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:none; } }
-      .mopt { height:26px; padding:0 12px; border:0; border-radius:9px; background:transparent; color:var(--muted); cursor:pointer; font-size:12px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; transition:background .15s ease, color .15s ease; }
+      .mopt { height:26px; padding:0 12px; border:0; border-radius:4px; background:transparent; color:var(--muted); cursor:pointer; font-size:12px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; transition:background .15s ease, color .15s ease; }
       .mopt:hover { color:var(--fg); }
       .mopt.active { background:rgba(110,168,254,.18); color:var(--accent); font-weight:600; }
-      button#use { height:36px; padding:0 16px; border:0; border-radius:8px; background:var(--accent); color:var(--bg); font-weight:600; font-size:13px; cursor:pointer; margin-left:auto; }
+      button#use { height:36px; padding:0 16px; border:0; border-radius:4px; background:var(--accent); color:var(--bg); font-weight:600; font-size:13px; cursor:pointer; margin-left:auto; }
       button#use:hover { opacity:.9; }
       button#use.disabled { background:#1b2030; color:var(--muted); cursor:not-allowed; opacity:1; }
     </style>
