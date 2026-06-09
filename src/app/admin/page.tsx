@@ -10,7 +10,7 @@ import { useAdminMe } from "@/components/admin/AdminMeContext";
 import { OrderDetailModal, Row, fmtHour } from "@/components/admin/OrderDetailModal";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Booking } from "@/lib/bookings/types";
-import { BOOKING_STATUSES, STATUS_LABEL, type BookingStatus } from "@/lib/bookings/status";
+import type { BookingStatus } from "@/lib/bookings/status";
 
 type Stats = {
   total: number;
@@ -195,7 +195,7 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
                   <button
                     onClick={() => setAskNote(true)}
                     disabled={selected.size === 0}
-                    className="rounded-[4px] bg-pink-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-pink-600 disabled:opacity-50"
+                    className="rounded-[4px] bg-surface-2 px-2.5 py-1 text-xs font-semibold text-white hover:bg-surface disabled:opacity-50"
                   >
                     Block {selected.size || ""}
                   </button>
@@ -226,7 +226,7 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
               if (booking) {
                 // Booked → filled with the night's tier colour.
                 cellStyle.backgroundColor = tierHex;
-                cls = tierKey === "bright" ? "text-slate-900" : "text-white";
+                cls = tierKey === "bright" ? "text-background" : "text-white";
               } else if (blk) {
                 // Blocked → low-contrast grey diagonal stripes.
                 cellStyle.backgroundImage = BLOCKED_STRIPES;
@@ -262,12 +262,12 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
                   }
                   style={cellStyle}
                   className={`group relative flex h-9 flex-1 items-center justify-center rounded-[3px] border text-[10px] font-medium ${cls} ${
-                    isSel ? "ring-2 ring-pink-500" : ""
+                    isSel ? "ring-2 ring-slate-400" : ""
                   } ${interactive ? "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-slate-400/60" : "cursor-default"}`}
                 >
-                  {isToday && <span className="absolute -top-1.5 inset-x-1 h-1 rounded-full bg-slate-900" />}
+                  {isToday && <span className="absolute -top-1.5 inset-x-1 h-1 rounded-full bg-surface-2" />}
                   {d}
-                  <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-[4px] bg-slate-900 px-2 py-1 text-[11px] font-normal text-white opacity-0 shadow-lg transition-all duration-150 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100">
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-[4px] bg-surface-2 px-2 py-1 text-[11px] font-normal text-white opacity-0 shadow-lg transition-all duration-150 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100">
                     {tip}
                   </span>
                 </button>
@@ -302,14 +302,14 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
         <div className="flex shrink-0 flex-col justify-center gap-4 border-l border-slate-200 pl-6 text-right">
           <div>
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Sold</p>
-            <p className="text-3xl font-semibold tracking-tight text-slate-900">{matches ? `${display.sold.pct}%` : "—"}</p>
+            <p className="text-3xl font-semibold tracking-tight text-background">{matches ? `${display.sold.pct}%` : "—"}</p>
             <p className="text-xs text-slate-500">
               {matches ? display.sold.count : "—"} / {display.daysInMonth} nights
             </p>
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Blocked</p>
-            <p className="text-3xl font-semibold tracking-tight text-pink-500">{matches ? `${display.blocked.pct}%` : "—"}</p>
+            <p className="text-3xl font-semibold tracking-tight text-slate-400">{matches ? `${display.blocked.pct}%` : "—"}</p>
             <p className="text-xs text-slate-500">
               {matches ? display.blocked.count : "—"} / {display.daysInMonth} nights
             </p>
@@ -337,7 +337,7 @@ function MonthYearPicker({ year, month, onPick }: { year: number; month: number;
         <button onClick={() => setY((v) => v - 1)} aria-label="Previous year" className="rounded-[4px] px-2 py-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
           ‹
         </button>
-        <span className="text-sm font-semibold text-slate-900">{y}</span>
+        <span className="text-sm font-semibold text-background">{y}</span>
         <button onClick={() => setY((v) => v + 1)} aria-label="Next year" className="rounded-[4px] px-2 py-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
           ›
         </button>
@@ -349,7 +349,7 @@ function MonthYearPicker({ year, month, onPick }: { year: number; month: number;
             <button
               key={m}
               onClick={() => onPick(y, i + 1)}
-              className={`rounded-[4px] px-2 py-1.5 text-xs font-medium ${isCur ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"}`}
+              className={`rounded-[4px] px-2 py-1.5 text-xs font-medium ${isCur ? "bg-surface-2 text-white" : "text-slate-700 hover:bg-slate-100"}`}
             >
               {m}
             </button>
@@ -363,10 +363,10 @@ function MonthYearPicker({ year, month, onPick }: { year: number; month: number;
 /** Occupancy card shown when clicking a booked night in the strip. */
 function BookingCard({ booking, onClose }: { booking: { date: string } & DayBooking; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-surface-2/40 p-4" onClick={onClose} role="dialog" aria-modal="true">
       <div className="w-full max-w-sm rounded-[4px] bg-white p-6 shadow-xl ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold text-slate-900">{booking.date}</h3>
+          <h3 className="text-base font-semibold text-background">{booking.date}</h3>
           <StatusBadge status={booking.status} light />
         </div>
         <dl className="mt-4 divide-y divide-slate-100">
@@ -395,9 +395,9 @@ function BookingCard({ booking, onClose }: { booking: { date: string } & DayBook
 function NoteDialog({ count, saving, onCancel, onSave }: { count: number; saving: boolean; onCancel: () => void; onSave: (note: string) => void }) {
   const [note, setNote] = useState("");
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 p-4" onClick={onCancel} role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-surface-2/40 p-4" onClick={onCancel} role="dialog" aria-modal="true">
       <div className="w-full max-w-sm rounded-[4px] bg-white p-6 shadow-xl ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-base font-semibold text-slate-900">Block {count} night{count === 1 ? "" : "s"}</h3>
+        <h3 className="text-base font-semibold text-background">Block {count} night{count === 1 ? "" : "s"}</h3>
         <p className="mt-1 text-sm text-slate-500">Add a reason? (optional — shared on every blocked date)</p>
         <textarea
           value={note}
@@ -410,7 +410,7 @@ function NoteDialog({ count, saving, onCancel, onSave }: { count: number; saving
           <button onClick={onCancel} disabled={saving} className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
             Cancel
           </button>
-          <button onClick={() => onSave(note.trim())} disabled={saving} className="rounded-[4px] bg-pink-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-pink-600 disabled:opacity-50">
+          <button onClick={() => onSave(note.trim())} disabled={saving} className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50">
             {saving ? "Blocking…" : "Block nights"}
           </button>
         </div>
@@ -463,9 +463,9 @@ function BlockModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-surface-2/40 p-4" onClick={onClose} role="dialog" aria-modal="true">
       <div className="w-full max-w-sm rounded-[4px] bg-white p-6 shadow-xl ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-base font-semibold text-slate-900">Blocked night · {block.date}</h3>
+        <h3 className="text-base font-semibold text-background">Blocked night · {block.date}</h3>
         <p className="mt-1 text-sm text-slate-500">
           Blocked by <span className="font-medium text-slate-700">{block.blockedBy}</span>
         </p>
@@ -491,7 +491,7 @@ function BlockModal({
               <button onClick={onClose} className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 Close
               </button>
-              <button onClick={saveNote} disabled={busy} className="rounded-[4px] bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
+              <button onClick={saveNote} disabled={busy} className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50">
                 Save note
               </button>
             </div>
@@ -552,7 +552,7 @@ function Metric({ label, value, sub }: { label: string; value: ReactNode; sub?: 
   return (
     <Card className="p-5">
       <p className="text-xs uppercase tracking-wider text-slate-400">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-tight text-background">{value}</p>
       {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
     </Card>
   );
@@ -608,7 +608,7 @@ export default function AdminOverview() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Overview</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-background">Overview</h1>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs uppercase tracking-wider text-slate-400">Created in range</span>
           <select value={preset} onChange={(e) => choosePreset(e.target.value)} className={ctrl}>
@@ -640,39 +640,9 @@ export default function AdminOverview() {
 
           <MonthOccupancy canBlock={can("calendar.block")} />
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="p-5">
-              <p className="text-xs uppercase tracking-wider text-slate-400">By status</p>
-              <dl className="mt-3 divide-y divide-slate-100">
-                {BOOKING_STATUSES.map((s) => (
-                  <div key={s} className="flex justify-between py-2 text-sm">
-                    <dt className="text-slate-500">{STATUS_LABEL[s]}</dt>
-                    <dd className="font-medium text-slate-900">{stats.byStatus[s]}</dd>
-                  </div>
-                ))}
-              </dl>
-            </Card>
-
-            <Card className="p-5">
-              <p className="text-xs uppercase tracking-wider text-slate-400">By night tier</p>
-              {Object.keys(stats.byTier).length === 0 ? (
-                <p className="mt-3 text-sm text-slate-500">No data in range.</p>
-              ) : (
-                <dl className="mt-3 divide-y divide-slate-100">
-                  {Object.entries(stats.byTier).map(([tier, n]) => (
-                    <div key={tier} className="flex justify-between py-2 text-sm">
-                      <dt className="capitalize text-slate-500">{tier}</dt>
-                      <dd className="font-medium text-slate-900">{n}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </Card>
-          </div>
-
           {/* Upcoming sessions to prepare — closest night first */}
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Upcoming sessions to prepare</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-background">Upcoming sessions to prepare</h2>
             <p className="mt-1 text-sm text-slate-500">
               Future nights still requested or confirmed, ordered by how soon they are.
             </p>
@@ -681,9 +651,9 @@ export default function AdminOverview() {
                 <p className="text-sm text-slate-500">Nothing to prepare right now.</p>
               </Card>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-[4px] border border-slate-200">
+              <div className="mt-4 overflow-x-auto rounded-[4px] border border-slate-300/70 bg-slate-50">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400">
+                  <thead className="bg-slate-100 text-xs uppercase tracking-wider text-slate-400">
                     <tr>
                       <th className="px-4 py-2 font-medium">When</th>
                       <th className="px-4 py-2 font-medium">Night</th>
@@ -695,8 +665,8 @@ export default function AdminOverview() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {upcoming.map((b) => (
-                      <tr key={b.id} onClick={() => setSelected(b)} className="cursor-pointer hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-900">{daysUntil(b.date)}</td>
+                      <tr key={b.id} onClick={() => setSelected(b)} className="cursor-pointer hover:bg-slate-100">
+                        <td className="px-4 py-3 font-medium text-background">{daysUntil(b.date)}</td>
                         <td className="px-4 py-3 text-slate-500">
                           {b.date}
                           {b.sessionStart != null && b.sessionEnd != null && (
