@@ -51,3 +51,11 @@ env:
     secret: GEMINI_API_KEY
     availability:
       - RUNTIME
+
+  # Comma-separated super-admin Google account emails (not a secret). Super
+  # admins always have ALL permissions and can manage the team & bundles; they
+  # can't be locked out. Everyone else gets access via the adminUsers collection.
+  - variable: SUPER_ADMIN_EMAILS
+    value: gabriel@pulpou.com
+    availability:
+      - RUNTIME

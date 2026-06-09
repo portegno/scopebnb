@@ -11,7 +11,6 @@ import { createBooking } from "@/lib/firebase/bookings";
 import { skyThumb } from "@/lib/thumbnail";
 import { astrobinUrl } from "@/lib/astrobin";
 import { targets, type Target } from "@/data/targets";
-import { demoReservedNights } from "@/data/demoReservations";
 import { site } from "@/config/site";
 import {
   rankTargets,
@@ -191,8 +190,14 @@ export default function Book() {
     [selectedDate],
   );
 
-  // DEMO: nights that are already booked (swap for a real Firestore query later).
-  const reservedNights = useMemo(() => (today ? demoReservedNights(today) : new Set<string>()), [today]);
+  // Unavailable nights from the server: real bookings + admin-blocked nights.
+  const [reservedNights, setReservedNights] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    fetch("/api/availability")
+      .then((r) => r.json())
+      .then((d) => setReservedNights(new Set<string>(d.unavailable ?? [])))
+      .catch(() => {});
+  }, []);
 
   // The chosen night's moon — pricing tier + illumination, matched to the calendar dot (moon at local midnight).
   const night = useMemo(() => {

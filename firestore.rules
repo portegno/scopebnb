@@ -17,5 +17,18 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
     }
+
+    // Admin-user assignments (email -> permissions) are accessed exclusively via
+    // the Firebase Admin SDK server-side, which bypasses these rules. Deny all
+    // client access explicitly.
+    match /adminUsers/{email} {
+      allow read, write: if false;
+    }
+
+    // Blocked nights are written via the Admin SDK; the public booking calendar
+    // reads availability through /api/availability, not Firestore directly.
+    match /blockedNights/{date} {
+      allow read, write: if false;
+    }
   }
 }
