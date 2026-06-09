@@ -6,12 +6,18 @@ import { adminFetch, AdminFetchError } from "@/lib/admin/client";
 import { useAuth } from "@/lib/firebase/useAuth";
 import { PERMISSION_GROUPS, PERMISSION_LABEL, type Permission } from "@/lib/admin/permissions";
 
-type AdminUser = { email: string; permissions: Permission[]; displayName?: string };
+type AdminUser = { email: string; permissions: Permission[]; firstName?: string; lastName?: string };
+
+const fullName = (u: AdminUser) => [u.firstName, u.lastName].filter(Boolean).join(" ");
 
 const btnPrimary =
-  "rounded-[4px] bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50";
+  "rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50";
+const btnGhost =
+  "rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50";
 const input =
   "rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 outline-none focus:border-slate-500";
+
+const MIN_PASSWORD = 8;
 
 export default function TeamPage() {
   const { user } = useAuth();
@@ -45,7 +51,7 @@ export default function TeamPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-background">Team</h1>
         <p className="mt-1 text-sm text-slate-500">
           Add people by email and grant them permissions directly. Super admins always have full access.
         </p>
@@ -65,6 +71,30 @@ function UserCard({ user, reload }: { user: AdminUser; reload: () => void }) {
   const [perms, setPerms] = useState<Permission[]>(user.permissions);
   const [busy, setBusy] = useState(false);
   const dirty = JSON.stringify([...perms].sort()) !== JSON.stringify([...user.permissions].sort());
+
+  // Set / reset this member's login password (email + password credential).
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwDone, setPwDone] = useState(false);
+
+  async function savePassword() {
+    if (pw.length < MIN_PASSWORD) return;
+    setPwBusy(true);
+    try {
+      await adminFetch(`/api/admin/team/users/${encodeURIComponent(user.email)}/password`, {
+        method: "PUT",
+        body: JSON.stringify({ password: pw }),
+      });
+      setPw("");
+      setPwOpen(false);
+      setPwDone(true);
+    } catch (e) {
+      alert(e instanceof AdminFetchError ? e.message : "Could not set password");
+    } finally {
+      setPwBusy(false);
+    }
+  }
 
   async function save() {
     setBusy(true);
@@ -96,18 +126,43 @@ function UserCard({ user, reload }: { user: AdminUser; reload: () => void }) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-slate-800">{user.email}</span>
-        <span className="text-xs text-slate-400">{perms.length} permissions</span>
+        <span className="min-w-0">
+          {fullName(user) && <span className="block text-sm font-semibold text-slate-800">{fullName(user)}</span>}
+          <span className="block truncate text-xs text-slate-500">{user.email}</span>
+        </span>
+        <span className="shrink-0 text-xs text-slate-400">{perms.length} permissions</span>
       </div>
       <PermPicker selected={perms} onChange={setPerms} />
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <button onClick={save} disabled={busy || !dirty} className={btnPrimary}>
           Save
         </button>
+        {!pwOpen && (
+          <button onClick={() => { setPwOpen(true); setPwDone(false); }} className={btnGhost}>
+            {pwDone ? "Password updated ✓" : "Set password"}
+          </button>
+        )}
         <button onClick={remove} disabled={busy} className="rounded-[4px] px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50">
           Remove
         </button>
       </div>
+
+      {pwOpen && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <PasswordInput
+            value={pw}
+            onChange={setPw}
+            placeholder={`New password (min ${MIN_PASSWORD} characters)`}
+            autoComplete="new-password"
+          />
+          <button onClick={savePassword} disabled={pwBusy || pw.length < MIN_PASSWORD} className={btnPrimary}>
+            {pwBusy ? "Saving…" : "Save password"}
+          </button>
+          <button onClick={() => { setPwOpen(false); setPw(""); }} className={btnGhost}>
+            Cancel
+          </button>
+        </div>
+      )}
     </Card>
   );
 }
@@ -115,20 +170,40 @@ function UserCard({ user, reload }: { user: AdminUser; reload: () => void }) {
 function AddUser({ reload }: { reload: () => void }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
   const [perms, setPerms] = useState<Permission[]>([]);
   const [busy, setBusy] = useState(false);
 
+  const emailOk = email.includes("@");
+  const passwordOk = password.length >= MIN_PASSWORD;
+  const canSubmit = emailOk && passwordOk && !busy;
+
+  function reset() {
+    setEmail("");
+    setFirstName("");
+    setLastName("");
+    setPassword("");
+    setPerms([]);
+    setOpen(false);
+  }
+
   async function add() {
-    if (!email.includes("@")) return;
+    if (!canSubmit) return;
     setBusy(true);
     try {
       await adminFetch("/api/admin/team/users", {
         method: "POST",
-        body: JSON.stringify({ email: email.trim(), permissions: perms }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          permissions: perms,
+        }),
       });
-      setEmail("");
-      setPerms([]);
-      setOpen(false);
+      reset();
       reload();
     } catch (e) {
       alert(e instanceof AdminFetchError ? e.message : "Could not add user");
@@ -139,10 +214,7 @@ function AddUser({ reload }: { reload: () => void }) {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-      >
+      <button onClick={() => setOpen(true)} className={btnGhost}>
         + Add user
       </button>
     );
@@ -151,25 +223,66 @@ function AddUser({ reload }: { reload: () => void }) {
   return (
     <Card className="p-5">
       <p className="text-xs uppercase tracking-wider text-slate-400">Add a user</p>
-      <input
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="email@example.com"
-        className={`${input} mt-3 w-72`}
-      />
+      <div className="mt-3 flex flex-wrap gap-3">
+        <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className={`${input} w-44`} />
+        <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className={`${input} w-44`} />
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" className={`${input} w-72`} />
+      </div>
+      <div className="mt-3">
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          placeholder={`Password (min ${MIN_PASSWORD} characters)`}
+          autoComplete="new-password"
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          The user signs in at the login page with their email and this password. They can change it later.
+        </p>
+      </div>
       <PermPicker selected={perms} onChange={setPerms} />
       <div className="mt-4 flex gap-2">
-        <button onClick={add} disabled={busy || !email.includes("@")} className={btnPrimary}>
+        <button onClick={add} disabled={!canSubmit} className={btnPrimary}>
           Add user
         </button>
-        <button
-          onClick={() => setOpen(false)}
-          className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
+        <button onClick={reset} className={btnGhost}>
           Cancel
         </button>
       </div>
     </Card>
+  );
+}
+
+/** Password field with a show/hide toggle. Pure presentation. */
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  autoComplete?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative w-72 max-w-full">
+      <input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className={`${input} w-full pr-16`}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-slate-500 hover:text-slate-700"
+      >
+        {show ? "Hide" : "Show"}
+      </button>
+    </div>
   );
 }
 
@@ -183,7 +296,7 @@ function PermPicker({ selected, onChange }: { selected: Permission[]; onChange: 
           <div className="mt-2 flex flex-col gap-1.5">
             {g.permissions.map((p) => (
               <label key={p} className="flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" checked={selected.includes(p)} onChange={() => toggle(p)} className="accent-slate-900" />
+                <input type="checkbox" checked={selected.includes(p)} onChange={() => toggle(p)} className="accent-surface-2" />
                 {PERMISSION_LABEL[p]}
               </label>
             ))}
