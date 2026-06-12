@@ -11,6 +11,7 @@ import type { Permission } from "@/lib/admin/permissions";
 const NAV: { href: string; label: string; exact?: boolean; perm: Permission }[] = [
   { href: "/admin", label: "Overview", exact: true, perm: "stats.view" },
   { href: "/admin/orders", label: "Orders", perm: "orders.view" },
+  { href: "/admin/sessions", label: "Sessions", perm: "orders.view" },
   { href: "/admin/blog", label: "Blog", perm: "blog.manage" },
   { href: "/admin/team", label: "Team", perm: "team.manage" },
 ];
