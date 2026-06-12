@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/admin/ui";
@@ -19,10 +19,20 @@ export default function BlogAdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  // Drag-and-drop reordering.
+  const dragId = useRef<string | null>(null); // post being dragged
+  const orderRef = useRef<string[]>([]); // current id order (kept in sync for persisting)
+  const moved = useRef(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     adminFetch<{ posts: BlogPost[] }>("/api/admin/blog")
-      .then((d) => setPosts(d.posts))
+      .then((d) => {
+        setPosts(d.posts);
+        orderRef.current = d.posts.map((p) => p.id);
+      })
       .catch((e) =>
         setError(
           e instanceof AdminFetchError && e.status === 403
@@ -44,6 +54,33 @@ export default function BlogAdminPage() {
     }
   }
 
+  function reorder(overId: string) {
+    const from = dragId.current;
+    if (!from || from === overId) return;
+    setPosts((prev) => {
+      const fromIdx = prev.findIndex((p) => p.id === from);
+      const overIdx = prev.findIndex((p) => p.id === overId);
+      if (fromIdx === -1 || overIdx === -1 || fromIdx === overIdx) return prev;
+      const next = [...prev];
+      const [m] = next.splice(fromIdx, 1);
+      next.splice(overIdx, 0, m);
+      orderRef.current = next.map((p) => p.id);
+      moved.current = true;
+      return next;
+    });
+  }
+
+  function onDragEnd() {
+    dragId.current = null;
+    setDraggingId(null);
+    if (!moved.current) return;
+    moved.current = false;
+    setSavingOrder(true);
+    adminFetch("/api/admin/blog/reorder", { method: "POST", body: JSON.stringify({ ids: orderRef.current }) })
+      .catch((e) => alert(e instanceof AdminFetchError ? e.message : "Could not save order"))
+      .finally(() => setSavingOrder(false));
+  }
+
   if (loading) return <p className="text-sm text-slate-500">Loading…</p>;
   if (error) return <p className="text-sm text-rose-600">{error}</p>;
 
@@ -52,15 +89,20 @@ export default function BlogAdminPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-background">Blog</h1>
-          <p className="mt-1 text-sm text-slate-500">Write posts and publish them to the public blog.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Write posts and publish them. Drag the handle to reorder how they appear on the blog.
+          </p>
         </div>
-        <button
-          onClick={newPost}
-          disabled={creating}
-          className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50"
-        >
-          {creating ? "Creating…" : "+ New post"}
-        </button>
+        <div className="flex items-center gap-3">
+          {savingOrder && <span className="text-xs text-slate-400">Saving order…</span>}
+          <button
+            onClick={newPost}
+            disabled={creating}
+            className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50"
+          >
+            {creating ? "Creating…" : "+ New post"}
+          </button>
+        </div>
       </div>
 
       {posts.length === 0 ? (
@@ -72,6 +114,7 @@ export default function BlogAdminPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-100 text-xs uppercase tracking-wider text-slate-400">
               <tr>
+                <th className="w-8 px-2 py-2" aria-hidden />
                 <th className="px-4 py-2 font-medium">Title</th>
                 <th className="px-4 py-2 font-medium">Mike’s tip</th>
                 <th className="px-4 py-2 font-medium">Status</th>
@@ -81,9 +124,26 @@ export default function BlogAdminPage() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {posts.map((p) => (
-                <tr key={p.id} className="cursor-pointer hover:bg-slate-100" onClick={() => router.push(`/admin/blog/${p.id}`)}>
+                <tr
+                  key={p.id}
+                  draggable
+                  onDragStart={() => {
+                    dragId.current = p.id;
+                    moved.current = false;
+                    setDraggingId(p.id);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    reorder(p.id);
+                  }}
+                  onDragEnd={onDragEnd}
+                  className={`hover:bg-slate-100 ${draggingId === p.id ? "opacity-40" : ""}`}
+                >
+                  <td className="cursor-grab px-2 py-3 text-center text-slate-400 active:cursor-grabbing" title="Drag to reorder">
+                    ⠿
+                  </td>
                   <td className="px-4 py-3">
-                    <Link href={`/admin/blog/${p.id}`} className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                    <Link href={`/admin/blog/${p.id}`} className="flex items-center gap-3">
                       {p.coverImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={p.coverImage} alt="" className="h-9 w-16 shrink-0 rounded-[3px] object-cover ring-1 ring-slate-200" />

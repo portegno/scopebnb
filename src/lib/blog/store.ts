@@ -8,6 +8,10 @@ const COL = "blogPosts";
 
 const toSeconds = (v: unknown) => (v instanceof Timestamp ? { seconds: v.seconds } : null);
 
+/** Manual order ascending, with the most recent of a given date field first on ties. */
+const byOrderThenDate = (key: "updatedAt" | "publishedAt") => (a: BlogPost, b: BlogPost) =>
+  a.order - b.order || (b[key]?.seconds ?? 0) - (a[key]?.seconds ?? 0);
+
 function serialize(id: string, d: FirebaseFirestore.DocumentData): BlogPost {
   return {
     id,
@@ -17,6 +21,7 @@ function serialize(id: string, d: FirebaseFirestore.DocumentData): BlogPost {
     coverImage: d.coverImage ?? "",
     contentHtml: d.contentHtml ?? "",
     mikeTip: { enabled: !!d.mikeTip?.enabled, html: d.mikeTip?.html ?? "" },
+    order: typeof d.order === "number" ? d.order : 0,
     status: (d.status as PostStatus) ?? "draft",
     authorEmail: d.authorEmail ?? "",
     createdAt: toSeconds(d.createdAt),
@@ -51,9 +56,7 @@ async function uniqueSlug(base: string, exceptId?: string): Promise<string> {
 
 export async function listPosts(): Promise<BlogPost[]> {
   const snap = await adminDb.collection(COL).get();
-  return snap.docs
-    .map((d) => serialize(d.id, d.data()))
-    .sort((a, b) => (b.updatedAt?.seconds ?? 0) - (a.updatedAt?.seconds ?? 0));
+  return snap.docs.map((d) => serialize(d.id, d.data())).sort(byOrderThenDate("updatedAt"));
 }
 
 export async function getPost(id: string): Promise<BlogPost | null> {
@@ -71,6 +74,7 @@ export async function createDraft(authorEmail: string): Promise<BlogPost> {
     coverImage: "",
     contentHtml: "",
     mikeTip: { enabled: false, html: "" },
+    order: 0,
     status: "draft",
     authorEmail,
     createdAt: now,
@@ -122,14 +126,19 @@ export async function deletePost(id: string): Promise<void> {
   await adminDb.doc(`${COL}/${id}`).delete();
 }
 
+/** Persist a manual ordering: each id's `order` becomes its index in the list. */
+export async function reorderPosts(ids: string[]): Promise<void> {
+  const batch = adminDb.batch();
+  ids.forEach((id, i) => batch.update(adminDb.doc(`${COL}/${id}`), { order: i }));
+  await batch.commit();
+}
+
 // ---- Public (published only) ----
 
 export async function listPublished(): Promise<BlogPost[]> {
   // Single-field filter + in-memory sort avoids a composite index.
   const snap = await adminDb.collection(COL).where("status", "==", "published").get();
-  return snap.docs
-    .map((d) => serialize(d.id, d.data()))
-    .sort((a, b) => (b.publishedAt?.seconds ?? 0) - (a.publishedAt?.seconds ?? 0));
+  return snap.docs.map((d) => serialize(d.id, d.data())).sort(byOrderThenDate("publishedAt"));
 }
 
 export async function getPublishedBySlug(slug: string): Promise<BlogPost | null> {

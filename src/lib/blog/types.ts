@@ -20,6 +20,7 @@ export type BlogPost = {
   coverImage: string; // URL, empty string if none
   contentHtml: string; // sanitized-by-schema HTML from the editor
   mikeTip: MikeTip;
+  order: number; // manual sort position (lower = first); ties break by date
   status: PostStatus;
   authorEmail: string;
   createdAt: { seconds: number } | null;
