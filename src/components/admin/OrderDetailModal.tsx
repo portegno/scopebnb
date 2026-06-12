@@ -38,7 +38,7 @@ export function OrderDetailModal({
   const b = booking;
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 p-4 sm:p-6"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-surface-2/40 p-4 sm:p-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -63,7 +63,7 @@ export function OrderDetailModal({
 
         <div className="p-6">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">{b.targetName ?? "Target"}</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-background">{b.targetName ?? "Target"}</h2>
             <StatusBadge status={b.status} light />
           </div>
 

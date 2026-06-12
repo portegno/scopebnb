@@ -116,7 +116,7 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Orders</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-background">Orders</h1>
 
       {busy ? (
         <p className="mt-6 text-sm text-slate-500">Loading orders…</p>
@@ -163,9 +163,9 @@ export default function AdminOrders() {
           {visible.length === 0 ? (
             <p className="mt-8 text-sm text-slate-500">No orders match.</p>
           ) : (
-            <div className="mt-6 overflow-x-auto rounded-[4px] border border-slate-200">
+            <div className="mt-6 overflow-x-auto rounded-[4px] border border-slate-300/70 bg-slate-50">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400">
+                <thead className="bg-slate-100 text-xs uppercase tracking-wider text-slate-400">
                   <tr>
                     <Th onClick={() => toggleSort("date")} active={sort.key === "date"} dir={sort.dir}>
                       Night
@@ -186,7 +186,7 @@ export default function AdminOrders() {
                   {visible.map((o) => {
                     const saving = savingId === o.id;
                     return (
-                      <tr key={o.id} className="hover:bg-slate-50">
+                      <tr key={o.id} className="hover:bg-slate-100">
                         <td className="cursor-pointer px-3 py-2.5 align-top text-slate-700" onClick={() => setSelected(o)}>
                           {o.date ?? "—"}
                           {o.sessionStart != null && o.sessionEnd != null && (
@@ -214,7 +214,7 @@ export default function AdminOrders() {
                           {o.assignedTo ? (
                             <span className="text-xs">
                               {o.assignedTo.toLowerCase() === myEmail ? (
-                                <span className="font-medium text-slate-900">You</span>
+                                <span className="font-medium text-background">You</span>
                               ) : (
                                 <span className="text-slate-600">{shortEmail(o.assignedTo)}</span>
                               )}
@@ -291,7 +291,7 @@ export default function AdminOrders() {
                         Release order
                       </button>
                     ) : (
-                      <button type="button" disabled={savingId === selected.id} onClick={() => claim(selected)} className="rounded-[4px] bg-slate-900 px-3 py-1 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
+                      <button type="button" disabled={savingId === selected.id} onClick={() => claim(selected)} className="rounded-[4px] bg-surface-2 px-3 py-1 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50">
                         {selected.assignedTo ? "Take over" : "Take order"}
                       </button>
                     ))}
