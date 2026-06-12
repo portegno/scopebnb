@@ -7,7 +7,7 @@ export type PostStatus = "draft" | "published";
 
 /**
  * "Mike's tip" — an optional branded callout shown in the post that ties the
- * topic to ScopeBnB's own rig (RedCat 51 under Bortle 1). `html` is rich text
+ * topic to ScopeBnB's own rig (RedCat 91 under Bortle 1). `html` is rich text
  * from the same editor as the body.
  */
 export type MikeTip = { enabled: boolean; html: string };

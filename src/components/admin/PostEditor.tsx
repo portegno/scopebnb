@@ -148,7 +148,7 @@ export function PostEditor({ post }: { post: BlogPost }) {
               <img src="/images/mike.png" alt="Mike" className="h-9 w-9 shrink-0 rounded-full object-cover object-top ring-1 ring-slate-300" />
               <span>
                 <span className="block text-sm font-semibold text-slate-800">Mike’s tip</span>
-                <span className="block text-xs text-slate-500">A SCOPEBNB tip tying this topic to the RedCat 51 under Bortle 1.</span>
+                <span className="block text-xs text-slate-500">A SCOPEBNB tip tying this topic to the RedCat 91 under Bortle 1.</span>
               </span>
             </label>
             {mikeEnabled && (
