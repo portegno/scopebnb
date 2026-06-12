@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   "revenue.view",
   "tickets.view", // reserved for the future ticket module
   "tickets.respond", // reserved
+  "blog.manage",
   "team.manage",
 ] as const;
 
@@ -34,6 +35,7 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   "revenue.view": "View prices & revenue ($)",
   "tickets.view": "View support tickets",
   "tickets.respond": "Respond to tickets",
+  "blog.manage": "Write & publish blog posts",
   "team.manage": "Manage team & permission bundles",
 };
 
@@ -43,5 +45,6 @@ export const PERMISSION_GROUPS: { label: string; permissions: Permission[] }[] =
   { label: "Calendar", permissions: ["calendar.block"] },
   { label: "Insights", permissions: ["stats.view", "customers.view", "revenue.view"] },
   { label: "Support (coming soon)", permissions: ["tickets.view", "tickets.respond"] },
+  { label: "Content", permissions: ["blog.manage"] },
   { label: "Administration", permissions: ["team.manage"] },
 ];

@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@mux/mux-player-react": "^3.13.0",
+    "@tiptap/extension-image": "^3.26.1",
+    "@tiptap/extension-link": "^3.26.1",
+    "@tiptap/pm": "^3.26.1",
+    "@tiptap/react": "^3.26.1",
+    "@tiptap/starter-kit": "^3.26.1",
     "firebase": "^12.14.0",
     "firebase-admin": "^13.10.0",
     "next": "16.2.7",

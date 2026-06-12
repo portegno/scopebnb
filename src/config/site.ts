@@ -43,6 +43,7 @@ export const footerSections = [
     title: "Learn",
     links: [
       { href: "/#how-it-works", label: "How it works" },
+      { href: "/blog", label: "Blog" },
       { href: "/faq", label: "FAQ" },
     ],
   },

@@ -72,6 +72,21 @@ export function SiteHeader() {
               </Link>
             );
           })}
+          <Link
+            href="/blog"
+            aria-current={isActive("/blog") ? "page" : undefined}
+            className={`text-sm transition-colors ${
+              transparent
+                ? isActive("/blog")
+                  ? "font-medium text-gold"
+                  : "text-white/90 hover:text-gold"
+                : isActive("/blog")
+                  ? "font-medium text-accent"
+                  : "text-muted hover:text-foreground"
+            }`}
+          >
+            Blog
+          </Link>
           <ForecastNavIcon transparent={transparent} active={isActive("/forecast")} />
         </nav>
 
@@ -133,6 +148,16 @@ export function SiteHeader() {
               </Link>
             );
           })}
+          <Link
+            href="/blog"
+            onClick={() => setOpen(false)}
+            aria-current={isActive("/blog") ? "page" : undefined}
+            className={`rounded-lg px-2 py-2 text-sm hover:bg-surface ${
+              isActive("/blog") ? "font-medium text-accent" : "text-muted hover:text-foreground"
+            }`}
+          >
+            Blog
+          </Link>
           <ForecastNavIcon
             onClick={() => setOpen(false)}
             className={`inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-surface ${
