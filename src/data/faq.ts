@@ -12,7 +12,7 @@ export const faqs: Faq[] = [
   },
   {
     q: "What file formats will I receive?",
-    a: "Calibrated 16-bit FITS files plus calibration frames (darks, flats, bias) and a processed JPEG preview, delivered to your dashboard within 24 hours.",
+    a: "Calibrated 16-bit FITS files and a processed JPEG preview, delivered to your dashboard within 24 hours.",
   },
   {
     q: "Can I choose my own target?",
