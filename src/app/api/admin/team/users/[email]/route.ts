@@ -22,9 +22,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ email:
   try {
     await guard(req);
     const { email } = await params;
-    const body = (await req.json().catch(() => ({}))) as { permissions?: unknown[]; displayName?: string };
+    const body = (await req.json().catch(() => ({}))) as {
+      permissions?: unknown[];
+      firstName?: string;
+      lastName?: string;
+    };
     const permissions = Array.isArray(body.permissions) ? body.permissions.filter(isPermission) : [];
-    await upsertAdminUser(decodeURIComponent(email), permissions, body.displayName);
+    await upsertAdminUser(decodeURIComponent(email), permissions, {
+      firstName: typeof body.firstName === "string" ? body.firstName.trim() : undefined,
+      lastName: typeof body.lastName === "string" ? body.lastName.trim() : undefined,
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return handle(e);

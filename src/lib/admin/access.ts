@@ -6,7 +6,7 @@ import { PERMISSIONS, isPermission, type Permission } from "@/lib/admin/permissi
 
 const USERS = "adminUsers";
 
-export type AdminUser = { email: string; permissions: Permission[]; displayName?: string };
+export type AdminUser = { email: string; permissions: Permission[]; firstName?: string; lastName?: string };
 
 function superAdminEmails(): string[] {
   return (process.env.SUPER_ADMIN_EMAILS ?? "")
@@ -45,15 +45,26 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
     .map((d) => ({
       email: d.data().email ?? d.id,
       permissions: ((d.data().permissions ?? []) as unknown[]).filter(isPermission),
-      displayName: d.data().displayName,
+      firstName: d.data().firstName,
+      lastName: d.data().lastName,
     }))
     .sort((a, b) => a.email.localeCompare(b.email));
 }
 
-export async function upsertAdminUser(email: string, permissions: Permission[], displayName?: string) {
+export async function upsertAdminUser(
+  email: string,
+  permissions: Permission[],
+  name?: { firstName?: string; lastName?: string },
+) {
   const e = email.toLowerCase();
   await adminDb.doc(`${USERS}/${e}`).set(
-    { email: e, permissions, ...(displayName ? { displayName } : {}), updatedAt: FieldValue.serverTimestamp() },
+    {
+      email: e,
+      permissions,
+      ...(name?.firstName ? { firstName: name.firstName } : {}),
+      ...(name?.lastName ? { lastName: name.lastName } : {}),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
     { merge: true },
   );
 }
