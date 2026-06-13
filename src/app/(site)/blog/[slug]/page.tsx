@@ -83,7 +83,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   />
                   <p className="mt-4 border-t border-hairline pt-3 text-xs text-muted">
                     Want to capture this yourself?{" "}
-                    <Link href="/book" className="text-accent hover:text-gold">
+                    <Link href="/book" className="font-medium text-gold hover:text-gold-soft">
                       Book the RedCat 91 under Bortle 1 →
                     </Link>
                   </p>
