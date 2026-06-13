@@ -3,9 +3,17 @@
 import { useRef, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
+import { SizedImage } from "./extensions/sizedImage";
 import { AstroFigure } from "./extensions/astroFigure";
 import { uploadBlogImage } from "@/lib/blog/upload";
+
+// Width options for a selected body image (null = full / natural width).
+const IMAGE_SIZES: { label: string; w: string | null }[] = [
+  { label: "S", w: "33%" },
+  { label: "M", w: "50%" },
+  { label: "L", w: "75%" },
+  { label: "Full", w: null },
+];
 
 /**
  * WYSIWYG editor for blog post bodies. StarterKit (v3) already bundles Link +
@@ -23,7 +31,7 @@ export function RichTextEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
-      Image.configure({ inline: false }),
+      SizedImage.configure({ inline: false }),
       AstroFigure,
     ],
     content: initialHtml,
@@ -113,6 +121,20 @@ function Toolbar({ editor }: { editor: Editor }) {
       <Btn label="Link" active={editor.isActive("link")} on={addLink} />
       <Btn label={uploading ? "Uploading…" : "Image"} on={() => !uploading && fileRef.current?.click()} />
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
+      {editor.isActive("image") && (
+        <>
+          <span className="mx-1 h-4 w-px bg-slate-300" />
+          <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Size</span>
+          {IMAGE_SIZES.map(({ label, w }) => (
+            <Btn
+              key={label}
+              label={label}
+              active={(editor.getAttributes("image").width ?? null) === w}
+              on={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
+            />
+          ))}
+        </>
+      )}
       <span className="mx-1 h-4 w-px bg-slate-300" />
       <Btn label="★ AstroBin" on={() => setAstroOpen(true)} />
       {astroOpen && <AstroDialog editor={editor} onClose={() => setAstroOpen(false)} />}
