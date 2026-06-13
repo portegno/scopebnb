@@ -20,7 +20,7 @@ export const site = {
   // Mux PLAYBACK ID (public) of the explainer video shown below the hero.
   // NOT the Asset ID — get it from Mux dashboard → Asset → "Playback IDs" (public).
   // Empty string hides the video block until a real ID is set.
-  explainerVideoPlaybackId: "mnB8uwuYKDe9IcgCvdvPx1nIQJpkXCk1l6RNUrsG401w",
+  explainerVideoPlaybackId: "klNQF3L5xLB2Bu3IbHkFJisA401HrhXDW3A00oNGlDOe4",
 } as const;
 
 /** Primary navigation shown in the header. */
