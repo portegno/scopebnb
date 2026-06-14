@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useEditor, useEditorState, EditorContent, type Editor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import { SizedImage } from "./extensions/sizedImage";
 import { AstroFigure } from "./extensions/astroFigure";
@@ -29,10 +30,6 @@ export function RichTextEditor({
 }) {
   const editor = useEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
-    // v3 doesn't re-render on transactions by default, so the toolbar's
-    // isActive() states (incl. the per-image size controls that appear when an
-    // image is selected) would go stale. Opt back in to selection-driven renders.
-    shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
       SizedImage.configure({ inline: false }),
@@ -63,7 +60,41 @@ export function RichTextEditor({
     <div className="rounded-[4px] border border-slate-300">
       <Toolbar editor={editor} />
       <EditorContent editor={editor} />
+      <ImageSizeMenu editor={editor} />
     </div>
+  );
+}
+
+/**
+ * Floating controls that appear right on a selected image so the author can
+ * change its size in place (S / M / L / Full). Driven by the bubble-menu
+ * plugin, so it shows on any image, including ones already in a saved post.
+ */
+function ImageSizeMenu({ editor }: { editor: Editor }) {
+  // Subscribe only to the selected image's width so the active highlight stays
+  // in sync without re-rendering the whole editor on every transaction (which
+  // would feed back into the bubble menu's positioning and loop).
+  const width = useEditorState({
+    editor,
+    selector: ({ editor: e }) => (e.getAttributes("image").width as string | undefined) ?? null,
+  });
+  return (
+    <BubbleMenu
+      editor={editor}
+      shouldShow={({ editor: e }) => e.isActive("image")}
+      options={{ placement: "top", offset: 8 }}
+      className="flex items-center gap-1 rounded-[4px] border border-slate-300 bg-white p-1 shadow-lg"
+    >
+      <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Size</span>
+      {IMAGE_SIZES.map(({ label, w }) => (
+        <Btn
+          key={label}
+          label={label}
+          active={width === w}
+          on={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
+        />
+      ))}
+    </BubbleMenu>
   );
 }
 
@@ -125,20 +156,6 @@ function Toolbar({ editor }: { editor: Editor }) {
       <Btn label="Link" active={editor.isActive("link")} on={addLink} />
       <Btn label={uploading ? "Uploading…" : "Image"} on={() => !uploading && fileRef.current?.click()} />
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
-      {editor.isActive("image") && (
-        <>
-          <span className="mx-1 h-4 w-px bg-slate-300" />
-          <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Size</span>
-          {IMAGE_SIZES.map(({ label, w }) => (
-            <Btn
-              key={label}
-              label={label}
-              active={(editor.getAttributes("image").width ?? null) === w}
-              on={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
-            />
-          ))}
-        </>
-      )}
       <span className="mx-1 h-4 w-px bg-slate-300" />
       <Btn label="★ AstroBin" on={() => setAstroOpen(true)} />
       {astroOpen && <AstroDialog editor={editor} onClose={() => setAstroOpen(false)} />}
