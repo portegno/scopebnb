@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useEditor, useEditorState, EditorContent, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
+import TextAlign from "@tiptap/extension-text-align";
 import { SizedImage } from "./extensions/sizedImage";
 import { AstroFigure } from "./extensions/astroFigure";
 import { uploadBlogImage } from "@/lib/blog/upload";
@@ -23,6 +24,14 @@ const IMAGE_ALIGNS: { label: string; a: string | null }[] = [
   { label: "Right", a: "right" },
 ];
 
+// Text justification for paragraphs/headings.
+const TEXT_ALIGNS: { label: string; a: "left" | "center" | "right" | "justify" }[] = [
+  { label: "↤", a: "left" },
+  { label: "↔", a: "center" },
+  { label: "↦", a: "right" },
+  { label: "≣", a: "justify" },
+];
+
 /**
  * WYSIWYG editor for blog post bodies. StarterKit (v3) already bundles Link +
  * Underline; we add Image. Emits HTML via onChange. Uncontrolled after mount —
@@ -39,6 +48,7 @@ export function RichTextEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       SizedImage.configure({ inline: false }),
       AstroFigure,
     ],
@@ -141,6 +151,23 @@ function Toolbar({ editor }: { editor: Editor }) {
   const [uploading, setUploading] = useState(false);
   const [astroOpen, setAstroOpen] = useState(false);
 
+  // Reactive active-states so the toolbar highlights track the selection (v3
+  // doesn't re-render on transactions by default).
+  const a = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      h2: e.isActive("heading", { level: 2 }),
+      h3: e.isActive("heading", { level: 3 }),
+      bold: e.isActive("bold"),
+      italic: e.isActive("italic"),
+      bullet: e.isActive("bulletList"),
+      ordered: e.isActive("orderedList"),
+      quote: e.isActive("blockquote"),
+      link: e.isActive("link"),
+      align: (["left", "center", "right", "justify"] as const).find((al) => e.isActive({ textAlign: al })) ?? null,
+    }),
+  });
+
   function addLink() {
     const prev = editor.getAttributes("link").href as string | undefined;
     const url = window.prompt("Link URL", prev ?? "https://");
@@ -165,18 +192,27 @@ function Toolbar({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-t-[4px] border-b border-slate-300 bg-slate-100 p-1.5">
-      <Btn label="H2" active={editor.isActive("heading", { level: 2 })} on={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
-      <Btn label="H3" active={editor.isActive("heading", { level: 3 })} on={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
+    <div className="sticky top-0 z-20 flex flex-wrap items-center gap-1 rounded-t-[4px] border-b border-slate-300 bg-slate-100 p-1.5">
+      <Btn label="H2" active={a.h2} on={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
+      <Btn label="H3" active={a.h3} on={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
-      <Btn label="B" active={editor.isActive("bold")} on={() => editor.chain().focus().toggleBold().run()} />
-      <Btn label="I" active={editor.isActive("italic")} on={() => editor.chain().focus().toggleItalic().run()} />
+      <Btn label="B" active={a.bold} on={() => editor.chain().focus().toggleBold().run()} />
+      <Btn label="I" active={a.italic} on={() => editor.chain().focus().toggleItalic().run()} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
-      <Btn label="• List" active={editor.isActive("bulletList")} on={() => editor.chain().focus().toggleBulletList().run()} />
-      <Btn label="1. List" active={editor.isActive("orderedList")} on={() => editor.chain().focus().toggleOrderedList().run()} />
-      <Btn label="❝ Quote" active={editor.isActive("blockquote")} on={() => editor.chain().focus().toggleBlockquote().run()} />
+      <Btn label="• List" active={a.bullet} on={() => editor.chain().focus().toggleBulletList().run()} />
+      <Btn label="1. List" active={a.ordered} on={() => editor.chain().focus().toggleOrderedList().run()} />
+      <Btn label="❝ Quote" active={a.quote} on={() => editor.chain().focus().toggleBlockquote().run()} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
-      <Btn label="Link" active={editor.isActive("link")} on={addLink} />
+      {TEXT_ALIGNS.map(({ label, a: al }) => (
+        <Btn
+          key={al}
+          label={label}
+          active={(a.align ?? "left") === al}
+          on={() => editor.chain().focus().setTextAlign(al).run()}
+        />
+      ))}
+      <span className="mx-1 h-4 w-px bg-slate-300" />
+      <Btn label="Link" active={a.link} on={addLink} />
       <Btn label={uploading ? "Uploading…" : "Image"} on={() => !uploading && fileRef.current?.click()} />
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
