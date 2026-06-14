@@ -29,6 +29,10 @@ export function RichTextEditor({
 }) {
   const editor = useEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
+    // v3 doesn't re-render on transactions by default, so the toolbar's
+    // isActive() states (incl. the per-image size controls that appear when an
+    // image is selected) would go stale. Opt back in to selection-driven renders.
+    shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
       SizedImage.configure({ inline: false }),
