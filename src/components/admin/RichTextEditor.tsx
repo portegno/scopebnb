@@ -16,6 +16,13 @@ const IMAGE_SIZES: { label: string; w: string | null }[] = [
   { label: "Full", w: null },
 ];
 
+// Justification options (null = left / natural flow).
+const IMAGE_ALIGNS: { label: string; a: string | null }[] = [
+  { label: "Left", a: null },
+  { label: "Center", a: "center" },
+  { label: "Right", a: "right" },
+];
+
 /**
  * WYSIWYG editor for blog post bodies. StarterKit (v3) already bundles Link +
  * Underline; we add Image. Emits HTML via onChange. Uncontrolled after mount —
@@ -74,9 +81,15 @@ function ImageSizeMenu({ editor }: { editor: Editor }) {
   // Subscribe only to the selected image's width so the active highlight stays
   // in sync without re-rendering the whole editor on every transaction (which
   // would feed back into the bubble menu's positioning and loop).
-  const width = useEditorState({
+  const { width, align } = useEditorState({
     editor,
-    selector: ({ editor: e }) => (e.getAttributes("image").width as string | undefined) ?? null,
+    selector: ({ editor: e }) => {
+      const a = e.getAttributes("image");
+      return {
+        width: (a.width as string | undefined) ?? null,
+        align: (a.align as string | undefined) ?? null,
+      };
+    },
   });
   return (
     <BubbleMenu
@@ -92,6 +105,16 @@ function ImageSizeMenu({ editor }: { editor: Editor }) {
           label={label}
           active={width === w}
           on={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
+        />
+      ))}
+      <span className="mx-1 h-4 w-px bg-slate-300" />
+      <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Align</span>
+      {IMAGE_ALIGNS.map(({ label, a }) => (
+        <Btn
+          key={label}
+          label={label}
+          active={align === a}
+          on={() => editor.chain().focus().updateAttributes("image", { align: a }).run()}
         />
       ))}
     </BubbleMenu>
