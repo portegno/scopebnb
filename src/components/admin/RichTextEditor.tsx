@@ -7,7 +7,6 @@ import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { SizedImage } from "./extensions/sizedImage";
 import { AstroFigure } from "./extensions/astroFigure";
-import { CreditLine } from "./extensions/creditLine";
 import { uploadBlogImage } from "@/lib/blog/upload";
 
 // Width options for a selected body image (null = full / natural width).
@@ -66,7 +65,6 @@ export function RichTextEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       SizedImage.configure({ inline: false }),
       AstroFigure,
-      CreditLine,
     ],
     content: initialHtml,
     editorProps: {
@@ -106,46 +104,111 @@ export function RichTextEditor({
  * plugin, so it shows on any image, including ones already in a saved post.
  */
 function ImageSizeMenu({ editor }: { editor: Editor }) {
-  // Subscribe only to the selected image's width so the active highlight stays
-  // in sync without re-rendering the whole editor on every transaction (which
-  // would feed back into the bubble menu's positioning and loop).
-  const { width, align } = useEditorState({
+  const [creditOpen, setCreditOpen] = useState(false);
+  // Subscribe to the selected image's size/align/credit so the active states
+  // stay in sync without re-rendering the whole editor on every transaction
+  // (which would feed back into the bubble menu's positioning and loop).
+  const { width, align, hasCredit } = useEditorState({
     editor,
     selector: ({ editor: e }) => {
       const a = e.getAttributes("image");
       return {
         width: (a.width as string | undefined) ?? null,
         align: (a.align as string | undefined) ?? null,
+        hasCredit: !!(a.credit as string | undefined),
       };
     },
   });
   return (
-    <BubbleMenu
-      editor={editor}
-      shouldShow={({ editor: e }) => e.isActive("image")}
-      options={{ placement: "top", offset: 8 }}
-      className="flex items-center gap-1 rounded-[4px] border border-slate-300 bg-white p-1 shadow-lg"
+    <>
+      <BubbleMenu
+        editor={editor}
+        shouldShow={({ editor: e }) => e.isActive("image")}
+        options={{ placement: "top", offset: 8 }}
+        className="flex items-center gap-1 rounded-[4px] border border-slate-300 bg-white p-1 shadow-lg"
+      >
+        <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Size</span>
+        {IMAGE_SIZES.map(({ label, w }) => (
+          <Btn
+            key={label}
+            label={label}
+            active={width === w}
+            on={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
+          />
+        ))}
+        <span className="mx-1 h-4 w-px bg-slate-300" />
+        <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Align</span>
+        {IMAGE_ALIGNS.map(({ label, a }) => (
+          <Btn
+            key={label}
+            label={label}
+            active={align === a}
+            on={() => editor.chain().focus().updateAttributes("image", { align: a }).run()}
+          />
+        ))}
+        <span className="mx-1 h-4 w-px bg-slate-300" />
+        <Btn label={hasCredit ? "Credit ✎" : "Credit"} active={hasCredit} on={() => setCreditOpen(true)} />
+      </BubbleMenu>
+      {creditOpen && <ImageCreditDialog editor={editor} onClose={() => setCreditOpen(false)} />}
+    </>
+  );
+}
+
+/** Modal to set/clear the selected image's photo credit (small text + optional new-tab link). */
+function ImageCreditDialog({ editor, onClose }: { editor: Editor; onClose: () => void }) {
+  const attrs = editor.getAttributes("image") as { credit?: string; creditHref?: string };
+  const [text, setText] = useState(attrs.credit ?? "");
+  const [href, setHref] = useState(attrs.creditHref ?? "");
+
+  const input =
+    "w-full rounded-[4px] border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-slate-500";
+
+  function save() {
+    editor.chain().focus().updateAttributes("image", { credit: text.trim(), creditHref: href.trim() }).run();
+    onClose();
+  }
+  function clear() {
+    editor.chain().focus().updateAttributes("image", { credit: "", creditHref: "" }).run();
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 p-4"
+      onMouseDown={onClose}
+      role="dialog"
+      aria-modal="true"
     >
-      <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Size</span>
-      {IMAGE_SIZES.map(({ label, w }) => (
-        <Btn
-          key={label}
-          label={label}
-          active={width === w}
-          on={() => editor.chain().focus().updateAttributes("image", { width: w }).run()}
-        />
-      ))}
-      <span className="mx-1 h-4 w-px bg-slate-300" />
-      <span className="px-1 text-[11px] uppercase tracking-wider text-slate-400">Align</span>
-      {IMAGE_ALIGNS.map(({ label, a }) => (
-        <Btn
-          key={label}
-          label={label}
-          active={align === a}
-          on={() => editor.chain().focus().updateAttributes("image", { align: a }).run()}
-        />
-      ))}
-    </BubbleMenu>
+      <div className="w-full max-w-md rounded-[4px] bg-white p-5 shadow-xl ring-1 ring-slate-200" onMouseDown={(e) => e.stopPropagation()}>
+        <h3 className="text-sm font-semibold text-slate-800">Photo credit</h3>
+        <p className="mt-1 text-xs text-slate-500">Small caption under the image. If you add a link, the text becomes clickable and opens in a new tab.</p>
+
+        <div className="mt-3 space-y-3">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Text</label>
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Photo by Jane Doe" className={`${input} mt-1`} autoFocus />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Link (optional)</label>
+            <input value={href} onChange={(e) => setHref(e.target.value)} placeholder="https://…" className={`${input} mt-1`} />
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-between gap-2">
+          <button type="button" onClick={clear} className="rounded-[4px] px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50">
+            Remove credit
+          </button>
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              Cancel
+            </button>
+            <button type="button" onClick={save} disabled={!text.trim() && !href.trim()} className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -180,7 +243,6 @@ function Toolbar({ editor }: { editor: Editor }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [astroOpen, setAstroOpen] = useState(false);
-  const [creditOpen, setCreditOpen] = useState(false);
 
   // Reactive active-states so the toolbar highlights track the selection (v3
   // doesn't re-render on transactions by default).
@@ -195,7 +257,6 @@ function Toolbar({ editor }: { editor: Editor }) {
       ordered: e.isActive("orderedList"),
       quote: e.isActive("blockquote"),
       link: e.isActive("link"),
-      credit: e.isActive("creditLine"),
       align: (["left", "center", "right", "justify"] as const).find((al) => e.isActive({ textAlign: al })) ?? null,
     }),
   });
@@ -249,63 +310,8 @@ function Toolbar({ editor }: { editor: Editor }) {
       <Btn label={uploading ? "Uploading…" : "Image"} on={() => !uploading && fileRef.current?.click()} />
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
-      <Btn label="Credit" active={a.credit} on={() => setCreditOpen(true)} />
       <Btn label="★ AstroBin" on={() => setAstroOpen(true)} />
       {astroOpen && <AstroDialog editor={editor} onClose={() => setAstroOpen(false)} />}
-      {creditOpen && <CreditDialog editor={editor} onClose={() => setCreditOpen(false)} />}
-    </div>
-  );
-}
-
-/** Modal to insert/edit a small photo-credit line (tiny text + optional link). */
-function CreditDialog({ editor, onClose }: { editor: Editor; onClose: () => void }) {
-  const editing = editor.isActive("creditLine");
-  const current = editing ? (editor.getAttributes("creditLine") as { text?: string; href?: string }) : {};
-  const [text, setText] = useState(current.text ?? "");
-  const [href, setHref] = useState(current.href ?? "");
-
-  const input =
-    "w-full rounded-[4px] border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-slate-500";
-
-  function save() {
-    const attrs = { text: text.trim(), href: href.trim() };
-    if (!attrs.text && !attrs.href) return;
-    if (editing) editor.chain().focus().updateAttributes("creditLine", attrs).run();
-    else editor.chain().focus().insertContent({ type: "creditLine", attrs }).run();
-    onClose();
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 p-4"
-      onMouseDown={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="w-full max-w-md rounded-[4px] bg-white p-5 shadow-xl ring-1 ring-slate-200" onMouseDown={(e) => e.stopPropagation()}>
-        <h3 className="text-sm font-semibold text-slate-800">{editing ? "Edit photo credit" : "Add photo credit"}</h3>
-        <p className="mt-1 text-xs text-slate-500">Small caption text. If you add a link, the text becomes clickable and opens in a new tab.</p>
-
-        <div className="mt-3 space-y-3">
-          <div>
-            <label className="text-xs uppercase tracking-wider text-slate-400">Text</label>
-            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Photo by Jane Doe" className={`${input} mt-1`} autoFocus />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-slate-400">Link (optional)</label>
-            <input value={href} onChange={(e) => setHref(e.target.value)} placeholder="https://…" className={`${input} mt-1`} />
-          </div>
-        </div>
-
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-            Cancel
-          </button>
-          <button type="button" onClick={save} disabled={!text.trim() && !href.trim()} className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50">
-            {editing ? "Update" : "Insert"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
