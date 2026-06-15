@@ -25,12 +25,26 @@ const IMAGE_ALIGNS: { label: string; a: string | null }[] = [
 ];
 
 // Text justification for paragraphs/headings.
-const TEXT_ALIGNS: { label: string; a: "left" | "center" | "right" | "justify" }[] = [
-  { label: "↤", a: "left" },
-  { label: "↔", a: "center" },
-  { label: "↦", a: "right" },
-  { label: "≣", a: "justify" },
+const TEXT_ALIGNS: { a: "left" | "center" | "right" | "justify"; title: string }[] = [
+  { a: "left", title: "Align left" },
+  { a: "center", title: "Align center" },
+  { a: "right", title: "Align right" },
+  { a: "justify", title: "Justify" },
 ];
+
+/** Classic text-justification glyph: four horizontal lines arranged per alignment. */
+function AlignIcon({ a }: { a: "left" | "center" | "right" | "justify" }) {
+  const widths = a === "justify" ? [12, 12, 12, 12] : [12, 7, 12, 7];
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+      {widths.map((w, i) => {
+        const y = 2.7 + i * 3.4;
+        const x = a === "center" ? (16 - w) / 2 : a === "right" ? 14 - w : 2;
+        return <rect key={i} x={x} y={y} width={w} height={1.5} rx={0.75} />;
+      })}
+    </svg>
+  );
+}
 
 /**
  * WYSIWYG editor for blog post bodies. StarterKit (v3) already bundles Link +
@@ -131,13 +145,25 @@ function ImageSizeMenu({ editor }: { editor: Editor }) {
   );
 }
 
-function Btn({ on, active, label }: { on: () => void; active?: boolean; label: string }) {
+function Btn({
+  on,
+  active,
+  label,
+  title,
+}: {
+  on: () => void;
+  active?: boolean;
+  label: React.ReactNode;
+  title?: string;
+}) {
   return (
     <button
       type="button"
+      title={title}
+      aria-label={title}
       onMouseDown={(e) => e.preventDefault()} // keep editor selection
       onClick={on}
-      className={`rounded-[4px] px-2 py-1 text-xs font-medium ${
+      className={`flex items-center rounded-[4px] px-2 py-1 text-xs font-medium ${
         active ? "bg-surface-2 text-white" : "text-slate-600 hover:bg-slate-200"
       }`}
     >
@@ -203,10 +229,11 @@ function Toolbar({ editor }: { editor: Editor }) {
       <Btn label="1. List" active={a.ordered} on={() => editor.chain().focus().toggleOrderedList().run()} />
       <Btn label="❝ Quote" active={a.quote} on={() => editor.chain().focus().toggleBlockquote().run()} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
-      {TEXT_ALIGNS.map(({ label, a: al }) => (
+      {TEXT_ALIGNS.map(({ a: al, title }) => (
         <Btn
           key={al}
-          label={label}
+          title={title}
+          label={<AlignIcon a={al} />}
           active={(a.align ?? "left") === al}
           on={() => editor.chain().focus().setTextAlign(al).run()}
         />
