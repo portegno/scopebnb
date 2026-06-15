@@ -52,7 +52,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             "[&_blockquote]:border-l-2 [&_blockquote]:border-accent/40 [&_blockquote]:pl-4 [&_blockquote]:text-muted " +
             "[&_figure]:my-8 [&_figure_img]:my-0 [&_figcaption]:mt-2 [&_figcaption]:text-xs [&_figcaption]:text-muted " +
             "[&_figcaption_.astro-cap]:block [&_figcaption_.astro-cap]:text-sm [&_figcaption_.astro-cap]:text-foreground/80 " +
-            "[&_figcaption_.astro-cap]:mb-0.5 [&_figcaption_a]:text-accent hover:[&_figcaption_a]:text-gold"
+            "[&_figcaption_.astro-cap]:mb-0.5 [&_figcaption_a]:text-accent hover:[&_figcaption_a]:text-gold " +
+            "[&_.photo-credit]:my-2 [&_.photo-credit]:text-xs [&_.photo-credit]:text-muted " +
+            "[&_.photo-credit_a]:text-accent [&_.photo-credit_a]:underline hover:[&_.photo-credit_a]:text-gold"
           }
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
@@ -77,7 +79,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                       "mt-3 text-sm text-foreground/90 [&_h2]:mt-4 [&_h2]:mb-1.5 [&_h2]:text-lg [&_h2]:font-semibold " +
                       "[&_h2]:text-foreground [&_h3]:mt-3 [&_h3]:text-base [&_h3]:font-semibold [&_p]:my-2 [&_p]:leading-relaxed " +
                       "[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 " +
-                      "[&_a]:text-accent [&_a]:underline hover:[&_a]:text-gold [&_img]:my-3 [&_img]:rounded-[4px]"
+                      "[&_a]:text-accent [&_a]:underline hover:[&_a]:text-gold [&_img]:my-3 [&_img]:rounded-[4px] " +
+                      "[&_.photo-credit]:my-1.5 [&_.photo-credit]:text-xs [&_.photo-credit]:text-muted " +
+                      "[&_.photo-credit_a]:text-accent [&_.photo-credit_a]:underline hover:[&_.photo-credit_a]:text-gold"
                     }
                     dangerouslySetInnerHTML={{ __html: post.mikeTip.html }}
                   />

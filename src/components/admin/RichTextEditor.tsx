@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { SizedImage } from "./extensions/sizedImage";
 import { AstroFigure } from "./extensions/astroFigure";
+import { CreditLine } from "./extensions/creditLine";
 import { uploadBlogImage } from "@/lib/blog/upload";
 
 // Width options for a selected body image (null = full / natural width).
@@ -65,6 +66,7 @@ export function RichTextEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       SizedImage.configure({ inline: false }),
       AstroFigure,
+      CreditLine,
     ],
     content: initialHtml,
     editorProps: {
@@ -79,7 +81,9 @@ export function RichTextEditor({
           "[&_blockquote]:pl-3 [&_blockquote]:text-slate-500 " +
           "[&_figure]:my-4 [&_figure_img]:m-0 [&_figcaption]:mt-1.5 [&_figcaption]:text-xs " +
           "[&_figcaption]:text-slate-500 [&_figcaption_.astro-cap]:block [&_figcaption_.astro-cap]:text-slate-600 " +
-          "[&_figcaption_a]:text-blue-600 [&_figcaption_a]:underline",
+          "[&_figcaption_a]:text-blue-600 [&_figcaption_a]:underline " +
+          "[&_.photo-credit]:my-1 [&_.photo-credit]:text-xs [&_.photo-credit]:text-slate-500 " +
+          "[&_.photo-credit_a]:text-blue-600 [&_.photo-credit_a]:underline",
       },
     },
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
@@ -176,6 +180,7 @@ function Toolbar({ editor }: { editor: Editor }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [astroOpen, setAstroOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
 
   // Reactive active-states so the toolbar highlights track the selection (v3
   // doesn't re-render on transactions by default).
@@ -190,6 +195,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       ordered: e.isActive("orderedList"),
       quote: e.isActive("blockquote"),
       link: e.isActive("link"),
+      credit: e.isActive("creditLine"),
       align: (["left", "center", "right", "justify"] as const).find((al) => e.isActive({ textAlign: al })) ?? null,
     }),
   });
@@ -243,8 +249,63 @@ function Toolbar({ editor }: { editor: Editor }) {
       <Btn label={uploading ? "Uploading…" : "Image"} on={() => !uploading && fileRef.current?.click()} />
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
       <span className="mx-1 h-4 w-px bg-slate-300" />
+      <Btn label="Credit" active={a.credit} on={() => setCreditOpen(true)} />
       <Btn label="★ AstroBin" on={() => setAstroOpen(true)} />
       {astroOpen && <AstroDialog editor={editor} onClose={() => setAstroOpen(false)} />}
+      {creditOpen && <CreditDialog editor={editor} onClose={() => setCreditOpen(false)} />}
+    </div>
+  );
+}
+
+/** Modal to insert/edit a small photo-credit line (tiny text + optional link). */
+function CreditDialog({ editor, onClose }: { editor: Editor; onClose: () => void }) {
+  const editing = editor.isActive("creditLine");
+  const current = editing ? (editor.getAttributes("creditLine") as { text?: string; href?: string }) : {};
+  const [text, setText] = useState(current.text ?? "");
+  const [href, setHref] = useState(current.href ?? "");
+
+  const input =
+    "w-full rounded-[4px] border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 outline-none focus:border-slate-500";
+
+  function save() {
+    const attrs = { text: text.trim(), href: href.trim() };
+    if (!attrs.text && !attrs.href) return;
+    if (editing) editor.chain().focus().updateAttributes("creditLine", attrs).run();
+    else editor.chain().focus().insertContent({ type: "creditLine", attrs }).run();
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 p-4"
+      onMouseDown={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-md rounded-[4px] bg-white p-5 shadow-xl ring-1 ring-slate-200" onMouseDown={(e) => e.stopPropagation()}>
+        <h3 className="text-sm font-semibold text-slate-800">{editing ? "Edit photo credit" : "Add photo credit"}</h3>
+        <p className="mt-1 text-xs text-slate-500">Small caption text. If you add a link, the text becomes clickable and opens in a new tab.</p>
+
+        <div className="mt-3 space-y-3">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Text</label>
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Photo by Jane Doe" className={`${input} mt-1`} autoFocus />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Link (optional)</label>
+            <input value={href} onChange={(e) => setHref(e.target.value)} placeholder="https://…" className={`${input} mt-1`} />
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button type="button" onClick={save} disabled={!text.trim() && !href.trim()} className="rounded-[4px] bg-surface-2 px-3 py-1.5 text-sm font-semibold text-white hover:bg-surface disabled:opacity-50">
+            {editing ? "Update" : "Insert"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
