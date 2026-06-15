@@ -49,7 +49,7 @@ export function ImageNodeView({ node, selected }: NodeViewProps) {
       {credit && (
         <figcaption className="mt-1 text-xs text-slate-500" style={{ textAlign }} contentEditable={false}>
           {creditHref ? (
-            <a href={creditHref} target="_blank" rel="noreferrer noopener" className="text-blue-600 underline">
+            <a href={creditHref} target="_blank" rel="noreferrer noopener" className="text-slate-500 no-underline transition-colors hover:text-gold">
               {credit}
             </a>
           ) : (

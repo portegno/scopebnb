@@ -54,7 +54,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             "[&_figcaption_.astro-cap]:block [&_figcaption_.astro-cap]:text-sm [&_figcaption_.astro-cap]:text-foreground/80 " +
             "[&_figcaption_.astro-cap]:mb-0.5 [&_figcaption_a]:text-accent hover:[&_figcaption_a]:text-gold " +
             "[&_.photo-credit]:my-2 [&_.photo-credit]:text-xs [&_.photo-credit]:text-muted " +
-            "[&_.photo-credit_a]:text-accent [&_.photo-credit_a]:underline hover:[&_.photo-credit_a]:text-gold"
+            "[&_.photo-credit_a]:text-muted [&_.photo-credit_a]:no-underline [&_.photo-credit_a]:transition-colors [&_.photo-credit_a:hover]:text-gold"
           }
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
@@ -81,7 +81,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                       "[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 " +
                       "[&_a]:text-accent [&_a]:underline hover:[&_a]:text-gold [&_img]:my-3 [&_img]:rounded-[4px] " +
                       "[&_.photo-credit]:my-1.5 [&_.photo-credit]:text-xs [&_.photo-credit]:text-muted " +
-                      "[&_.photo-credit_a]:text-accent [&_.photo-credit_a]:underline hover:[&_.photo-credit_a]:text-gold"
+                      "[&_.photo-credit_a]:text-muted [&_.photo-credit_a]:no-underline [&_.photo-credit_a]:transition-colors [&_.photo-credit_a:hover]:text-gold"
                     }
                     dangerouslySetInnerHTML={{ __html: post.mikeTip.html }}
                   />
