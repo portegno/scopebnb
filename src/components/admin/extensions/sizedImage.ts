@@ -1,4 +1,6 @@
 import Image from "@tiptap/extension-image";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { ImageNodeView } from "./ImageNodeView";
 
 /**
  * The standard Image node plus `width` and `align` attributes so the author can
@@ -32,5 +34,10 @@ export const SizedImage = Image.extend({
             : {},
       },
     };
+  },
+  // Editor-only: render through a React node view that shows a selection
+  // boundary + corner control points. Output HTML still comes from renderHTML.
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageNodeView);
   },
 });
