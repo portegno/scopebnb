@@ -558,6 +558,61 @@ function Metric({ label, value, sub }: { label: string; value: ReactNode; sub?: 
   );
 }
 
+// Public live snapshot from the Starfront rooftop that hosts our RedCat 91.
+const BUILDING18_CAM = "https://files-api.tx.starfront.space/status-assets-public/building-0018/current.jpg";
+const STARFRONT_STATUS = "https://status.starfront.space/?camera=15";
+
+/** Live rooftop camera for Building 18, refreshed every minute (cache-busted). */
+function SiteCamera() {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [failed, setFailed] = useState(false);
+
+  // Re-point the <img> at a cache-busted URL. Driving the DOM node directly (as
+  // opposed to React state) keeps the polling out of an effect's render cycle.
+  function reload() {
+    if (imgRef.current) imgRef.current.src = `${BUILDING18_CAM}?t=${Date.now()}`;
+  }
+  useEffect(() => {
+    const id = setInterval(reload, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold tracking-tight text-background">Site camera — Building 18</h2>
+        <div className="flex items-center gap-2">
+          <a href={STARFRONT_STATUS} target="_blank" rel="noreferrer noopener" className="text-xs text-slate-500 hover:text-background">
+            Open status page ↗
+          </a>
+          <button type="button" onClick={reload} className={ctrl}>
+            Refresh
+          </button>
+        </div>
+      </div>
+      <p className="mt-1 text-sm text-slate-500">
+        Live view from the Starfront rooftop where the RedCat 91 lives. Refreshes every minute.
+      </p>
+      <Card className="relative mt-4 max-w-2xl overflow-hidden p-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={imgRef}
+          src={BUILDING18_CAM}
+          alt="Starfront Building 18 live camera"
+          className="block aspect-video w-full bg-slate-900 object-cover"
+          onError={() => setFailed(true)}
+          onLoad={() => setFailed(false)}
+        />
+        {failed && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-sm text-slate-400">
+            Camera image unavailable
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminOverview() {
   const { user } = useAuth();
   const { can } = useAdminMe();
@@ -623,6 +678,8 @@ export default function AdminOverview() {
           <input type="date" value={toYMD(range.to)} onChange={(e) => setCustom("to", e.target.value)} className={ctrl} />
         </div>
       </div>
+
+      <SiteCamera />
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
       {busy && !stats && <p className="text-sm text-slate-500">Loading metrics…</p>}
