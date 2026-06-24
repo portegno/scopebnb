@@ -648,16 +648,20 @@ function CameraModal({ title, url, onClose }: { title: string; url: string; onCl
   );
 }
 
-/** Live Starfront site cameras as small patches; click to open a large modal. */
+/**
+ * Live Starfront site cameras as small patches; click to open a large modal.
+ * Renders the thumbs as bare grid cells (a fragment) so they sit on the same
+ * row as the metric cards; the modal is fixed-position and out of grid flow.
+ */
 function SiteCamera() {
   const [open, setOpen] = useState<{ title: string; url: string } | null>(null);
   return (
-    <div className="grid max-w-md gap-4 sm:grid-cols-2">
+    <>
       {SITE_CAMERAS.map((c) => (
         <CameraThumb key={c.title} title={c.title} url={c.url} onOpen={() => setOpen(c)} />
       ))}
       {open && <CameraModal title={open.title} url={open.url} onClose={() => setOpen(null)} />}
-    </div>
+    </>
   );
 }
 
@@ -727,21 +731,27 @@ export default function AdminOverview() {
         </div>
       </div>
 
-      <SiteCamera />
-
       {error && <p className="text-sm text-rose-600">{error}</p>}
-      {busy && !stats && <p className="text-sm text-slate-500">Loading metrics…</p>}
 
-      {stats && (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Site cameras and stat cards share one row; cameras show even while stats load. */}
+      <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <SiteCamera />
+        {stats && (
+          <>
             <Metric label="Bookings" value={stats.total} sub={rangeLabel} />
             {stats.revenue && (
               <Metric label="Pipeline revenue" value={usd(stats.revenue.pipeline)} sub={`${usd(stats.revenue.realized)} realized`} />
             )}
             <Metric label="Upcoming nights" value={stats.upcomingNights} sub="not cancelled, today onward" />
             <Metric label="Managed / Remote" value={`${stats.byProduct.managed} / ${stats.byProduct.remote}`} sub="bookings in range" />
-          </div>
+          </>
+        )}
+      </div>
+
+      {busy && !stats && <p className="text-sm text-slate-500">Loading metrics…</p>}
+
+      {stats && (
+        <>
 
           <MonthOccupancy canBlock={can("calendar.block")} />
 
