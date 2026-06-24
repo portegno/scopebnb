@@ -558,48 +558,53 @@ function Metric({ label, value, sub }: { label: string; value: ReactNode; sub?: 
   );
 }
 
-// Public live snapshot from the Starfront rooftop that hosts our RedCat 91.
-const BUILDING18_CAM = "https://files-api.tx.starfront.space/status-assets-public/building-0018/current.jpg";
+// Public live snapshots from the Starfront site that hosts our RedCat 91.
 const STARFRONT_STATUS = "https://status.starfront.space/?camera=15";
+const SITE_CAMERAS: { title: string; url: string; aspect: string }[] = [
+  {
+    title: "Building 18",
+    url: "https://files-api.tx.starfront.space/status-assets-public/building-0018/current.jpg",
+    aspect: "aspect-video",
+  },
+  {
+    title: "All-sky",
+    url: "https://files-api.tx.starfront.space/status-assets-public/building-0009/allsky/images/image.jpg",
+    aspect: "aspect-square",
+  },
+];
 
-/** Live rooftop camera for Building 18, refreshed every minute (cache-busted). */
-function SiteCamera() {
+/** One live camera image, refreshed every minute by cache-busting its src. */
+function CameraTile({ title, url, aspect }: { title: string; url: string; aspect: string }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [failed, setFailed] = useState(false);
 
   // Re-point the <img> at a cache-busted URL. Driving the DOM node directly (as
   // opposed to React state) keeps the polling out of an effect's render cycle.
   function reload() {
-    if (imgRef.current) imgRef.current.src = `${BUILDING18_CAM}?t=${Date.now()}`;
+    if (imgRef.current) imgRef.current.src = `${url}?t=${Date.now()}`;
   }
   useEffect(() => {
-    const id = setInterval(reload, 60_000);
+    const id = setInterval(() => {
+      if (imgRef.current) imgRef.current.src = `${url}?t=${Date.now()}`;
+    }, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [url]);
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold tracking-tight text-background">Site camera — Building 18</h2>
-        <div className="flex items-center gap-2">
-          <a href={STARFRONT_STATUS} target="_blank" rel="noreferrer noopener" className="text-xs text-slate-500 hover:text-background">
-            Open status page ↗
-          </a>
-          <button type="button" onClick={reload} className={ctrl}>
-            Refresh
-          </button>
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</span>
+        <button type="button" onClick={reload} className="text-xs text-slate-400 hover:text-background">
+          Refresh
+        </button>
       </div>
-      <p className="mt-1 text-sm text-slate-500">
-        Live view from the Starfront rooftop where the RedCat 91 lives. Refreshes every minute.
-      </p>
-      <Card className="relative mt-4 max-w-2xl overflow-hidden p-0">
+      <Card className="relative mt-2 overflow-hidden p-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imgRef}
-          src={BUILDING18_CAM}
-          alt="Starfront Building 18 live camera"
-          className="block aspect-video w-full bg-slate-900 object-cover"
+          src={url}
+          alt={`Starfront ${title} live camera`}
+          className={`block w-full ${aspect} bg-slate-900 object-cover`}
           onError={() => setFailed(true)}
           onLoad={() => setFailed(false)}
         />
@@ -609,6 +614,28 @@ function SiteCamera() {
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+/** Live Starfront site cameras (rooftop + all-sky), each refreshed every minute. */
+function SiteCamera() {
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold tracking-tight text-background">Site cameras</h2>
+        <a href={STARFRONT_STATUS} target="_blank" rel="noreferrer noopener" className="text-xs text-slate-500 hover:text-background">
+          Open status page ↗
+        </a>
+      </div>
+      <p className="mt-1 text-sm text-slate-500">
+        Live views from the Starfront site where the RedCat 91 lives. Each refreshes every minute.
+      </p>
+      <div className="mt-4 grid max-w-4xl gap-4 sm:grid-cols-2">
+        {SITE_CAMERAS.map((c) => (
+          <CameraTile key={c.title} {...c} />
+        ))}
+      </div>
     </div>
   );
 }
