@@ -560,82 +560,103 @@ function Metric({ label, value, sub }: { label: string; value: ReactNode; sub?: 
 
 // Public live snapshots from the Starfront site that hosts our RedCat 91.
 const STARFRONT_STATUS = "https://status.starfront.space/?camera=15";
-const SITE_CAMERAS: { title: string; url: string; aspect: string }[] = [
-  {
-    title: "Building 18",
-    url: "https://files-api.tx.starfront.space/status-assets-public/building-0018/current.jpg",
-    aspect: "aspect-video",
-  },
-  {
-    title: "All-sky",
-    url: "https://files-api.tx.starfront.space/status-assets-public/building-0009/allsky/images/image.jpg",
-    aspect: "aspect-square",
-  },
+const SITE_CAMERAS: { title: string; url: string }[] = [
+  { title: "Building 18", url: "https://files-api.tx.starfront.space/status-assets-public/building-0018/current.jpg" },
+  { title: "All-sky", url: "https://files-api.tx.starfront.space/status-assets-public/building-0009/allsky/images/image.jpg" },
 ];
 
-/** One live camera image, refreshed every minute by cache-busting its src. */
-function CameraTile({ title, url, aspect }: { title: string; url: string; aspect: string }) {
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [failed, setFailed] = useState(false);
-
-  // Re-point the <img> at a cache-busted URL. Driving the DOM node directly (as
-  // opposed to React state) keeps the polling out of an effect's render cycle.
-  function reload() {
-    if (imgRef.current) imgRef.current.src = `${url}?t=${Date.now()}`;
-  }
+// Auto-refresh an <img> every minute by cache-busting its src directly on the
+// DOM node, which keeps the polling out of React's render cycle.
+function useCameraRefresh(url: string, ref: React.RefObject<HTMLImageElement | null>) {
   useEffect(() => {
     const id = setInterval(() => {
-      if (imgRef.current) imgRef.current.src = `${url}?t=${Date.now()}`;
+      if (ref.current) ref.current.src = `${url}?t=${Date.now()}`;
     }, 60_000);
     return () => clearInterval(id);
-  }, [url]);
+  }, [url, ref]);
+}
 
+/** Small clickable camera patch (cropped to 16:9); opens the full image in a modal. */
+function CameraThumb({ title, url, onOpen }: { title: string; url: string; onOpen: () => void }) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [failed, setFailed] = useState(false);
+  useCameraRefresh(url, imgRef);
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</span>
-        <button type="button" onClick={reload} className="text-xs text-slate-400 hover:text-background">
-          Refresh
-        </button>
-      </div>
-      <Card className="relative mt-2 overflow-hidden p-0">
+    <button type="button" onClick={onOpen} className="group block w-full text-left" title={`${title} — click to enlarge`}>
+      <Card className="relative overflow-hidden p-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imgRef}
           src={url}
           alt={`Starfront ${title} live camera`}
-          className={`block w-full ${aspect} bg-slate-900 object-cover`}
+          className="block aspect-video w-full bg-slate-900 object-cover transition group-hover:opacity-90"
           onError={() => setFailed(true)}
           onLoad={() => setFailed(false)}
         />
         {failed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-sm text-slate-400">
-            Camera image unavailable
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs text-slate-400">
+            Unavailable
           </div>
         )}
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
+          <span className="text-xs font-medium text-white">{title}</span>
+          <span aria-hidden className="text-xs text-white/80">⤢</span>
+        </div>
       </Card>
+    </button>
+  );
+}
+
+/** Full-size camera view in a modal. */
+function CameraModal({ title, url, onClose }: { title: string; url: string; onClose: () => void }) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  useCameraRefresh(url, imgRef);
+  // Load a fresh frame the moment the modal opens (Date.now is fine in an effect).
+  useEffect(() => {
+    if (imgRef.current) imgRef.current.src = `${url}?t=${Date.now()}`;
+  }, [url]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="relative flex max-h-[92vh] max-w-6xl flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-white">{title} — live</span>
+          <div className="flex items-center gap-2">
+            <a href={STARFRONT_STATUS} target="_blank" rel="noreferrer noopener" className="text-xs text-white/70 hover:text-white">
+              Status page ↗
+            </a>
+            <button type="button" onClick={onClose} className="rounded-[4px] bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/20">
+              Close ✕
+            </button>
+          </div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={imgRef}
+          src={url}
+          alt={`Starfront ${title} live camera`}
+          className="max-h-[85vh] w-auto rounded-[4px] bg-slate-900 object-contain"
+        />
+      </div>
     </div>
   );
 }
 
-/** Live Starfront site cameras (rooftop + all-sky), each refreshed every minute. */
+/** Live Starfront site cameras as small patches; click to open a large modal. */
 function SiteCamera() {
+  const [open, setOpen] = useState<{ title: string; url: string } | null>(null);
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold tracking-tight text-background">Site cameras</h2>
-        <a href={STARFRONT_STATUS} target="_blank" rel="noreferrer noopener" className="text-xs text-slate-500 hover:text-background">
-          Open status page ↗
-        </a>
-      </div>
-      <p className="mt-1 text-sm text-slate-500">
-        Live views from the Starfront site where the RedCat 91 lives. Each refreshes every minute.
-      </p>
-      <div className="mt-4 grid max-w-4xl gap-4 sm:grid-cols-2">
-        {SITE_CAMERAS.map((c) => (
-          <CameraTile key={c.title} {...c} />
-        ))}
-      </div>
+    <div className="grid max-w-md gap-4 sm:grid-cols-2">
+      {SITE_CAMERAS.map((c) => (
+        <CameraThumb key={c.title} title={c.title} url={c.url} onOpen={() => setOpen(c)} />
+      ))}
+      {open && <CameraModal title={open.title} url={open.url} onClose={() => setOpen(null)} />}
     </div>
   );
 }
