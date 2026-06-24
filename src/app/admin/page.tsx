@@ -582,14 +582,20 @@ function CameraThumb({ title, url, onOpen }: { title: string; url: string; onOpe
   const [failed, setFailed] = useState(false);
   useCameraRefresh(url, imgRef);
   return (
-    <button type="button" onClick={onOpen} className="group block w-full text-left" title={`${title} — click to enlarge`}>
-      <Card className="relative overflow-hidden p-0">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative block h-full min-h-[7rem] w-full text-left"
+      title={`${title} — click to enlarge`}
+    >
+      <Card className="relative h-full overflow-hidden p-0">
+        {/* Absolutely filled so the patch matches the stat cards' height (cropped). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imgRef}
           src={url}
           alt={`Starfront ${title} live camera`}
-          className="block aspect-video w-full bg-slate-900 object-cover transition group-hover:opacity-90"
+          className="absolute inset-0 h-full w-full bg-slate-900 object-cover transition group-hover:opacity-90"
           onError={() => setFailed(true)}
           onLoad={() => setFailed(false)}
         />
@@ -734,7 +740,7 @@ export default function AdminOverview() {
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
       {/* Site cameras and stat cards share one row; cameras show even while stats load. */}
-      <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <SiteCamera />
         {stats && (
           <>
