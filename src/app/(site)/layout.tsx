@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { WarpTransition } from "@/components/WarpTransition";
 import { SiteFooter } from "@/components/SiteFooter";
+import { SkyPole } from "@/components/SkyPole";
 
 /**
  * Public-site shell: the dark, space-themed chrome (header, footer, animated
@@ -12,6 +13,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-screen flex-col">
       <div className="aurora" aria-hidden />
       <div className="starfield" aria-hidden />
+      <SkyPole />
       <WarpTransition />
       <SiteHeader />
       <main className="flex-1">{children}</main>

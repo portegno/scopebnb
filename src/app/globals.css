@@ -144,6 +144,26 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+/* Dashboard inline detail: the full-width panel fades/slides in under its row. */
+.detail-reveal {
+  animation: detailReveal 0.22s ease-out;
+}
+@keyframes detailReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail-reveal {
+    animation: none;
+  }
+}
+
 /* Calendar: hovering an available night tints it with that night's tier colour
    (set per-cell via the --tier-bg custom property). */
 .cal-day:hover {
@@ -174,9 +194,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
-/* Site-wide animated starfield: two layers drifting very slowly in different
-   directions for parallax depth, plus a gentle twinkle. Seamless loop (each
-   drifts exactly one tile). Sits behind all content. */
+/* Site-wide animated starfield: the real sky as seen from a fixed point on
+   Earth — every star wheels around the celestial pole (diurnal motion), not a
+   linear drift. The pole is pinned to the header logo's spiral (see SkyPole),
+   so the sky turns around the ScopeBnB mark. Both layers share that pivot and
+   angular rate, counter-clockwise as in the northern hemisphere. Plus a gentle
+   twinkle. Sits behind all content. */
 .starfield {
   position: fixed;
   inset: 0;
@@ -234,8 +257,13 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .starfield::after {
   content: "";
   position: absolute;
-  inset: -60%;
+  /* Oversized so a full rotation never exposes the edges of the tiled field. */
+  inset: -150%;
   background-repeat: repeat;
+  /* The pivot is the celestial pole — the still point the sky turns around.
+     SkyPole pins it to the header logo's spiral via --sky-origin; the fallback
+     (upper-left, near the logo) covers the moment before JS measures. */
+  transform-origin: var(--sky-origin, 41% 38%);
   will-change: transform;
 }
 /* Far layer — many tiny faint stars in varied stellar colours, gently twinkling. */
@@ -253,7 +281,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     radial-gradient(1px 1px at 60% 95%, rgba(255, 224, 196, 0.45), transparent);
   background-size: 400px 400px;
   opacity: 0.55;
-  animation: starDriftA 95s linear infinite, starTwinkle 7s ease-in-out infinite;
+  animation: skyRotate 440s linear infinite, starTwinkle 7s ease-in-out infinite;
 }
 /* Near layer — brighter stars; a few have a soft coloured glow (halo + core). */
 .starfield::after {
@@ -273,16 +301,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     radial-gradient(1.2px 1.2px at 38% 90%, rgba(255, 255, 255, 0.75), transparent);
   background-size: 320px 320px;
   opacity: 0.85;
-  animation: starDriftB 70s linear infinite;
+  animation: skyRotate 440s linear infinite;
 }
-@keyframes starDriftA {
-  to {
-    transform: translate3d(-400px, -400px, 0);
+/* One sidereal turn, slowed for ambiance. Counter-clockwise = northern sky. */
+@keyframes skyRotate {
+  from {
+    transform: rotate(0deg);
   }
-}
-@keyframes starDriftB {
   to {
-    transform: translate3d(300px, -300px, 0);
+    transform: rotate(-360deg);
   }
 }
 @keyframes starTwinkle {

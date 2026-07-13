@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Section, Eyebrow, CTA, Card } from "@/components/ui";
-import { NIGHT_TIERS, fmtPrice, remotePrice } from "@/lib/pricing";
+import { NIGHT_TIERS, fmtPrice, remotePrice, INTEGRATION_FEE } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Pricing" };
 
@@ -38,10 +38,20 @@ export default function Pricing() {
           <p className="text-xs font-semibold uppercase tracking-wider text-accent">Managed Imaging</p>
           <h2 className="mt-1 text-lg font-semibold">We capture, you receive the data</h2>
           <p className="mt-1 text-sm text-muted">
-            Pick a target, frame it, and our team runs the rig. Calibrated FITS delivered within 24h.
+            Pick a target, frame it, and our team runs the rig. You receive the session&apos;s light frames plus
+            the matching calibration frames within 24h, ready to stack.
           </p>
           <TierTable />
           <p className="mt-4 text-xs text-muted">Flat price for the whole imageable night.</p>
+          <div className="mt-5 flex items-start justify-between gap-3 rounded-[4px] bg-surface-2 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground/90">Integrated image add-on</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Want a finished picture instead of the raw data? We calibrate, stack and process it for you.
+              </p>
+            </div>
+            <span className="shrink-0 text-lg font-semibold text-gold">+{fmtPrice(INTEGRATION_FEE)}</span>
+          </div>
           <div className="mt-6">
             <CTA href="/book?mode=managed">Book a night</CTA>
           </div>

@@ -38,6 +38,13 @@ export function fmtPrice(usd: number): string {
 }
 
 /**
+ * Every managed booking delivers the session's light frames plus the matching
+ * calibration frames (un-integrated). A fully integrated, ready-to-stretch image
+ * (calibrated + stacked + processed) is an optional add-on for this flat fee.
+ */
+export const INTEGRATION_FEE = 25;
+
+/**
  * Remote Control rents the rig itself (the user drives it), priced 10% above
  * the managed-imaging "we take the photo" rate. Derived so it tracks any change
  * to the base tier prices.

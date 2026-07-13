@@ -11,6 +11,8 @@ import { createBooking } from "@/lib/firebase/bookings";
 import { skyThumb } from "@/lib/thumbnail";
 import { astrobinUrl } from "@/lib/astrobin";
 import { targets, type Target } from "@/data/targets";
+import { captureFilters } from "@/data/equipment";
+import type { CaptureFilterPlan } from "@/lib/bookings/types";
 import { site } from "@/config/site";
 import {
   rankTargets,
@@ -22,7 +24,7 @@ import {
   type Assessment,
   type AltitudeCurve,
 } from "@/lib/visibility";
-import { nightTier, fmtPrice, remotePrice, NIGHT_TIERS } from "@/lib/pricing";
+import { nightTier, fmtPrice, remotePrice, NIGHT_TIERS, INTEGRATION_FEE } from "@/lib/pricing";
 
 type Mosaic = { cols: number; rows: number; overlap: number; panels: { ra: number; dec: number }[] };
 type Framing = { ra: number; dec: number; rotation: number; targetName: string; image?: string; mosaic?: Mosaic };
@@ -81,6 +83,22 @@ export default function Book() {
   const [zoomed, setZoomed] = useState(false); // framing preview open in a full-size lightbox
   const [current, setCurrent] = useState<Current | null>(null);
   const [session, setSession] = useState<{ start: number; end: number } | null>(null);
+  // Managed capture plan: per-filter sub targets (seeded from the rig's filters) + team notes.
+  const [plan, setPlan] = useState<CaptureFilterPlan[]>(() =>
+    captureFilters.map((f) => ({ key: f.key, enabled: true, subSeconds: f.defaultSub, subs: f.defaultSubs })),
+  );
+  const [captureNotes, setCaptureNotes] = useState("");
+  // Add-on: deliver a fully integrated image (+$25) on top of lights + calibration.
+  const [wantsIntegration, setWantsIntegration] = useState(false);
+  const updatePlan = (key: string, patch: Partial<CaptureFilterPlan>) =>
+    setPlan((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
+  // Capture plan is an advanced, opt-in setting: collapsed by default, in which
+  // case the ScopeBnB team chooses the filters/exposures. Opening it reveals the
+  // controls and triggers the AI seed.
+  const [planOpen, setPlanOpen] = useState(false);
+  // AI-suggested plan: seeds the controls the first time the panel is opened.
+  const [planAi, setPlanAi] = useState<{ rationale: string; loading: boolean }>({ rationale: "", loading: false });
+  const suggestedForRef = useRef<string | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [today, setToday] = useState("");
   const [aiInfo, setAiInfo] = useState<{
@@ -120,6 +138,8 @@ export default function Book() {
         rotation: framing.rotation,
         previewImage: framing.image,
         mosaic: framing.mosaic ?? null,
+        capturePlan: { filters: plan, notes: captureNotes.trim() || undefined, autoManaged: !planOpen },
+        wantsIntegration,
         date: selectedDate,
         sessionStart: session.start,
         sessionEnd: session.end,
@@ -211,6 +231,8 @@ export default function Book() {
   const tier = night?.tier ?? null;
   // Remote nights cost 10% more than managed — the price shown follows the chosen modality.
   const priceOf = (base: number) => (mode === "remote" ? remotePrice(base) : base);
+  // Managed total = night price + optional integrated-image add-on.
+  const managedTotal = tier ? tier.price + (wantsIntegration ? INTEGRATION_FEE : 0) : 0;
 
   function computeCurrent(name: string, ra: number, dec: number) {
     const w = whenRef.current ?? new Date();
@@ -301,6 +323,46 @@ export default function Book() {
     return () => ctrl.abort();
   }, [current?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When the user opens the advanced panel for a framed target, ask the AI to
+  // seed the plan. Re-runs only when the target or night changes (or it's first
+  // opened), so manual edits are kept.
+  useEffect(() => {
+    if (!planOpen || !framing || !current?.assessment.visible) return;
+    const key = `${current.name}|${selectedDate}`;
+    if (suggestedForRef.current === key) return;
+    suggestedForRef.current = key;
+
+    const cat = targets.find((t) => t.name === current.name);
+    const qs = new URLSearchParams({
+      name: current.name,
+      type: cat?.type ?? "",
+      mag: cat?.magnitude != null ? String(cat.magnitude) : "",
+      moon: String(Math.round(current.assessment.moon?.illumPct ?? 0)),
+      window: String(current.window?.hours ?? 0),
+    });
+    const ctrl = new AbortController();
+    setPlanAi({ rationale: "", loading: true });
+    fetch(`/api/capture-plan?${qs.toString()}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !Array.isArray(d.filters)) {
+          setPlanAi({ rationale: "", loading: false });
+          return;
+        }
+        setPlan((prev) =>
+          prev.map((p) => {
+            const s = d.filters.find((f: { key: string }) => f.key === p.key);
+            return s ? { key: p.key, enabled: !!s.enabled, subSeconds: s.subSeconds, subs: s.subs } : p;
+          }),
+        );
+        setPlanAi({ rationale: typeof d.rationale === "string" ? d.rationale : "", loading: false });
+      })
+      .catch((e) => {
+        if (e?.name !== "AbortError") setPlanAi({ rationale: "", loading: false });
+      });
+    return () => ctrl.abort();
+  }, [planOpen, framing?.targetName, current?.name, current?.assessment.visible, selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Steps depend on the chosen modality: managed frames a target; remote jumps to confirm.
   const steps =
     mode === "remote"
@@ -348,7 +410,7 @@ export default function Book() {
             key: "managed",
             title: "Request an image",
             tag: "Managed",
-            desc: "We frame and capture it for you. Calibrated FITS within 24h. No remote-control skills needed.",
+            desc: "We frame and capture it for you. You get the session's lights plus calibration frames within 24h, ready to stack. No remote-control skills needed.",
           },
           {
             key: "remote",
@@ -801,6 +863,265 @@ export default function Book() {
               )}
             </Card>
           )}
+
+          {/* Capture plan — how the night is split between the rig's two filter states */}
+          {current.assessment.visible && (
+            <Card className="mt-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Capture plan</h3>
+                  <p className="mt-2 max-w-xl text-sm text-muted">
+                    {planOpen
+                      ? "One-shot colour rig, so it's clear glass or the L-Extreme narrowband. Counts are a target — we image the whole window above and split it as you set here."
+                      : "By default our team picks the best filters and sub-exposures for your target and the night's conditions. You can set your own plan if you'd like."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPlanOpen((o) => !o)}
+                  aria-expanded={planOpen}
+                  className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-[4px] px-3 py-1.5 text-xs font-semibold text-accent ring-1 ring-accent/40 transition-colors hover:bg-accent/10"
+                >
+                  {planOpen ? "Use ScopeBnB's choice" : "Customise"}
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className={`transition-transform ${planOpen ? "rotate-180" : ""}`}
+                  >
+                    <path
+                      d="M6 9l6 6 6-6"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {!planOpen && (
+                <div className="mt-4 flex items-start gap-2 rounded-[4px] bg-surface px-4 py-3 text-xs text-muted ring-1 ring-hairline">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 text-accent">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+                    <path d="M12 11v5M12 8h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                  <span>
+                    We&apos;ll choose the filters and sub-exposures that get the most out of{" "}
+                    {framingName.trim() || current.name} on {nightLabel}. Leave a note below if you have preferences.
+                  </span>
+                </div>
+              )}
+
+              {planOpen && (
+                <>
+              {(planAi.loading || planAi.rationale) && (
+                <div className="mt-3 flex items-start gap-2 rounded-[4px] bg-accent/10 px-3 py-2 text-xs text-accent ring-1 ring-hairline">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0">
+                    <path
+                      d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3zM18 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span className="text-accent/90">
+                    {planAi.loading ? (
+                      "Suggesting a starting plan for this target and night…"
+                    ) : (
+                      <>
+                        <span className="font-semibold text-accent">AI suggestion · </span>
+                        {planAi.rationale} Adjust anything below.
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
+
+              <div className="mt-4 space-y-3">
+                {captureFilters.map((def) => {
+                  const p = plan.find((x) => x.key === def.key)!;
+                  const hrs = (p.subSeconds * p.subs) / 3600;
+                  const accentText = def.accent === "gold" ? "text-gold-soft" : "text-accent";
+                  return (
+                    <div
+                      key={def.key}
+                      className={`rounded-[4px] bg-surface p-4 ring-1 transition-opacity ${
+                        p.enabled ? "ring-gold/40" : "opacity-50 ring-hairline"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={p.enabled}
+                          aria-label={`Use ${def.name}`}
+                          onClick={() => updatePlan(def.key, { enabled: !p.enabled })}
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] ${
+                            p.enabled ? "bg-gold text-background" : "text-transparent ring-1 ring-white/20"
+                          }`}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M5 12l4.5 4.5L19 7"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-baseline gap-x-2">
+                            <span className="font-medium">{def.name}</span>
+                            <span className={`text-xs ${accentText}`}>{def.tagline}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted">{def.blurb}</p>
+
+                          {p.enabled && (
+                            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+                              <label className="text-xs text-muted">
+                                Sub length{" "}
+                                <select
+                                  value={p.subSeconds}
+                                  onChange={(e) => updatePlan(def.key, { subSeconds: Number(e.target.value) })}
+                                  className="ml-1 rounded-[4px] bg-surface-2 px-2 py-1 text-xs text-foreground"
+                                >
+                                  {def.subOptions.map((s) => (
+                                    <option key={s} value={s}>
+                                      {s}s
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="text-xs text-muted">
+                                Desired subs{" "}
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.subs}
+                                  onChange={(e) =>
+                                    updatePlan(def.key, { subs: Math.max(0, Number(e.target.value) || 0) })
+                                  }
+                                  className="ml-1 w-16 rounded-[4px] bg-surface-2 px-2 py-1 text-xs text-foreground"
+                                />
+                              </label>
+                              <span className="ml-auto text-xs text-gold-soft">≈ {fmtDuration(hrs)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const requested = plan.reduce(
+                  (sum, p) => sum + (p.enabled ? (p.subSeconds * p.subs) / 3600 : 0),
+                  0,
+                );
+                const avail = current.window?.hours;
+                const over = avail != null && requested > avail + 0.01;
+                return (
+                  <>
+                    <div className="mt-4 flex items-center justify-between gap-3 rounded-[4px] bg-surface-2 px-4 py-3">
+                      <span className="text-xs uppercase tracking-wider text-muted">Requested integration</span>
+                      <span className="text-sm">
+                        <span className={`font-semibold ${over ? "text-amber-300" : "text-gold"}`}>
+                          {fmtDuration(requested)}
+                        </span>
+                        {avail != null && (
+                          <span className="text-muted"> of ~{fmtDuration(avail)} imageable this night</span>
+                        )}
+                      </span>
+                    </div>
+                    {over && (
+                      <p className="mt-2 text-xs text-amber-200/90">
+                        That&apos;s more than fits in one night — we&apos;ll prioritise by your notes, or it may need
+                        extra nights.
+                      </p>
+                    )}
+                    <p className="mt-2 flex items-start gap-1.5 text-xs text-muted">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 text-accent">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+                        <path d="M12 11v5M12 8h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                      <span>
+                        These counts are an ideal target. Real integration depends on conditions on the night —
+                        weather, when the roof can open, seeing, and passing clouds. We capture as much as the
+                        window allows and never charge for clouded-out time.
+                      </span>
+                    </p>
+                  </>
+                );
+              })()}
+                </>
+              )}
+
+              <div className="mt-5">
+                <label htmlFor="capture-notes" className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  Notes for the team
+                </label>
+                <textarea
+                  id="capture-notes"
+                  maxLength={500}
+                  value={captureNotes}
+                  onChange={(e) => setCaptureNotes(e.target.value)}
+                  placeholder="e.g. Prioritise OIII on the core, skip if seeing is poor..."
+                  className="mt-2 min-h-[84px] w-full resize-y rounded-[4px] bg-surface px-3 py-2 text-sm text-foreground ring-1 ring-hairline placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent/50"
+                />
+                <div className="mt-1 text-right text-xs text-muted">{captureNotes.length}/500</div>
+              </div>
+            </Card>
+          )}
+
+          {/* Deliverable — what you receive, plus the optional integrated-image add-on */}
+          {current.assessment.visible && (
+            <Card className="mt-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">What you&apos;ll receive</h3>
+              <p className="mt-2 text-sm text-muted">
+                Every managed night ships the complete set of light frames from your session plus the matching
+                calibration frames (darks and flats), ready for you to stack. Calibrated 16-bit FITS, delivered to
+                your dashboard within 24h.
+              </p>
+
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={wantsIntegration}
+                onClick={() => setWantsIntegration((v) => !v)}
+                className={`mt-4 flex w-full items-start gap-3 rounded-[4px] p-4 text-left ring-1 transition-colors ${
+                  wantsIntegration ? "bg-gold/10 ring-gold/40" : "bg-surface ring-hairline hover:ring-accent/40"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] ${
+                    wantsIntegration ? "bg-gold text-background" : "text-transparent ring-1 ring-white/20"
+                  }`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 12l4.5 4.5L19 7"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <span className="font-medium">Add a finished, integrated image</span>
+                    <span className="text-sm font-semibold text-gold">+{fmtPrice(INTEGRATION_FEE)}</span>
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">
+                    We calibrate, stack and process your data into a ready-to-stretch image. Otherwise you do it
+                    yourself with the frames above.
+                  </span>
+                </span>
+              </button>
+            </Card>
+          )}
         </>
       )}
 
@@ -851,7 +1172,8 @@ export default function Book() {
                 Booking requested for <span className="font-semibold">{framingName.trim() || current.name}</span> on{" "}
                 <span className="font-semibold text-gold-soft">{nightLabel}</span>
                 {session && <> · {fmtHour(session.start)}–{fmtHour(session.end)}</>}
-                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(tier.price)}</span></>}. We&apos;ll confirm the night.
+                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedTotal)}</span></>}
+                {wantsIntegration && <span className="text-muted"> (incl. integrated image)</span>}. We&apos;ll confirm the night.
               </p>
               <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
                 View in your dashboard →
@@ -871,7 +1193,16 @@ export default function Book() {
                 <span className="text-sm text-muted">
                   <span className="font-medium text-gold-soft">{nightLabel}</span> · {framingName.trim() || current.name} ·{" "}
                   {fmtHour(session.start)}–{fmtHour(session.end)} · {fmtDuration(session.end - session.start)}
-                  {tier && <> · <span className="font-semibold text-gold">{fmtPrice(tier.price)}</span></>}
+                  {tier && (
+                    <>
+                      {" "}· <span className="font-semibold text-gold">{fmtPrice(managedTotal)}</span>
+                      {wantsIntegration && (
+                        <span className="text-muted">
+                          {" "}({fmtPrice(tier.price)} night + {fmtPrice(INTEGRATION_FEE)} integration)
+                        </span>
+                      )}
+                    </>
+                  )}
                 </span>
               )}
               {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}

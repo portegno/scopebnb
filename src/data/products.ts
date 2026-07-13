@@ -21,7 +21,8 @@ export const products: Product[] = [
     bullets: [
       "Choose a target by night-sky availability",
       "Rotate the camera and preview the framing on the real sky",
-      "Receive calibrated FITS files within 24h",
+      "Receive the session's lights + calibration frames in 24h",
+      "Optional: add a finished, integrated image for $25",
     ],
   },
   {

@@ -2,6 +2,7 @@
 
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "./client";
+import type { CapturePlan } from "@/lib/bookings/types";
 
 /** A booking, as stored in Firestore. Target/framing fields apply to Managed
  *  Imaging only; Remote Control bookings are just a night + price. */
@@ -14,6 +15,10 @@ export type BookingInput = {
   rotation?: number;
   previewImage?: string; // sky preview data URL (later: Storage path)
   mosaic?: { cols: number; rows: number; overlap: number; panels: { ra: number; dec: number }[] } | null;
+  // Capture plan: per-filter sub targets + team notes (Managed Imaging only)
+  capturePlan?: CapturePlan | null;
+  // Add-on: deliver a fully integrated image on top of lights + calibration frames
+  wantsIntegration?: boolean;
   // Night + session
   date: string; // YYYY-MM-DD
   sessionStart?: number; // local hour

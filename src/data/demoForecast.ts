@@ -1,28 +1,36 @@
 /**
  * Deterministic demo forecast — a realistic-looking week for previewing
- * <SkyForecast /> without hitting Open-Meteo / 7Timer.
+ * <SkyForecast /> without hitting Open-Meteo / 7Timer, and the fallback when the
+ * live request fails. Dates roll from "today" (computed at module load) so the
+ * fixture never shows stale calendar dates; the moon is the genuine phase for
+ * each date. Only the weather numbers are synthetic.
  *
  * Kept strictly separate from the UI: the component renders whatever
- * `ForecastDay[]` it's handed, demo or live (from /api/forecast). No randomness
- * (stable across renders/SSR); curves are sine-shaped so cells read naturally.
+ * `ForecastDay[]` it's handed, demo or live. No randomness (stable per server
+ * lifetime); curves are sine-shaped so cells read naturally.
  */
 import type { ForecastDay, ForecastHour } from "@/lib/weather";
-import { isImagingNight } from "@/lib/visibility";
+import { isImagingNight, moonIllumination } from "@/lib/visibility";
 import { site } from "@/config/site";
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const PHASES = ["Waxing crescent", "First quarter", "Waxing gibbous", "Full moon", "Waning gibbous", "Last quarter", "Waning crescent"];
 
 /** 0–1 deterministic wobble from two integers. */
 const wob = (a: number, b: number) => (Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const toJD = (epochMs: number) => epochMs / 86400000 + 2440587.5;
+
+// Local calendar "today" at the observatory as a UTC-midnight anchor (so adding
+// whole days keeps the local date correct). Resolved once, at module load.
+const OFFSET_MS = site.location.utcOffset * 3_600_000;
+const localToday = new Date(Date.now() + OFFSET_MS);
+const BASE_DAY_UTC = Date.UTC(localToday.getUTCFullYear(), localToday.getUTCMonth(), localToday.getUTCDate());
 
 function makeHour(dayIdx: number, hour: number): ForecastHour {
   const n = Math.abs(wob(dayIdx + 1, hour + 1));
   // Real UTC instant for this local hour at the observatory, so darkness is the
-  // genuine astronomical night for the date (short, since the demo week is June).
-  const epoch =
-    Date.UTC(2026, 5, 5 + dayIdx) + (hour - site.location.utcOffset) * 3_600_000;
+  // genuine astronomical night for the (rolling) date.
+  const epoch = BASE_DAY_UTC + dayIdx * 86_400_000 + (hour - site.location.utcOffset) * 3_600_000;
   const night = isImagingNight(new Date(epoch), site.location);
   // Clearer skies at night on the better days; a cloudy patch mid-week.
   const cloudBias = dayIdx === 2 ? 70 : dayIdx === 5 ? 45 : 12;
@@ -51,10 +59,18 @@ function makeHour(dayIdx: number, hour: number): ForecastHour {
   };
 }
 
-export const demoForecast: ForecastDay[] = Array.from({ length: 7 }, (_, dayIdx) => ({
-  date: `2026-06-${String(5 + dayIdx).padStart(2, "0")}`,
-  label: `${WEEKDAY[(4 + dayIdx) % 7]} ${5 + dayIdx}`,
-  moonIllumPct: clamp(Math.round(20 + dayIdx * 12), 0, 100),
-  moonPhase: PHASES[dayIdx % PHASES.length],
-  hours: Array.from({ length: 24 }, (_, hour) => makeHour(dayIdx, hour)),
-}));
+export const demoForecast: ForecastDay[] = Array.from({ length: 7 }, (_, dayIdx) => {
+  const dayUTC = BASE_DAY_UTC + dayIdx * 86_400_000;
+  const d = new Date(dayUTC); // getUTC* read back the local calendar date
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const moon = moonIllumination(toJD(dayUTC + 12 * 3_600_000)); // local midday
+  return {
+    date: `${yyyy}-${mm}-${dd}`,
+    label: `${WEEKDAY[d.getUTCDay()]} ${d.getUTCDate()}`,
+    moonIllumPct: Math.round(moon.fraction * 100),
+    moonPhase: moon.phase,
+    hours: Array.from({ length: 24 }, (_, hour) => makeHour(dayIdx, hour)),
+  };
+});

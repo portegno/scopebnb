@@ -11,8 +11,12 @@ export const faqs: Faq[] = [
     a: "We monitor conditions up to 48 hours in advance. If your night isn't usable, it's automatically rescheduled at no extra cost. That's our weather guarantee.",
   },
   {
-    q: "What file formats will I receive?",
-    a: "Calibrated 16-bit FITS files and a processed JPEG preview, delivered to your dashboard within 24 hours.",
+    q: "What will I receive?",
+    a: "The complete set of light frames from your session plus the matching calibration frames (darks and flats), as calibrated 16-bit FITS, delivered to your dashboard within 24 hours. You stack them yourself, or add an integrated image for $25.",
+  },
+  {
+    q: "What is the integrated image add-on?",
+    a: "For $25 we do the processing for you: we calibrate, stack and finish your data into a ready-to-stretch image, on top of the raw frames you already get. It's optional, only if you'd rather not process the data yourself.",
   },
   {
     q: "Can I choose my own target?",

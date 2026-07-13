@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Section, Eyebrow, Card, CTA } from "@/components/ui";
 import { db } from "@/lib/firebase/client";
 import { useAuth, signOut } from "@/lib/firebase/useAuth";
-import { BookingDetailModal, fmtHour } from "@/components/BookingDetailModal";
+import { BookingDetailBody, fmtHour } from "@/components/BookingDetailBody";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Booking } from "@/lib/bookings/types";
 
@@ -14,7 +14,27 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Booking | null>(null);
+  // Inline expansion: the open booking + the grid's live column count, so the
+  // full-width detail panel can slot in at the end of the selected card's row.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [cols, setCols] = useState(1);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const measure = () =>
+      setCols(getComputedStyle(el).gridTemplateColumns.split(" ").filter(Boolean).length || 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [bookings.length]);
+
+  useEffect(() => {
+    if (selectedId) panelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedId]);
 
   useEffect(() => {
     if (!user || !db) return;
@@ -92,46 +112,79 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {bookings.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            onClick={() => setSelected(b)}
-            className="group block overflow-hidden rounded-[4px] bg-surface text-left ring-1 ring-hairline transition-colors hover:ring-accent/40"
-          >
-            {b.previewImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.previewImage} alt={b.targetName ?? "Framing"} className="w-full" />
-            )}
-            <div className="p-5">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-semibold">{b.targetName ?? "Target"}</h3>
-                <StatusBadge status={b.status} />
-              </div>
-              <p className="mt-2 text-sm text-muted">
-                {b.date}
-                {b.sessionStart != null && b.sessionEnd != null && (
-                  <>
-                    {" "}· {fmtHour(b.sessionStart)}–{fmtHour(b.sessionEnd)}
-                  </>
+      <div ref={gridRef} className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {bookings.map((b, i) => {
+          const open = selectedId === b.id;
+          // The detail panel slots in after the last card of the selected card's
+          // row (clamped to the final card), spanning the full width.
+          const selectedIndex = selectedId ? bookings.findIndex((x) => x.id === selectedId) : -1;
+          const insertAfter =
+            selectedIndex >= 0
+              ? Math.min((Math.floor(selectedIndex / cols) + 1) * cols - 1, bookings.length - 1)
+              : -1;
+          const selected = selectedIndex >= 0 ? bookings[selectedIndex] : null;
+          return (
+            <Fragment key={b.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId((id) => (id === b.id ? null : b.id))}
+                aria-expanded={open}
+                className={`group block overflow-hidden rounded-[4px] bg-surface text-left transition-colors ${
+                  open ? "ring-2 ring-accent" : "ring-1 ring-hairline hover:ring-accent/40"
+                }`}
+              >
+                {b.previewImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={b.previewImage} alt={b.targetName ?? "Framing"} className="w-full" />
                 )}
-              </p>
-              {(b.maxAltitude != null || b.moon) && (
-                <p className="mt-1 text-xs text-muted">
-                  {b.maxAltitude != null && <>peaks {b.maxAltitude}° · {b.darkHours}h dark</>}
-                  {b.moon && <> · Moon {b.moon.illumPct}% @ {b.moon.separationDeg}°</>}
-                </p>
-              )}
-              <p className="mt-3 text-xs font-medium text-accent opacity-0 transition-opacity group-hover:opacity-100">
-                View details →
-              </p>
-            </div>
-          </button>
-        ))}
-      </div>
+                <div className="p-5">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold">{b.targetName ?? "Target"}</h3>
+                    <StatusBadge status={b.status} />
+                  </div>
+                  <p className="mt-2 text-sm text-muted">
+                    {b.date}
+                    {b.sessionStart != null && b.sessionEnd != null && (
+                      <>
+                        {" "}· {fmtHour(b.sessionStart)}–{fmtHour(b.sessionEnd)}
+                      </>
+                    )}
+                  </p>
+                  {(b.maxAltitude != null || b.moon) && (
+                    <p className="mt-1 text-xs text-muted">
+                      {b.maxAltitude != null && <>peaks {b.maxAltitude}° · {b.darkHours}h dark</>}
+                      {b.moon && <> · Moon {b.moon.illumPct}% @ {b.moon.separationDeg}°</>}
+                    </p>
+                  )}
+                  <p
+                    className={`mt-3 text-xs font-medium text-accent transition-opacity ${
+                      open ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    {open ? "Hide details" : "View details →"}
+                  </p>
+                </div>
+              </button>
 
-      {selected && <BookingDetailModal booking={selected} onClose={() => setSelected(null)} />}
+              {i === insertAfter && selected && (
+                <div ref={panelRef} className="detail-reveal col-span-full scroll-mt-24">
+                  <div className="relative rounded-[4px] bg-surface p-5 ring-2 ring-accent sm:p-6">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(null)}
+                      aria-label="Close details"
+                      className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-[4px] bg-background/60 text-muted backdrop-blur hover:bg-surface-2 hover:text-foreground"
+                    >
+                      ✕
+                    </button>
+                    <BookingDetailBody booking={selected} />
+                  </div>
+                </div>
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
     </Section>
   );
 }

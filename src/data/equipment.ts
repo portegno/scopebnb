@@ -45,3 +45,43 @@ export const equipment: Spec[] = [
 
 /** Total approximate gear value, shown in the showcase. */
 export const gearValueUsd = 9000;
+
+/**
+ * The two filter states the rig can actually shoot. The ASI2600MC-P25 is a
+ * one-shot colour camera, so there is no LRGB/SHO — only clear glass (broadband
+ * true colour) or the Optolong L-Extreme dual narrowband (Hα + OIII). Drives the
+ * managed-session capture-plan selector; pure config, no UI here.
+ */
+export type CaptureFilterDef = {
+  key: "clear" | "lextreme";
+  name: string;
+  tagline: string; // short subtitle next to the name
+  blurb: string; // what it's good for
+  accent: "gold" | "accent"; // which theme colour tints the option
+  subOptions: number[]; // selectable sub lengths, seconds
+  defaultSub: number; // seconds
+  defaultSubs: number; // desired sub count
+};
+
+export const captureFilters: CaptureFilterDef[] = [
+  {
+    key: "clear",
+    name: "No filter",
+    tagline: "clear · broadband true colour",
+    blurb: "Galaxies, star clusters, dust & reflection nebulae. Best on moonless nights.",
+    accent: "gold",
+    subOptions: [60, 120, 180, 300],
+    defaultSub: 120,
+    defaultSubs: 60,
+  },
+  {
+    key: "lextreme",
+    name: "Optolong L-Extreme",
+    tagline: "dual narrowband · Hα + OIII 7nm",
+    blurb: "Emission nebulae, planetaries, supernova remnants. Cuts light pollution, works under moonlight.",
+    accent: "accent",
+    subOptions: [120, 180, 300, 600],
+    defaultSub: 300,
+    defaultSubs: 36,
+  },
+];

@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import type { Booking } from "@/lib/bookings/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { CapturePlanDetail } from "@/components/CapturePlanDetail";
+import { INTEGRATION_FEE } from "@/lib/pricing";
 
 export const fmtHour = (h: number) =>
   `${String(((Math.floor(h) % 24) + 24) % 24).padStart(2, "0")}:${String(
@@ -97,8 +99,15 @@ export function OrderDetailModal({
             )}
             {b.priceUsd != null && (
               <Row label="Price">
-                ${b.priceUsd}
+                ${b.priceUsd + (b.wantsIntegration ? INTEGRATION_FEE : 0)}
                 {b.nightTier && <span className="text-slate-400"> · {cap(b.nightTier)} night</span>}
+                {b.wantsIntegration && <span className="text-slate-400"> + ${INTEGRATION_FEE} integration</span>}
+              </Row>
+            )}
+            {b.product !== "remote" && (
+              <Row label="Deliverable">
+                Lights + calibration frames
+                {b.wantsIntegration && <span className="font-medium text-amber-600"> · integrated image</span>}
               </Row>
             )}
             {b.createdAt?.seconds && <Row label="Requested">{fmtDate(b.createdAt.seconds)}</Row>}
@@ -107,6 +116,8 @@ export function OrderDetailModal({
               <span className="font-mono text-xs">{b.id}</span>
             </Row>
           </dl>
+
+          <CapturePlanDetail booking={b} light />
 
           {footer}
         </div>
