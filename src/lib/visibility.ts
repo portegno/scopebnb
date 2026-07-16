@@ -224,6 +224,27 @@ export function moonIllumination(jd: number): { fraction: number; phase: string 
   return { fraction, phase };
 }
 
+/**
+ * Moon state relative to a target at a given instant — illumination, phase,
+ * angular separation, and waxing/waning trend. Computed from first principles
+ * (no external service), for the session report's moon facts.
+ */
+export function moonState(
+  raDeg: number,
+  decDeg: number,
+  when: Date,
+): { illumPct: number; phase: string; separationDeg: number; trend: "up" | "down" } {
+  const jd = toJD(when);
+  const { fraction, phase } = moonIllumination(jd);
+  const moon = moonEqu(jd);
+  return {
+    illumPct: Math.round(fraction * 100),
+    phase,
+    separationDeg: Math.round(angularSep(raDeg, decDeg, moon.ra, moon.dec)),
+    trend: phase.startsWith("Waxing") || phase === "First quarter" ? "up" : "down",
+  };
+}
+
 /** Angular separation (deg) between two equatorial positions. */
 function angularSep(ra1: number, dec1: number, ra2: number, dec2: number): number {
   const a =

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { Booking } from "@/lib/bookings/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CapturePlanDetail } from "@/components/CapturePlanDetail";
@@ -49,6 +50,15 @@ export function BookingDetailBody({ booking }: { booking: Booking }) {
           <h3 className="text-lg font-semibold tracking-tight">{b.targetName ?? "Target"}</h3>
           <StatusBadge status={b.status} />
         </div>
+
+        {b.reportId && (
+          <Link
+            href={`/report/${b.reportId}`}
+            className="mt-3 inline-flex h-10 items-center justify-center rounded-[4px] bg-accent px-4 text-sm font-semibold text-background transition-colors hover:bg-accent/90"
+          >
+            View session report →
+          </Link>
+        )}
 
         <dl className="mt-3 divide-y divide-hairline">
           <Row label="Product">{b.product === "remote" ? "Remote Control" : "Managed Imaging"}</Row>

@@ -54,6 +54,9 @@ export type Booking = {
   contact?: { email?: string; name?: string };
   userId?: string;
   status?: BookingStatus;
+  // Set once a session is captured/delivered: id of its client-facing session
+  // report (see src/data/sessions.ts → /report/[id]).
+  reportId?: string;
   createdAt?: { seconds: number } | null;
   statusUpdatedAt?: { seconds: number } | null;
   statusUpdatedBy?: string;

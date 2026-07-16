@@ -1,0 +1,4 @@
+{
+  "endpoint": "https://YOUR-SCOPEBNB-HOST/api/sessions/ingest",
+  "secret": "SAME-AS-SERVER-SESSION_INGEST_SECRET"
+}
