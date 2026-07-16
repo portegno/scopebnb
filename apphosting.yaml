@@ -52,6 +52,12 @@ env:
     availability:
       - RUNTIME
 
+  # Shared secret for the on-site N.I.N.A. -> /api/sessions/ingest uploader.
+  - variable: SESSION_INGEST_SECRET
+    secret: SESSION_INGEST_SECRET
+    availability:
+      - RUNTIME
+
   # Comma-separated super-admin Google account emails (not a secret). Super
   # admins always have ALL permissions and can manage the team & bundles; they
   # can't be locked out. Everyone else gets access via the adminUsers collection.
