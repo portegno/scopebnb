@@ -10,10 +10,19 @@ import { buildForecast, type OpenMeteoRaw, type SevenTimerRaw } from "@/lib/weat
  *   • Open-Meteo   — cloud layers, wind, humidity, dew point, temp, visibility.
  *   • 7Timer ASTRO — seeing & transparency.
  *
- * Cached for 1 hour (`revalidate`) so visitors don't each hit the upstreams.
+ * The route itself is dynamic (`revalidate = 0`) so the 7-day window always
+ * starts at *today* — caching the whole response (e.g. `revalidate = 3600`)
+ * emits a year-long stale-while-revalidate window on the CDN, which froze the
+ * grid at the build-day's dates in production. Only the UPSTREAM fetches are
+ * cached (1 h, via `next.revalidate`), so visitors still don't each hit
+ * Open-Meteo / 7Timer, but the dates roll forward on every request.
  */
 export const runtime = "nodejs";
-export const revalidate = 3600;
+export const revalidate = 0;
+
+// Upstream data is fine for an hour; positive per-fetch revalidate is left as-is
+// even though the route is dynamic, so these responses stay in the Data Cache.
+const UPSTREAM_REVALIDATE = 3600;
 
 const { latitude, longitude } = site.location;
 
@@ -32,8 +41,8 @@ export async function GET() {
     // 7Timer is the flakier upstream — tolerate it being down (astro cells just
     // render as "no data"); Open-Meteo failing is fatal for the grid.
     const [meteoRes, sevenRes] = await Promise.all([
-      fetch(OPEN_METEO, { next: { revalidate } }),
-      fetch(SEVEN_TIMER, { next: { revalidate } }).catch(() => null),
+      fetch(OPEN_METEO, { next: { revalidate: UPSTREAM_REVALIDATE } }),
+      fetch(SEVEN_TIMER, { next: { revalidate: UPSTREAM_REVALIDATE } }).catch(() => null),
     ]);
 
     if (!meteoRes.ok) {

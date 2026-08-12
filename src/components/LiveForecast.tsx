@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SkyForecast } from "@/components/SkyForecast";
-import { demoForecast } from "@/data/demoForecast";
+import { buildDemoForecast } from "@/data/demoForecast";
 import type { ForecastDay } from "@/lib/weather";
 
 /**
@@ -13,6 +13,9 @@ import type { ForecastDay } from "@/lib/weather";
 export function LiveForecast() {
   const [days, setDays] = useState<ForecastDay[] | null>(null);
   const [failed, setFailed] = useState(false);
+  // Built once at mount (never at module load) so the fallback's dates are
+  // current on every page visit, however long the bundle has been alive.
+  const demoForecast = useMemo(() => buildDemoForecast(), []);
 
   useEffect(() => {
     let alive = true;
