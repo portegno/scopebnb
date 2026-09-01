@@ -4,6 +4,7 @@ import { Section, Eyebrow, CTA, Card } from "@/components/ui";
 import { HeroBackground } from "@/components/HeroBackground";
 import { HomeLogo } from "@/components/HomeLogo";
 import { HowItWorksVideo } from "@/components/HowItWorksVideo";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { site } from "@/config/site";
 import { products } from "@/data/products";
 import { equipment, fieldOfView } from "@/data/equipment";
@@ -148,6 +149,11 @@ export default function Home() {
             </Link>
           </Card>
         </div>
+      </Section>
+
+      {/* Newsletter — subscribe for a 10% first-session discount. */}
+      <Section>
+        <NewsletterSignup source="home" />
       </Section>
 
       {/* Final CTA */}

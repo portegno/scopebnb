@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/admin/ui";
 import { adminFetch, AdminFetchError } from "@/lib/admin/client";
 import { useAuth } from "@/lib/firebase/useAuth";
-import type { BlogPost } from "@/lib/blog/types";
+import { isScheduled, type BlogPost } from "@/lib/blog/types";
 
 const fmtDate = (t: { seconds: number } | null) =>
   t ? new Date(t.seconds * 1000).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -18,6 +18,8 @@ export default function BlogAdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  // Captured once at mount so render stays pure (for the scheduled/published badge).
+  const [nowMs] = useState(() => Date.now());
 
   // Drag-and-drop reordering.
   const dragId = useRef<string | null>(null); // post being dragged
@@ -169,14 +171,20 @@ export default function BlogAdminPage() {
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-[4px] px-2 py-0.5 text-xs font-medium ${
-                        p.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                        isScheduled(p, nowMs)
+                          ? "bg-amber-100 text-amber-700"
+                          : p.status === "published"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-200 text-slate-600"
                       }`}
                     >
-                      {p.status === "published" ? "Published" : "Draft"}
+                      {isScheduled(p, nowMs) ? "Scheduled" : p.status === "published" ? "Published" : "Draft"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{fmtDate(p.createdAt)}</td>
-                  <td className="px-4 py-3 text-slate-500">{fmtDate(p.publishedAt)}</td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {isScheduled(p, nowMs) ? `→ ${fmtDate(p.publishedAt)}` : fmtDate(p.publishedAt)}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -65,3 +65,18 @@ env:
     value: gabriel@pulpou.com
     availability:
       - RUNTIME
+
+  # Resend email. The API key is a Cloud Secret Manager secret; create it with:
+  #   firebase apphosting:secrets:set RESEND_API_KEY
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
+    availability:
+      - RUNTIME
+  - variable: NEWSLETTER_FROM
+    value: ScopeBnB <contact@scopebnb.com>
+    availability:
+      - RUNTIME
+  - variable: RESEND_AUDIENCE_ID
+    value: ebd3fb5c-bfb4-4709-ab2a-f27eed5c46e0
+    availability:
+      - RUNTIME

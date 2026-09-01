@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Section, Eyebrow, CTA, Card } from "@/components/ui";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { NIGHT_TIERS, fmtPrice, remotePrice, INTEGRATION_FEE } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Pricing" };
@@ -102,6 +103,11 @@ export default function Pricing() {
           In the event of unsuitable weather conditions, we&apos;ll gladly reschedule your session at no extra
           cost.
         </p>
+      </div>
+
+      {/* Newsletter promo — a 10% off nudge right where visitors compare prices. */}
+      <div className="mt-8">
+        <NewsletterSignup source="pricing" variant="compact" />
       </div>
     </Section>
   );

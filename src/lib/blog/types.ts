@@ -31,4 +31,20 @@ export type BlogPost = {
 /** Fields an editor can change. */
 export type BlogPostPatch = Partial<
   Pick<BlogPost, "title" | "slug" | "excerpt" | "coverImage" | "contentHtml" | "mikeTip" | "status">
->;
+> & {
+  /**
+   * Explicit publish instant as epoch SECONDS (or null to clear). A time in the
+   * future schedules the post: it stays `status: "published"` but is hidden from
+   * the public until that moment (see `listPublished`). Omitted means "stamp now
+   * the first time it goes live", the previous behavior.
+   */
+  publishedAt?: number | null;
+};
+
+/**
+ * True when a published post's publish time is still in the future. `nowMs` is
+ * passed in (not read here) so callers control it and render stays pure.
+ */
+export function isScheduled(post: Pick<BlogPost, "status" | "publishedAt">, nowMs: number): boolean {
+  return post.status === "published" && !!post.publishedAt && post.publishedAt.seconds * 1000 > nowMs;
+}

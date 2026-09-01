@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/ui";
+import { ArticleContent } from "@/components/blog/ArticleContent";
 import { getPublishedBySlug } from "@/lib/blog/store";
 
 export const dynamic = "force-dynamic";
@@ -35,13 +36,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <h1 className="mt-6 text-4xl font-semibold tracking-tight">{post.title}</h1>
         {post.excerpt && <p className="mt-3 text-lg text-muted">{post.excerpt}</p>}
 
-        {post.coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.coverImage} alt="" className="mt-8 w-full rounded-[4px] ring-1 ring-hairline" />
-        )}
-
-        <div
-          className={
+        <ArticleContent
+          coverImage={post.coverImage || undefined}
+          contentClassName={
             "mt-8 text-foreground/90 " +
             "[&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-foreground " +
             "[&_h3]:mt-8 [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-foreground " +
@@ -56,7 +53,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             "[&_.photo-credit]:my-2 [&_.photo-credit]:text-xs [&_.photo-credit]:text-muted " +
             "[&_.photo-credit_a]:text-muted [&_.photo-credit_a]:no-underline [&_.photo-credit_a]:transition-colors [&_.photo-credit_a:hover]:text-gold"
           }
-          dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+          contentHtml={post.contentHtml}
         />
 
         {post.mikeTip.enabled && post.mikeTip.html && (

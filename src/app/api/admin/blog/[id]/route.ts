@@ -50,6 +50,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       patch.mikeTip = { enabled: !!mt.enabled, html: typeof mt.html === "string" ? mt.html : "" };
     }
     if (body.status === "draft" || body.status === "published") patch.status = body.status as PostStatus;
+    // Explicit publish instant (epoch seconds) for scheduling; null clears it.
+    if (typeof body.publishedAt === "number" && Number.isFinite(body.publishedAt)) {
+      patch.publishedAt = body.publishedAt;
+    } else if (body.publishedAt === null) {
+      patch.publishedAt = null;
+    }
 
     const post = await updatePost(id, patch);
     return NextResponse.json({ post });

@@ -30,5 +30,15 @@ service cloud.firestore {
     match /blockedNights/{date} {
       allow read, write: if false;
     }
+
+    // Newsletter subscribers + sent-campaign history are written and read only
+    // via the Admin SDK (POST /api/newsletter, /api/admin/newsletter). No client
+    // access.
+    match /newsletterSubscribers/{email} {
+      allow read, write: if false;
+    }
+    match /newsletterCampaigns/{id} {
+      allow read, write: if false;
+    }
   }
 }

@@ -112,10 +112,16 @@ export async function updatePost(id: string, patch: BlogPostPatch): Promise<Blog
 
   if (patch.status !== undefined && patch.status !== current.status) {
     update.status = patch.status;
-    // Stamp publishedAt the first time it goes live; keep it on later edits.
-    if (patch.status === "published" && !current.publishedAt) {
-      update.publishedAt = FieldValue.serverTimestamp();
-    }
+  }
+
+  // Publish time. An explicit value (epoch seconds) wins and can be in the
+  // future, which schedules the post; null clears it. Otherwise, stamp the
+  // current time the first time the post goes live and keep it on later edits.
+  if (patch.publishedAt !== undefined) {
+    update.publishedAt =
+      patch.publishedAt === null ? FieldValue.delete() : Timestamp.fromMillis(patch.publishedAt * 1000);
+  } else if (patch.status === "published" && !current.publishedAt) {
+    update.publishedAt = FieldValue.serverTimestamp();
   }
 
   await ref.update(update);
@@ -136,9 +142,16 @@ export async function reorderPosts(ids: string[]): Promise<void> {
 // ---- Public (published only) ----
 
 export async function listPublished(): Promise<BlogPost[]> {
-  // Single-field filter + in-memory sort avoids a composite index.
+  // Single-field filter + in-memory sort avoids a composite index. Scheduled
+  // posts (publishedAt in the future) are filtered out here so they surface on
+  // their own, without any cron: the blog page is force-dynamic and re-reads per
+  // request, so `now` advances every load.
+  const now = Date.now() / 1000;
   const snap = await adminDb.collection(COL).where("status", "==", "published").get();
-  return snap.docs.map((d) => serialize(d.id, d.data())).sort(byOrderThenDate("publishedAt"));
+  return snap.docs
+    .map((d) => serialize(d.id, d.data()))
+    .filter((p) => (p.publishedAt?.seconds ?? 0) <= now)
+    .sort(byOrderThenDate("publishedAt"));
 }
 
 export async function getPublishedBySlug(slug: string): Promise<BlogPost | null> {
@@ -148,5 +161,10 @@ export async function getPublishedBySlug(slug: string): Promise<BlogPost | null>
     .where("status", "==", "published")
     .limit(1)
     .get();
-  return snap.empty ? null : serialize(snap.docs[0].id, snap.docs[0].data());
+  if (snap.empty) return null;
+  const post = serialize(snap.docs[0].id, snap.docs[0].data());
+  // Hide a scheduled post until its publish time (slugs are unique, so limit(1)
+  // is safe).
+  const now = Date.now() / 1000;
+  return (post.publishedAt?.seconds ?? 0) <= now ? post : null;
 }

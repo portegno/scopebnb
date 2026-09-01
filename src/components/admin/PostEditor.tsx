@@ -14,6 +14,23 @@ const btnPrimary =
 const btnGhost =
   "rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50";
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Epoch seconds -> a value for <input type="datetime-local"> in local time. */
+function toLocalInput(seconds: number): string {
+  const d = new Date(seconds * 1000);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** A local datetime-local string -> epoch seconds (undefined when empty/invalid). */
+function fromLocalInput(value: string): number | undefined {
+  if (!value) return undefined;
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
+}
+
+const tzLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export function PostEditor({ post }: { post: BlogPost }) {
   const router = useRouter();
   const coverRef = useRef<HTMLInputElement>(null);
@@ -26,6 +43,11 @@ export function PostEditor({ post }: { post: BlogPost }) {
   const [mikeEnabled, setMikeEnabled] = useState(post.mikeTip.enabled);
   const [mikeHtml, setMikeHtml] = useState(post.mikeTip.html);
   const [status, setStatus] = useState(post.status);
+  // Publish date/time (local). Empty = publish now on publish.
+  const [publishAt, setPublishAt] = useState(post.publishedAt ? toLocalInput(post.publishedAt.seconds) : "");
+  // Captured once at mount so render stays pure (used to compare against the
+  // chosen publish time for the Publish/Schedule label).
+  const [nowMs] = useState(() => Date.now());
 
   const [busy, setBusy] = useState(false);
   const [coverBusy, setCoverBusy] = useState(false);
@@ -35,6 +57,7 @@ export function PostEditor({ post }: { post: BlogPost }) {
     setBusy(true);
     setNote(null);
     try {
+      const publishedAt = fromLocalInput(publishAt);
       const { post: updated } = await adminFetch<{ post: BlogPost }>(`/api/admin/blog/${post.id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -45,11 +68,22 @@ export function PostEditor({ post }: { post: BlogPost }) {
           contentHtml,
           mikeTip: { enabled: mikeEnabled, html: mikeHtml },
           status: nextStatus ?? status,
+          ...(publishedAt !== undefined ? { publishedAt } : {}),
         }),
       });
       setSlug(updated.slug);
       setStatus(updated.status);
-      setNote(nextStatus === "published" ? "Published ✓" : nextStatus === "draft" ? "Unpublished" : "Saved ✓");
+      if (updated.publishedAt) setPublishAt(toLocalInput(updated.publishedAt.seconds));
+      const futureNow = !!updated.publishedAt && updated.publishedAt.seconds * 1000 > Date.now();
+      setNote(
+        nextStatus === "draft"
+          ? "Unpublished"
+          : updated.status === "published" && futureNow
+            ? "Scheduled ✓"
+            : nextStatus === "published"
+              ? "Published ✓"
+              : "Saved ✓",
+      );
     } catch (e) {
       setNote(e instanceof AdminFetchError ? e.message : "Could not save");
     } finally {
@@ -83,6 +117,10 @@ export function PostEditor({ post }: { post: BlogPost }) {
     }
   }
 
+  const publishSeconds = fromLocalInput(publishAt);
+  const willSchedule = publishSeconds !== undefined && publishSeconds * 1000 > nowMs;
+  const scheduled = status === "published" && willSchedule;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -92,12 +130,16 @@ export function PostEditor({ post }: { post: BlogPost }) {
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={`rounded-[4px] px-2 py-0.5 text-xs font-medium ${
-              status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+              scheduled
+                ? "bg-amber-100 text-amber-700"
+                : status === "published"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-slate-200 text-slate-600"
             }`}
           >
-            {status === "published" ? "Published" : "Draft"}
+            {scheduled ? "Scheduled" : status === "published" ? "Published" : "Draft"}
           </span>
-          {status === "published" && (
+          {status === "published" && !scheduled && (
             <a href={`/blog/${slug}`} target="_blank" rel="noreferrer" className={btnGhost}>
               View
             </a>
@@ -111,7 +153,7 @@ export function PostEditor({ post }: { post: BlogPost }) {
             </button>
           ) : (
             <button onClick={() => save("published")} disabled={busy} className={btnPrimary}>
-              Publish
+              {willSchedule ? "Schedule" : "Publish"}
             </button>
           )}
           <button onClick={remove} disabled={busy} className="rounded-[4px] px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50">
@@ -160,6 +202,25 @@ export function PostEditor({ post }: { post: BlogPost }) {
         </div>
 
         <aside className="space-y-4">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Publish date &amp; time</label>
+            <input
+              type="datetime-local"
+              value={publishAt}
+              onChange={(e) => setPublishAt(e.target.value)}
+              className={`${input} mt-1 w-full`}
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              {willSchedule
+                ? `Will go live at the time above (${tzLabel}).`
+                : `Times are ${tzLabel}. Leave empty to publish immediately; set a future time to schedule.`}
+            </p>
+            {publishAt && (
+              <button onClick={() => setPublishAt("")} className="mt-1 text-xs text-slate-500 hover:text-slate-800">
+                Clear (publish now)
+              </button>
+            )}
+          </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-slate-400">Slug</label>
             <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="post-slug" className={`${input} mt-1 w-full`} />

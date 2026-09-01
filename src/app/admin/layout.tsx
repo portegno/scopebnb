@@ -13,6 +13,7 @@ const NAV: { href: string; label: string; exact?: boolean; perm: Permission }[] 
   { href: "/admin/orders", label: "Orders", perm: "orders.view" },
   { href: "/admin/sessions", label: "Sessions", perm: "orders.view" },
   { href: "/admin/blog", label: "Blog", perm: "blog.manage" },
+  { href: "/admin/newsletter", label: "Newsletter", perm: "newsletter.manage" },
   { href: "/admin/team", label: "Team", perm: "team.manage" },
 ];
 

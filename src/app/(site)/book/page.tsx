@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Section, Eyebrow, Card } from "@/components/ui";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { AltitudeChart } from "@/components/AltitudeChart";
 import { NightCalendar } from "@/components/NightCalendar";
 import { useAuth } from "@/lib/firebase/useAuth";
@@ -1382,6 +1383,11 @@ export default function Book() {
           </div>
         </div>
       )}
+
+      {/* Newsletter promo — nudge the 10% first-session discount while booking. */}
+      <div className="mt-12">
+        <NewsletterSignup source="book" variant="compact" />
+      </div>
 
       {/* Framing preview lightbox — full-size view of the captured framing. */}
       {zoomed && framing?.image && (
