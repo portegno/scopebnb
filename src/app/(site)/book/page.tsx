@@ -9,6 +9,7 @@ import { AltitudeChart } from "@/components/AltitudeChart";
 import { NightCalendar } from "@/components/NightCalendar";
 import { useAuth } from "@/lib/firebase/useAuth";
 import { createBooking } from "@/lib/firebase/bookings";
+import { trackEvent } from "@/lib/analytics";
 import { skyThumb } from "@/lib/thumbnail";
 import { astrobinUrl } from "@/lib/astrobin";
 import { targets, type Target } from "@/data/targets";
@@ -155,6 +156,14 @@ export default function Book() {
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
       });
       setBooking({ id });
+      // Marketing conversion: a managed booking request, with its value.
+      trackEvent("generate_lead", {
+        currency: "USD",
+        value: managedTotal,
+        mode: "managed",
+        night_tier: tier?.key,
+        wants_integration: wantsIntegration,
+      });
     } catch (e) {
       setBooking({ error: e instanceof Error ? e.message.replace(/^Firebase:\s*/, "") : "Could not save booking" });
     }
@@ -178,6 +187,13 @@ export default function Book() {
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
       });
       setBooking({ id });
+      // Marketing conversion: a remote-control booking request, with its value.
+      trackEvent("generate_lead", {
+        currency: "USD",
+        value: remotePrice(night.tier.price),
+        mode: "remote",
+        night_tier: night.tier.key,
+      });
     } catch (e) {
       setBooking({ error: e instanceof Error ? e.message.replace(/^Firebase:\s*/, "") : "Could not save booking" });
     }

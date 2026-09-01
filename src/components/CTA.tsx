@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { scrollToHash } from "@/lib/scrollToHash";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Primary / secondary call-to-action link.
@@ -31,6 +32,7 @@ export function CTA({
     <Link
       href={href}
       onClick={(e) => {
+        if (href.includes("/book")) trackEvent("book_click", { href });
         if (scrollToHash(href)) e.preventDefault();
       }}
       className={`${base} ${styles}`}

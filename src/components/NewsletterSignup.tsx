@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 /** Amber, bold eyebrow specific to the newsletter box (the shared Eyebrow is blue). */
 function NewsletterEyebrow() {
@@ -49,6 +50,7 @@ function useSubscribe(source: string) {
       setCode(data.code ?? "");
       setAlreadySubscribed(!!data.alreadySubscribed);
       setStatus("success");
+      trackEvent("newsletter_signup", { source, new_subscriber: !data.alreadySubscribed });
     } catch {
       setStatus("error");
       setMessage("Network error. Please try again.");

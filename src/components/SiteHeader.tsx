@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navLinks, site } from "@/config/site";
 import { scrollToHash } from "@/lib/scrollToHash";
+import { trackEvent } from "@/lib/analytics";
 import { Wordmark } from "@/components/Wordmark";
 import { ForecastNavIcon } from "@/components/ForecastNavIcon";
 import { useAuth } from "@/lib/firebase/useAuth";
@@ -96,6 +97,7 @@ export function SiteHeader() {
             ))}
           <Link
             href="/book"
+            onClick={() => trackEvent("book_click", { location: "header" })}
             className="inline-flex h-9 items-center rounded-[4px] bg-gold px-4 text-sm font-semibold text-background hover:bg-gold/90"
           >
             Book a night
@@ -159,7 +161,10 @@ export function SiteHeader() {
             ))}
           <Link
             href="/book"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              trackEvent("book_click", { location: "header_mobile" });
+              setOpen(false);
+            }}
             className="mt-2 inline-flex h-10 items-center justify-center rounded-[4px] bg-gold px-4 text-sm font-semibold text-background"
           >
             Book a night

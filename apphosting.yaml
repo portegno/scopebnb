@@ -80,3 +80,11 @@ env:
     value: ebd3fb5c-bfb4-4709-ab2a-f27eed5c46e0
     availability:
       - RUNTIME
+
+  # Google Analytics 4 measurement ID (public). NEXT_PUBLIC_* is inlined at
+  # build, so it needs BUILD availability; set the real G-XXXX here to enable.
+  - variable: NEXT_PUBLIC_GA_ID
+    value: G-F58PHV4VN9
+    availability:
+      - BUILD
+      - RUNTIME
