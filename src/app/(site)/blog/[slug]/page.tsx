@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/ui";
 import { ArticleContent } from "@/components/blog/ArticleContent";
+import { LevelMeter } from "@/components/blog/LevelMeter";
 import { getPublishedBySlug } from "@/lib/blog/store";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </Link>
 
         <h1 className="mt-6 text-4xl font-semibold tracking-tight">{post.title}</h1>
+        {post.level && (
+          <div className="mt-3 text-muted">
+            <LevelMeter level={post.level} />
+          </div>
+        )}
         {post.excerpt && <p className="mt-3 text-lg text-muted">{post.excerpt}</p>}
 
         <ArticleContent

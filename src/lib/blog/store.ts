@@ -2,7 +2,7 @@ import "server-only";
 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
-import type { BlogPost, BlogPostPatch, PostStatus } from "./types";
+import { isPostLevel, type BlogPost, type BlogPostPatch, type PostStatus } from "./types";
 
 const COL = "blogPosts";
 
@@ -23,6 +23,7 @@ function serialize(id: string, d: FirebaseFirestore.DocumentData): BlogPost {
     mikeTip: { enabled: !!d.mikeTip?.enabled, html: d.mikeTip?.html ?? "" },
     order: typeof d.order === "number" ? d.order : 0,
     status: (d.status as PostStatus) ?? "draft",
+    level: isPostLevel(d.level) ? d.level : null,
     authorEmail: d.authorEmail ?? "",
     createdAt: toSeconds(d.createdAt),
     updatedAt: toSeconds(d.updatedAt),
@@ -103,6 +104,7 @@ export async function updatePost(id: string, patch: BlogPostPatch): Promise<Blog
   if (patch.mikeTip !== undefined) {
     update.mikeTip = { enabled: !!patch.mikeTip.enabled, html: patch.mikeTip.html ?? "" };
   }
+  if (patch.level !== undefined) update.level = patch.level; // PostLevel or null (clears it)
 
   // Slug: explicit value, else regenerate from a new title; always kept unique.
   if (patch.slug !== undefined || patch.title !== undefined) {

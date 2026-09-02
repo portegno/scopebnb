@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { AdminError, requireAdmin, requirePermission } from "@/lib/admin/auth";
 import { getPost, updatePost, deletePost } from "@/lib/blog/store";
-import type { BlogPostPatch, PostStatus } from "@/lib/blog/types";
+import { isPostLevel, type BlogPostPatch, type PostStatus } from "@/lib/blog/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +50,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       patch.mikeTip = { enabled: !!mt.enabled, html: typeof mt.html === "string" ? mt.html : "" };
     }
     if (body.status === "draft" || body.status === "published") patch.status = body.status as PostStatus;
+    if (body.level === null) patch.level = null;
+    else if (isPostLevel(body.level)) patch.level = body.level;
     // Explicit publish instant (epoch seconds) for scheduling; null clears it.
     if (typeof body.publishedAt === "number" && Number.isFinite(body.publishedAt)) {
       patch.publishedAt = body.publishedAt;

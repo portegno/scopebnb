@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { adminFetch, AdminFetchError } from "@/lib/admin/client";
 import { uploadBlogImage } from "@/lib/blog/upload";
 import { RichTextEditor } from "./RichTextEditor";
-import type { BlogPost } from "@/lib/blog/types";
+import { LevelMeter } from "@/components/blog/LevelMeter";
+import { POST_LEVELS, POST_LEVEL_META, type BlogPost, type PostLevel } from "@/lib/blog/types";
 
 const input =
   "rounded-[4px] border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 outline-none focus:border-slate-500";
@@ -43,6 +44,10 @@ export function PostEditor({ post }: { post: BlogPost }) {
   const [mikeEnabled, setMikeEnabled] = useState(post.mikeTip.enabled);
   const [mikeHtml, setMikeHtml] = useState(post.mikeTip.html);
   const [status, setStatus] = useState(post.status);
+  // Topic difficulty ("Expertometer").
+  const [level, setLevel] = useState<PostLevel | null>(post.level);
+  const [suggesting, setSuggesting] = useState(false);
+  const [levelReason, setLevelReason] = useState<string | null>(null);
   // Publish date/time (local). Empty = publish now on publish.
   const [publishAt, setPublishAt] = useState(post.publishedAt ? toLocalInput(post.publishedAt.seconds) : "");
   // Captured once at mount so render stays pure (used to compare against the
@@ -68,6 +73,7 @@ export function PostEditor({ post }: { post: BlogPost }) {
           contentHtml,
           mikeTip: { enabled: mikeEnabled, html: mikeHtml },
           status: nextStatus ?? status,
+          level,
           ...(publishedAt !== undefined ? { publishedAt } : {}),
         }),
       });
@@ -88,6 +94,23 @@ export function PostEditor({ post }: { post: BlogPost }) {
       setNote(e instanceof AdminFetchError ? e.message : "Could not save");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function suggestLevel() {
+    setSuggesting(true);
+    setLevelReason(null);
+    try {
+      const { level: suggested, reason } = await adminFetch<{ level: PostLevel; reason: string }>(
+        "/api/admin/blog/suggest-level",
+        { method: "POST", body: JSON.stringify({ title, contentHtml }) },
+      );
+      setLevel(suggested);
+      setLevelReason(reason || null);
+    } catch (e) {
+      setLevelReason(e instanceof AdminFetchError ? e.message : "Could not suggest a level");
+    } finally {
+      setSuggesting(false);
     }
   }
 
@@ -220,6 +243,35 @@ export function PostEditor({ post }: { post: BlogPost }) {
                 Clear (publish now)
               </button>
             )}
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Difficulty</label>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {POST_LEVELS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLevel(level === l ? null : l)}
+                  className={`rounded-[4px] px-2.5 py-1 text-xs font-medium ring-1 transition-colors ${
+                    level === l
+                      ? "bg-surface-2 text-white ring-transparent"
+                      : "bg-white text-slate-600 ring-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  {POST_LEVEL_META[l].short}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-slate-500">
+                {level ? <LevelMeter level={level} /> : <span className="text-xs text-slate-400">Not set</span>}
+              </span>
+              <button type="button" onClick={suggestLevel} disabled={suggesting} className={btnGhost}>
+                {suggesting ? "Thinking…" : "✨ Suggest"}
+              </button>
+            </div>
+            {levelReason && <p className="mt-1 text-xs text-slate-500 italic">{levelReason}</p>}
+            <p className="mt-1 text-xs text-slate-400">Topic complexity shown on the post. Optional; click a level again to clear.</p>
           </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-slate-400">Slug</label>

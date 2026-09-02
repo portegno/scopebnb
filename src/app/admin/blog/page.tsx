@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/admin/ui";
 import { adminFetch, AdminFetchError } from "@/lib/admin/client";
 import { useAuth } from "@/lib/firebase/useAuth";
+import { LevelMeter } from "@/components/blog/LevelMeter";
 import { isScheduled, type BlogPost } from "@/lib/blog/types";
 
 const fmtDate = (t: { seconds: number } | null) =>
@@ -154,8 +155,11 @@ export default function BlogAdminPage() {
                           No cover
                         </span>
                       )}
-                      <span className="font-medium text-background hover:underline">
-                        {p.title || <span className="text-slate-400">Untitled</span>}
+                      <span className="min-w-0">
+                        <span className="block font-medium text-background hover:underline">
+                          {p.title || <span className="text-slate-400">Untitled</span>}
+                        </span>
+                        {p.level && <LevelMeter level={p.level} className="mt-0.5 text-slate-500" />}
                       </span>
                     </Link>
                   </td>

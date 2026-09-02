@@ -12,6 +12,26 @@ export type PostStatus = "draft" | "published";
  */
 export type MikeTip = { enabled: boolean; html: string };
 
+/**
+ * Topic difficulty ("Expertometer"). A public, author-controlled signal of how
+ * technical a post is — not a barrier, just a heads-up. Optional: unset posts
+ * show no meter.
+ */
+export type PostLevel = "beginner" | "intermediate" | "advanced";
+
+export const POST_LEVELS: PostLevel[] = ["beginner", "intermediate", "advanced"];
+
+/** Display metadata per level: friendly label + how many meter bars to fill. */
+export const POST_LEVEL_META: Record<PostLevel, { label: string; short: string; steps: number }> = {
+  beginner: { label: "Beginner friendly", short: "Beginner", steps: 1 },
+  intermediate: { label: "Intermediate", short: "Intermediate", steps: 2 },
+  advanced: { label: "Advanced", short: "Advanced", steps: 3 },
+};
+
+export function isPostLevel(v: unknown): v is PostLevel {
+  return v === "beginner" || v === "intermediate" || v === "advanced";
+}
+
 export type BlogPost = {
   id: string;
   slug: string;
@@ -22,6 +42,7 @@ export type BlogPost = {
   mikeTip: MikeTip;
   order: number; // manual sort position (lower = first); ties break by date
   status: PostStatus;
+  level: PostLevel | null; // topic difficulty ("Expertometer"); null = not set
   authorEmail: string;
   createdAt: { seconds: number } | null;
   updatedAt: { seconds: number } | null;
@@ -30,7 +51,7 @@ export type BlogPost = {
 
 /** Fields an editor can change. */
 export type BlogPostPatch = Partial<
-  Pick<BlogPost, "title" | "slug" | "excerpt" | "coverImage" | "contentHtml" | "mikeTip" | "status">
+  Pick<BlogPost, "title" | "slug" | "excerpt" | "coverImage" | "contentHtml" | "mikeTip" | "status" | "level">
 > & {
   /**
    * Explicit publish instant as epoch SECONDS (or null to clear). A time in the
