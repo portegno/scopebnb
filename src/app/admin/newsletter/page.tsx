@@ -484,6 +484,7 @@ export default function NewsletterAdminPage() {
                   )}
                   <RichTextEditor
                     key={editorKey}
+                    paraMail
                     initialHtml={contentHtml}
                     onChange={(h) => {
                       setAvisado(true);
@@ -585,7 +586,7 @@ export default function NewsletterAdminPage() {
                 esa prop al montarse, así que cargar un borrador ponía el asunto y el
                 preview y dejaba el cuerpo vacío. Se pasa el estado, y `editorKey`
                 fuerza el remonte cuando cambia lo que hay que mostrar. */}
-            <RichTextEditor key={editorKey} initialHtml={contentHtml} onChange={setContentHtml} />
+            <RichTextEditor key={editorKey} paraMail initialHtml={contentHtml} onChange={setContentHtml} />
           </div>
         </div>
       </Card>

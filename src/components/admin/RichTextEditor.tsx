@@ -56,20 +56,35 @@ function AlignIcon({ a }: { a: "left" | "center" | "right" | "justify" }) {
 export function RichTextEditor({
   initialHtml,
   onChange,
+  paraMail = false,
 }: {
   initialHtml: string;
   onChange: (html: string) => void;
+  /**
+   * Email mode. Off by default, and that default is the point.
+   *
+   * A post and an email are opposite artifacts. A post is semantic HTML living
+   * inside a page that has its own CSS: `<h2>`, `<p>`, `<figure>`, and nothing
+   * else, which is what lets the site be restyled without rewriting every post.
+   * An email is tables and inline styles, because mail clients ignore
+   * stylesheets. Teaching one editor to keep both means the blog starts
+   * swallowing tables and `style` attributes from anything anyone pastes, and
+   * that is a slow, quiet mess.
+   *
+   * So it is the same component with two schemas, and not one schema that tries
+   * to be both.
+   */
+  paraMail?: boolean;
 }) {
   const editor = useEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
-      // Tables and the attributes an email layout hangs from. Without them the
-      // editor parses a newsletter against a schema that has no idea what a two
-      // column block is, and gives back a stack of paragraphs. It happened once,
-      // to Mike's tip, and that is how it was found.
-      TableKit.configure({ table: { resizable: false } }),
-      KeepAttrs,
+      // Only for email: tables and the attributes a layout hangs from. Without
+      // them the editor parses a newsletter against a schema that has no idea
+      // what a two column block is and gives back a stack of paragraphs. It
+      // happened once, to Mike's tip, and that is how it was found.
+      ...(paraMail ? [TableKit.configure({ table: { resizable: false } }), KeepAttrs] : []),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       SizedImage.configure({ inline: false }),
       AstroFigure,
