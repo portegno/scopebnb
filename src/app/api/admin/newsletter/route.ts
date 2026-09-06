@@ -40,6 +40,16 @@ export const POST = withAdmin(async (req, { identity }) => {
   };
   const action = body.action ?? "";
 
+  // Throwing away a draft the team wrote is a decision, and it needs to be
+  // possible: without it a draft you do not like sits there forever and the next
+  // one stacks under it. It is not history either, so nothing is kept.
+  if (action === "discard") {
+    const id = (body.draftId ?? "").trim();
+    if (!id) throw new AdminError(400, "Which draft?");
+    await dropDraft(id);
+    return NextResponse.json({ ok: true });
+  }
+
   if (action === "sync") {
     const emails = await listSubscriberEmails();
     const result = await syncAudience(emails);

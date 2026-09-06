@@ -72,14 +72,20 @@ export async function listCampaigns(): Promise<Campaign[]> {
 }
 
 /** Editions written by the team and waiting to be read and sent. */
-export async function listDrafts(): Promise<(Campaign & { contentHtml: string })[]> {
+export async function listDrafts(): Promise<(Campaign & { contentHtml: string; piezas: string[] })[]> {
   const snap = await adminDb
     .collection(COL)
     .where("status", "==", "borrador")
     .limit(20)
     .get();
   return snap.docs
-    .map((d) => ({ ...serialize(d.id, d.data()), contentHtml: d.data().contentHtml ?? "" }))
+    .map((d) => ({
+      ...serialize(d.id, d.data()),
+      contentHtml: d.data().contentHtml ?? "",
+      // Which posts it covers, so the list says what is inside without having to
+      // load it into the composer first.
+      piezas: Array.isArray(d.data().piezas) ? (d.data().piezas as string[]) : [],
+    }))
     .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
 

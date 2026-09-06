@@ -26,7 +26,8 @@ const fmtDate = (t: { seconds: number } | null) =>
       })
     : "—";
 
-type Borrador = Campaign & { contentHtml: string };
+type Borrador = Campaign & { contentHtml: string; piezas: string[] };
+type Subscriber = { email: string; source: string; discountRedeemed: boolean; subscribedAt: { seconds: number } | null };
 
 export default function NewsletterAdminPage() {
   const { user } = useAuth();
@@ -47,8 +48,10 @@ export default function NewsletterAdminPage() {
   const [subscribers, setSubscribers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<null | "test" | "send" | "sync">(null);
+  const [busy, setBusy] = useState<null | "test" | "send" | "sync" | "discard">(null);
   const [note, setNote] = useState<string | null>(null);
+  const [subs, setSubs] = useState<Subscriber[]>([]);
+  const [subsLoaded, setSubsLoaded] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -66,6 +69,11 @@ export default function NewsletterAdminPage() {
         ),
       )
       .finally(() => setLoading(false));
+
+    adminFetch<{ subscribers: Subscriber[] }>("/api/admin/newsletter/subscribers")
+      .then((d) => setSubs(d.subscribers))
+      .catch(() => {})
+      .finally(() => setSubsLoaded(true));
   }, [user]);
 
   async function refresh() {
@@ -121,6 +129,47 @@ export default function NewsletterAdminPage() {
     }
   }
 
+  function exportCsv() {
+    const rows = [
+      ["email", "source", "subscribed_at"],
+      ...subs.map((s) => [
+        s.email,
+        s.source,
+        s.subscribedAt ? new Date(s.subscribedAt.seconds * 1000).toISOString() : "",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "newsletter-subscribers.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function discard(d: Borrador) {
+    if (!confirm(`Discard "${d.subject}"? The team would have to write it again.`)) return;
+    setNote(null);
+    setError(null);
+    setBusy("discard");
+    try {
+      await adminFetch("/api/admin/newsletter", {
+        method: "POST",
+        body: JSON.stringify({ action: "discard", draftId: d.id }),
+      });
+      // If it was the one loaded in the composer, the composer no longer points
+      // at anything: clearing the link avoids sending and then trying to drop a
+      // draft that is already gone.
+      if (fromDraft === d.id) setFromDraft(null);
+      setNote("Draft discarded.");
+      await refresh();
+    } catch (e) {
+      setError(e instanceof AdminFetchError ? e.message : "Could not discard it.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function sync() {
     setNote(null);
     setError(null);
@@ -155,6 +204,45 @@ export default function NewsletterAdminPage() {
       {error && <p className="text-sm text-rose-600">{error}</p>}
       {note && <p className="text-sm text-emerald-600">{note}</p>}
 
+      <Card className="p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-slate-800">
+            Subscribers{subsLoaded ? ` (${subs.length})` : ""}
+          </h2>
+          {subs.length > 0 && (
+            <button onClick={exportCsv} className={btnGhost}>
+              Export CSV
+            </button>
+          )}
+        </div>
+        {!subsLoaded ? (
+          <p className="mt-2 text-sm text-slate-400">Loading…</p>
+        ) : subs.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-400">No subscribers yet.</p>
+        ) : (
+          <div className="mt-3 max-h-80 overflow-auto rounded-[4px] border border-slate-200">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 bg-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Email</th>
+                  <th className="px-3 py-2 font-medium">Source</th>
+                  <th className="px-3 py-2 font-medium">Subscribed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {subs.map((s) => (
+                  <tr key={s.email} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 text-slate-800">{s.email}</td>
+                    <td className="px-3 py-2 text-slate-500">{s.source}</td>
+                    <td className="px-3 py-2 text-slate-500">{fmtDate(s.subscribedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {drafts.length > 0 && (
         <Card className="p-5">
           <h2 className="text-sm font-semibold text-slate-800">Written by the team</h2>
@@ -167,7 +255,13 @@ export default function NewsletterAdminPage() {
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-800">{d.subject}</p>
                   <p className="truncate text-xs text-slate-500">{d.previewText}</p>
+                  {d.piezas.length > 0 && (
+                    <p className="mt-0.5 truncate text-xs text-slate-400">
+                      {d.piezas.length} post{d.piezas.length === 1 ? "" : "s"}: {d.piezas.join(", ")}
+                    </p>
+                  )}
                 </div>
+                <div className="flex shrink-0 items-center gap-2">
                 <button
                   className={btnGhost}
                   onClick={() => {
@@ -181,6 +275,15 @@ export default function NewsletterAdminPage() {
                 >
                   Load
                 </button>
+                <button
+                  className={btnGhost}
+                  disabled={busy !== null}
+                  onClick={() => discard(d)}
+                  title="Throw it away. The team would have to write it again."
+                >
+                  Discard
+                </button>
+                </div>
               </li>
             ))}
           </ul>
