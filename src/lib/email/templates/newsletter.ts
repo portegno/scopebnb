@@ -29,7 +29,13 @@ export function newsletterEmail(
       .nl-body h2 { font-size:20px; line-height:1.3; margin:22px 0 8px; color:#0b0f1d; }
       .nl-body h3 { font-size:17px; margin:18px 0 6px; color:#0b0f1d; }
       .nl-body p { margin:0 0 14px; }
-      .nl-body a { color:#2563eb; text-decoration:underline; }
+      /* Un titulo no es un link aunque se pueda clickear. Pintados de azul y
+         subrayados como los demas, el mail se lee como una pagina de 1998: el
+         ojo ve seis links y ningun titular. Se quedan del color del texto y el
+         subrayado aparece recien al pasar por encima. */
+      .nl-body a { color:#1d4ed8; text-decoration:underline; }
+      .nl-body h1 a, .nl-body h2 a, .nl-body h3 a { color:#0b0f1d; text-decoration:none; }
+      .nl-body h1 a:hover, .nl-body h2 a:hover, .nl-body h3 a:hover { text-decoration:underline; }
       .nl-body img { max-width:100%; height:auto; border-radius:4px; margin:12px 0; }
       .nl-body ul, .nl-body ol { margin:0 0 14px 20px; padding:0; }
       .nl-body blockquote { margin:14px 0; padding:8px 16px; border-left:3px solid #cbd5e1; color:#475569; }
