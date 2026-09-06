@@ -86,72 +86,11 @@ export async function addToAudience(email: string): Promise<void> {
   }
 }
 
-/**
- * Mirror a batch of subscriber emails into the Resend Audience (idempotent:
- * contacts that already exist are ignored). Returns how many calls succeeded.
- * Requires a full-access API key + RESEND_AUDIENCE_ID.
- */
-export async function syncAudience(emails: string[]): Promise<{ synced: number; total: number }> {
-  const resend = getResend();
-  const audienceId = process.env.RESEND_AUDIENCE_ID;
-  if (!resend || !audienceId) return { synced: 0, total: emails.length };
-
-  let synced = 0;
-  for (const email of emails) {
-    try {
-      await resend.contacts.create({ email, audienceId, unsubscribed: false });
-      synced += 1;
-    } catch (err) {
-      // Already-exists and transient errors are non-fatal; keep going.
-      console.warn("[email] syncAudience skipped:", email, err instanceof Error ? err.message : err);
-    }
-  }
-  return { synced, total: emails.length };
-}
-
-export type BroadcastResult =
-  | { ok: true; broadcastId: string }
-  | { ok: false; error: string; broadcastId?: string };
-
-/**
- * Create a Resend Broadcast for the configured Audience and send it now.
- * Two steps: create as draft, then send, so we can surface a broadcast id even
- * if the send call fails. Requires a full-access API key.
- */
-export async function createAndSendBroadcast(input: {
-  subject: string;
-  html: string;
-  previewText?: string;
-  name?: string;
-}): Promise<BroadcastResult> {
-  const resend = getResend();
-  const audienceId = process.env.RESEND_AUDIENCE_ID;
-  if (!resend) return { ok: false, error: "email-not-configured" };
-  if (!audienceId) return { ok: false, error: "RESEND_AUDIENCE_ID not set" };
-
-  const from = process.env.NEWSLETTER_FROM || DEFAULT_FROM;
-
-  try {
-    const created = await resend.broadcasts.create({
-      audienceId,
-      from,
-      subject: input.subject,
-      html: input.html,
-      name: input.name,
-      previewText: input.previewText,
-    });
-    if (created.error || !created.data?.id) {
-      return { ok: false, error: created.error?.message ?? "Broadcast create failed" };
-    }
-    const broadcastId = created.data.id;
-
-    const sent = await resend.broadcasts.send(broadcastId);
-    if (sent.error) {
-      return { ok: false, error: sent.error.message, broadcastId };
-    }
-    return { ok: true, broadcastId };
-  } catch (err) {
-    console.error("[email] broadcast threw:", err);
-    return { ok: false, error: err instanceof Error ? err.message : "unknown" };
-  }
-}
+// `syncAudience` and `createAndSendBroadcast` lived here. They went with the
+// composer: the newsletter is written, laid out and **sent** from the Portegno
+// building now, through its own door to this Resend account. Two places able to
+// send the same broadcast is one place too many for something that does not
+// come back.
+//
+// What stays is what the site itself does: the transactional mail above, and
+// adding a new subscriber to the audience the moment they sign up.

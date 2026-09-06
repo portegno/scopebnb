@@ -37,7 +37,7 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   "tickets.view": "View support tickets",
   "tickets.respond": "Respond to tickets",
   "blog.manage": "Write & publish blog posts",
-  "newsletter.manage": "Compose & send newsletters",
+  "newsletter.manage": "See the newsletter subscribers",
   "team.manage": "Manage team & permission bundles",
 };
 

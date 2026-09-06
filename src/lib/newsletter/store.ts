@@ -1,6 +1,6 @@
 import "server-only";
 
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 
 const COL = "newsletterSubscribers";
@@ -61,4 +61,29 @@ export async function subscriberCount(): Promise<number> {
 export async function listSubscriberEmails(): Promise<string[]> {
   const snap = await adminDb.collection(COL).get();
   return snap.docs.map((d) => (d.data().email as string) ?? d.id).filter(Boolean);
+}
+
+/** A subscriber as shown in the admin (timestamp reduced to `{ seconds }`). */
+export type Subscriber = {
+  email: string;
+  source: string;
+  discountRedeemed: boolean;
+  subscribedAt: { seconds: number } | null;
+};
+
+/** Full subscriber list for the admin, newest first. */
+export async function listSubscribers(): Promise<Subscriber[]> {
+  const snap = await adminDb.collection(COL).get();
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      const ts = data.subscribedAt;
+      return {
+        email: (data.email as string) ?? d.id,
+        source: (data.source as string) ?? "site",
+        discountRedeemed: !!data.discountRedeemed,
+        subscribedAt: ts instanceof Timestamp ? { seconds: ts.seconds } : null,
+      };
+    })
+    .sort((a, b) => (b.subscribedAt?.seconds ?? 0) - (a.subscribedAt?.seconds ?? 0));
 }

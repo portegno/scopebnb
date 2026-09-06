@@ -6,8 +6,6 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { SizedImage } from "./extensions/sizedImage";
-import { TableKit } from "@tiptap/extension-table";
-import { KeepAttrs } from "./extensions/keepAttrs";
 import { AstroFigure } from "./extensions/astroFigure";
 import { uploadBlogImage } from "@/lib/blog/upload";
 
@@ -53,38 +51,23 @@ function AlignIcon({ a }: { a: "left" | "center" | "right" | "justify" }) {
  * Underline; we add Image. Emits HTML via onChange. Uncontrolled after mount —
  * pass the initial HTML as `initialHtml`.
  */
+// This editor briefly had an email mode: tables plus an extension that kept the
+// `style`, `width` and `valign` attributes a mail layout hangs from. It is gone
+// with the newsletter composer that needed it. A post and an email are opposite
+// artifacts -- a post is semantic HTML inside a page that owns its CSS, an email
+// is tables and inline styles -- and one schema trying to be both means the blog
+// quietly starts swallowing tables from anything anyone pastes.
 export function RichTextEditor({
   initialHtml,
   onChange,
-  paraMail = false,
 }: {
   initialHtml: string;
   onChange: (html: string) => void;
-  /**
-   * Email mode. Off by default, and that default is the point.
-   *
-   * A post and an email are opposite artifacts. A post is semantic HTML living
-   * inside a page that has its own CSS: `<h2>`, `<p>`, `<figure>`, and nothing
-   * else, which is what lets the site be restyled without rewriting every post.
-   * An email is tables and inline styles, because mail clients ignore
-   * stylesheets. Teaching one editor to keep both means the blog starts
-   * swallowing tables and `style` attributes from anything anyone pastes, and
-   * that is a slow, quiet mess.
-   *
-   * So it is the same component with two schemas, and not one schema that tries
-   * to be both.
-   */
-  paraMail?: boolean;
 }) {
   const editor = useEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
-      // Only for email: tables and the attributes a layout hangs from. Without
-      // them the editor parses a newsletter against a schema that has no idea
-      // what a two column block is and gives back a stack of paragraphs. It
-      // happened once, to Mike's tip, and that is how it was found.
-      ...(paraMail ? [TableKit.configure({ table: { resizable: false } }), KeepAttrs] : []),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       SizedImage.configure({ inline: false }),
       AstroFigure,
