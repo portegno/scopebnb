@@ -45,6 +45,31 @@ export default function NewsletterAdminPage() {
   // persona apretando Send acá.
   const [drafts, setDrafts] = useState<Borrador[]>([]);
   const [fromDraft, setFromDraft] = useState<string | null>(null);
+  // Dos solapas y un compositor que aparece. Antes estaba todo apilado en una
+  // columna: suscriptores, borradores, compositor e historial, así que para ver
+  // qué se había mandado había que pasar por encima de un formulario vacío.
+  const [tab, setTab] = useState<"newsletters" | "subscribers">("newsletters");
+  const [composing, setComposing] = useState(false);
+
+  function newDraft() {
+    setSubject("");
+    setPreviewText("");
+    setContentHtml("");
+    setFromDraft(null);
+    setEditorKey((k) => k + 1);
+    setNote(null);
+    setComposing(true);
+  }
+
+  function loadDraft(d: Borrador) {
+    setSubject(d.subject);
+    setPreviewText(d.previewText);
+    setContentHtml(d.contentHtml);
+    setFromDraft(d.id);
+    setEditorKey((k) => k + 1);
+    setNote("Loaded into the composer. Read it before sending.");
+    setComposing(true);
+  }
   const [subscribers, setSubscribers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +145,7 @@ export default function NewsletterAdminPage() {
       setContentHtml("");
       setFromDraft(null);
       setEditorKey((k) => k + 1);
+      setComposing(false);
       await refresh();
     } catch (e) {
       setError(e instanceof AdminFetchError ? e.message : "Send failed.");
@@ -196,14 +222,42 @@ export default function NewsletterAdminPage() {
             {loading ? "Loading…" : `${subscribers} subscriber${subscribers === 1 ? "" : "s"}`}
           </p>
         </div>
-        <button onClick={sync} disabled={busy !== null} className={btnGhost} title="Mirror all subscribers into the Resend audience">
-          {busy === "sync" ? "Syncing…" : "Sync audience"}
-        </button>
+        {tab === "subscribers" && (
+          <button onClick={sync} disabled={busy !== null} className={btnGhost} title="Mirror all subscribers into the Resend audience">
+            {busy === "sync" ? "Syncing…" : "Sync audience"}
+          </button>
+        )}
+        {tab === "newsletters" && !composing && (
+          <button onClick={newDraft} className={btnPrimary}>
+            New newsletter
+          </button>
+        )}
+      </div>
+
+      {/* Las solapas separan dos cosas que se miran en momentos distintos: qué
+          se mandó y a quién se le manda. */}
+      <div className="flex gap-1">
+        {([
+          ["newsletters", `Newsletters${drafts.length ? ` (${drafts.length} draft${drafts.length === 1 ? "" : "s"})` : ""}`],
+          ["subscribers", `Subscribers${subsLoaded ? ` (${subs.length})` : ""}`],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`rounded-[4px] px-3 py-1.5 text-sm transition-colors ${
+              tab === id ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
       {note && <p className="text-sm text-emerald-600">{note}</p>}
 
+      {tab === "subscribers" && (
+        <>
       <Card className="p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-slate-800">
@@ -242,8 +296,12 @@ export default function NewsletterAdminPage() {
           </div>
         )}
       </Card>
+        </>
+      )}
 
-      {drafts.length > 0 && (
+      {tab === "newsletters" && !composing && (
+        <>
+          {drafts.length > 0 ? (
         <Card className="p-5">
           <h2 className="text-sm font-semibold text-slate-800">Written by the team</h2>
           <p className="mt-1 text-xs text-slate-500">
@@ -264,14 +322,7 @@ export default function NewsletterAdminPage() {
                 <div className="flex shrink-0 items-center gap-2">
                 <button
                   className={btnGhost}
-                  onClick={() => {
-                    setSubject(d.subject);
-                    setPreviewText(d.previewText);
-                    setContentHtml(d.contentHtml);
-                    setFromDraft(d.id);
-                    setEditorKey((k) => k + 1);
-                    setNote("Loaded into the composer. Read it before sending.");
-                  }}
+                  onClick={() => loadDraft(d)}
                 >
                   Load
                 </button>
@@ -288,8 +339,49 @@ export default function NewsletterAdminPage() {
             ))}
           </ul>
         </Card>
+          ) : (
+            <Card className="p-5">
+              <h2 className="text-sm font-semibold text-slate-800">Written by the team</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Nothing waiting. When marketing writes an edition it lands here, and you read it
+                and send it yourself.
+              </p>
+            </Card>
+          )}
+
+      <div>
+        <h2 className="text-sm font-semibold text-slate-700">History</h2>
+        {campaigns.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-400">No newsletters sent yet.</p>
+        ) : (
+          <Card className="mt-2 divide-y divide-slate-200">
+            {campaigns.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-800">{c.subject}</p>
+                  <p className="text-xs text-slate-400">
+                    {fmtDate(c.createdAt)} · {c.authorEmail}
+                    {c.recipientCount != null ? ` · ${c.recipientCount} recipients` : ""}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-[4px] px-2 py-0.5 text-xs font-medium ${
+                    c.status === "sent" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                  }`}
+                  title={c.error ?? undefined}
+                >
+                  {c.status}
+                </span>
+              </div>
+            ))}
+          </Card>
+        )}
+      </div>
+        </>
       )}
 
+      {tab === "newsletters" && composing && (
+        <>
       <Card className="p-5">
         <div>
           <label className="text-xs uppercase tracking-wider text-slate-400">Subject</label>
@@ -332,39 +424,15 @@ export default function NewsletterAdminPage() {
             {busy === "test" ? "Sending…" : "Send test"}
           </button>
         </div>
+        <button onClick={() => setComposing(false)} disabled={busy !== null} className={btnGhost}>
+          Cancel
+        </button>
         <button onClick={sendToAll} disabled={busy !== null} className={btnPrimary}>
           {busy === "send" ? "Sending…" : `Send to ${subscribers} subscriber${subscribers === 1 ? "" : "s"}`}
         </button>
       </Card>
-
-      <div>
-        <h2 className="text-sm font-semibold text-slate-700">History</h2>
-        {campaigns.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-400">No newsletters sent yet.</p>
-        ) : (
-          <Card className="mt-2 divide-y divide-slate-200">
-            {campaigns.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">{c.subject}</p>
-                  <p className="text-xs text-slate-400">
-                    {fmtDate(c.createdAt)} · {c.authorEmail}
-                    {c.recipientCount != null ? ` · ${c.recipientCount} recipients` : ""}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-[4px] px-2 py-0.5 text-xs font-medium ${
-                    c.status === "sent" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                  }`}
-                  title={c.error ?? undefined}
-                >
-                  {c.status}
-                </span>
-              </div>
-            ))}
-          </Card>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
