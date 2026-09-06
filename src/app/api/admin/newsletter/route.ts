@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withAdmin, AdminError } from "@/lib/admin/auth";
 import { sendEmail, createAndSendBroadcast, syncAudience } from "@/lib/email/client";
 import { newsletterEmail } from "@/lib/email/templates/newsletter";
-import { listCampaigns, listDrafts, dropDraft, updateDraft, recordCampaign } from "@/lib/newsletter/campaigns";
+import { listCampaigns, listDrafts, dropDraft, updateDraft, askDesign, recordCampaign } from "@/lib/newsletter/campaigns";
 import { subscriberCount, listSubscriberEmails } from "@/lib/newsletter/store";
 
 export const runtime = "nodejs";
@@ -37,6 +37,7 @@ export const POST = withAdmin(async (req, { identity }) => {
     contentHtml?: string;
     testEmail?: string;
     draftId?: string;
+    texto?: string;
   };
   const action = body.action ?? "";
 
@@ -80,6 +81,20 @@ export const POST = withAdmin(async (req, { identity }) => {
       previewText: (body.previewText ?? "").trim(),
       contentHtml: body.contentHtml ?? "",
     });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Ask the design agent for a change. The request is written on the draft and
+  // not sent anywhere: the worker already reads this database, so a `pedido`
+  // field means "someone has to do something here", the same way `esperando
+  // firma` means it inside a run. No new auth, no new plumbing, and the right
+  // direction: whoever asks leaves it where whoever works already looks.
+  if (action === "pedir") {
+    const id = (body.draftId ?? "").trim();
+    const texto = (body.texto ?? "").trim();
+    if (!id) throw new AdminError(400, "Which draft?");
+    if (texto.length < 4) throw new AdminError(400, "Say what to change");
+    await askDesign(id, texto);
     return NextResponse.json({ ok: true });
   }
 

@@ -26,7 +26,8 @@ const fmtDate = (t: { seconds: number } | null) =>
       })
     : "—";
 
-type Borrador = Campaign & { contentHtml: string; piezas: string[] };
+type Pedido = { texto: string; respuesta?: string | null; encolado?: number | null };
+type Borrador = Campaign & { contentHtml: string; piezas: string[]; pedido: Pedido | null };
 type Subscriber = { email: string; source: string; discountRedeemed: boolean; subscribedAt: { seconds: number } | null };
 
 export default function NewsletterAdminPage() {
@@ -59,6 +60,7 @@ export default function NewsletterAdminPage() {
   // columnas es lo primero que se rompe: la miniatura y el texto no entran al
   // lado. Ver los dos anchos es la única forma de saberlo antes de mandarlo.
   const [ancho, setAncho] = useState<"desktop" | "mobile">("desktop");
+  const [pedido, setPedido] = useState("");
   // **Dos formas de tocar lo mismo, y no son equivalentes.** El HTML es la
   // verdad; el visual es cómodo y tiene un costo: TipTap parsea contra su propio
   // esquema y tira las tablas y los estilos en línea, o sea la maquetación que
@@ -86,6 +88,30 @@ export default function NewsletterAdminPage() {
     setContentHtml(d.contentHtml);
   }
 
+  /**
+   * Ask design for a change. It is not a chat: the request lands on the edition
+   * and the agent picks it up on its next pass, so what comes back is the
+   * edition itself, changed, plus a line saying what was done.
+   */
+  async function pedirCambio() {
+    if (!fromDraft || pedido.trim().length < 4) return;
+    setBusy("pedir");
+    setError(null);
+    try {
+      await adminFetch("/api/admin/newsletter", {
+        method: "POST",
+        body: JSON.stringify({ action: "pedir", draftId: fromDraft, texto: pedido.trim() }),
+      });
+      setPedido("");
+      setNote("Asked. It gets picked up on the next pass, and the answer shows up here.");
+      await refresh();
+    } catch (e) {
+      setError(e instanceof AdminFetchError ? e.message : "Could not ask.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveDraft() {
     if (!fromDraft) return;
     setBusy("save");
@@ -105,7 +131,7 @@ export default function NewsletterAdminPage() {
   const [subscribers, setSubscribers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<null | "test" | "send" | "sync" | "discard" | "save">(null);
+  const [busy, setBusy] = useState<null | "test" | "send" | "sync" | "discard" | "save" | "pedir">(null);
   const [note, setNote] = useState<string | null>(null);
   const [subs, setSubs] = useState<Subscriber[]>([]);
   const [subsLoaded, setSubsLoaded] = useState(false);
@@ -153,6 +179,15 @@ export default function NewsletterAdminPage() {
     setCampaigns(d.campaigns);
     setDrafts(d.drafts ?? []);
     setSubscribers(d.subscribers);
+    // Si estás mirando una, que traiga lo que el equipo haya cambiado mientras
+    // tanto: el punto del pedido es ver la respuesta sin salir de acá.
+    const abierta = (d.drafts ?? []).find((x) => x.id === fromDraft);
+    if (abierta) {
+      setViendo(abierta);
+      setContentHtml(abierta.contentHtml);
+      setSubject(abierta.subject);
+      setPreviewText(abierta.previewText);
+    }
   }
 
   async function sendTest() {
@@ -529,6 +564,49 @@ export default function NewsletterAdminPage() {
               </div>
             </Card>
           </div>
+
+          {/* Debajo del preview, porque es donde mirás lo que querés cambiar. */}
+          <Card className="p-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-800">Ask design for a change</h2>
+              <span className="text-xs text-slate-400">Vicky, Design</span>
+            </div>
+
+            {viendo.pedido?.respuesta ? (
+              <div className="mt-3 rounded-[4px] bg-slate-50 p-3">
+                <p className="text-xs text-slate-500">You asked</p>
+                <p className="mt-0.5 text-sm text-slate-700">{viendo.pedido.texto}</p>
+                <p className="mt-3 text-xs text-slate-500">She did</p>
+                <p className="mt-0.5 text-sm text-slate-800">{viendo.pedido.respuesta}</p>
+              </div>
+            ) : viendo.pedido?.texto ? (
+              <div className="mt-3 rounded-[4px] bg-amber-50 p-3">
+                <p className="text-sm text-amber-900">{viendo.pedido.texto}</p>
+                <p className="mt-1 text-xs text-amber-700">
+                  Waiting{viendo.pedido.encolado ? ` · ticket ${viendo.pedido.encolado}` : ""}. It runs
+                  within a few minutes; the preview above updates when it lands.
+                </p>
+              </div>
+            ) : null}
+
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <textarea
+                value={pedido}
+                onChange={(e) => setPedido(e.target.value)}
+                rows={2}
+                placeholder="Make the second piece the one that opens, and drop the button"
+                className={`${input} min-w-64 flex-1`}
+              />
+              <button onClick={pedirCambio} disabled={busy !== null || pedido.trim().length < 4}
+                      className={btnGhost}>
+                {busy === "pedir" ? "Asking…" : "Ask"}
+              </button>
+              <button onClick={refresh} disabled={busy !== null} className={btnGhost}
+                      title="Check whether the answer has landed">
+                Refresh
+              </button>
+            </div>
+          </Card>
 
           <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
             <div className="flex flex-wrap items-center gap-2">

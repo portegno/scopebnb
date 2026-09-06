@@ -72,7 +72,11 @@ export async function listCampaigns(): Promise<Campaign[]> {
 }
 
 /** Editions written by the team and waiting to be read and sent. */
-export async function listDrafts(): Promise<(Campaign & { contentHtml: string; piezas: string[] })[]> {
+export type Pedido = { texto: string; respuesta?: string | null; encolado?: number | null };
+
+export async function listDrafts(): Promise<
+  (Campaign & { contentHtml: string; piezas: string[]; pedido: Pedido | null })[]
+> {
   const snap = await adminDb
     .collection(COL)
     .where("status", "==", "borrador")
@@ -85,6 +89,7 @@ export async function listDrafts(): Promise<(Campaign & { contentHtml: string; p
       // Which posts it covers, so the list says what is inside without having to
       // load it into the composer first.
       piezas: Array.isArray(d.data().piezas) ? (d.data().piezas as string[]) : [],
+      pedido: (d.data().pedido as Pedido) ?? null,
     }))
     .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
@@ -95,6 +100,18 @@ export async function updateDraft(
   patch: { subject: string; previewText: string; contentHtml: string },
 ): Promise<void> {
   await adminDb.collection(COL).doc(id).update(patch);
+}
+
+/**
+ * Leave a change request on a draft for the design agent to pick up.
+ *
+ * Overwrites whatever was there: a second ask replaces the first, because two
+ * pending requests on the same edition is a way to get half of each.
+ */
+export async function askDesign(id: string, texto: string): Promise<void> {
+  await adminDb.collection(COL).doc(id).update({
+    pedido: { texto, cuando: FieldValue.serverTimestamp() },
+  });
 }
 
 /** A draft stops being a draft when it goes out: it is dropped, not kept twice. */
