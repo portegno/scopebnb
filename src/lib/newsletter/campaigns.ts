@@ -89,6 +89,14 @@ export async function listDrafts(): Promise<(Campaign & { contentHtml: string; p
     .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
 
+/** Save changes to a draft without sending it. */
+export async function updateDraft(
+  id: string,
+  patch: { subject: string; previewText: string; contentHtml: string },
+): Promise<void> {
+  await adminDb.collection(COL).doc(id).update(patch);
+}
+
 /** A draft stops being a draft when it goes out: it is dropped, not kept twice. */
 export async function dropDraft(id: string): Promise<void> {
   await adminDb.collection(COL).doc(id).delete();

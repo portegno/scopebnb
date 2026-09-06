@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withAdmin, AdminError } from "@/lib/admin/auth";
 import { sendEmail, createAndSendBroadcast, syncAudience } from "@/lib/email/client";
 import { newsletterEmail } from "@/lib/email/templates/newsletter";
-import { listCampaigns, listDrafts, dropDraft, recordCampaign } from "@/lib/newsletter/campaigns";
+import { listCampaigns, listDrafts, dropDraft, updateDraft, recordCampaign } from "@/lib/newsletter/campaigns";
 import { subscriberCount, listSubscriberEmails } from "@/lib/newsletter/store";
 
 export const runtime = "nodejs";
@@ -55,11 +55,32 @@ export const POST = withAdmin(async (req, { identity }) => {
   // against its own schema and drops everything it does not know. So a team
   // edition is previewed and sent as it is, never loaded into the editor.
   if (action === "preview") {
-    const drafts = await listDrafts();
-    const d = drafts.find((x) => x.id === (body.draftId ?? "").trim());
-    if (!d) throw new AdminError(404, "No such draft");
-    const { html } = newsletterEmail(d.contentHtml, { previewText: d.previewText, unsubscribeUrl: "#" });
-    return NextResponse.json({ ok: true, html, subject: d.subject });
+    // Takes the HTML you have in front of you, not the stored one: the point of
+    // the preview is that it moves while you edit. Falls back to the draft on
+    // the first open, when there is nothing typed yet.
+    let contentHtml = body.contentHtml ?? "";
+    let previewText = body.previewText ?? "";
+    if (!contentHtml && body.draftId) {
+      const d = (await listDrafts()).find((x) => x.id === body.draftId!.trim());
+      if (!d) throw new AdminError(404, "No such draft");
+      contentHtml = d.contentHtml;
+      previewText = d.previewText;
+    }
+    const { html } = newsletterEmail(contentHtml, { previewText, unsubscribeUrl: "#" });
+    return NextResponse.json({ ok: true, html });
+  }
+
+  // Keep what you edited without sending it. An edition you fixed and did not
+  // send should still be fixed tomorrow.
+  if (action === "save") {
+    const id = (body.draftId ?? "").trim();
+    if (!id) throw new AdminError(400, "Which draft?");
+    await updateDraft(id, {
+      subject: (body.subject ?? "").trim(),
+      previewText: (body.previewText ?? "").trim(),
+      contentHtml: body.contentHtml ?? "",
+    });
+    return NextResponse.json({ ok: true });
   }
 
   if (action === "sync") {

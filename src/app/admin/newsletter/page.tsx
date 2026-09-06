@@ -53,7 +53,8 @@ export default function NewsletterAdminPage() {
   // La edición que escribió el equipo se **mira**, no se edita. Su HTML es HTML
   // de mail de verdad (tablas, estilos en línea) y el compositor lo aplastaría:
   // TipTap parsea contra su propio esquema y tira todo lo que no conoce.
-  const [viendo, setViendo] = useState<{ d: Borrador; html: string } | null>(null);
+  const [viendo, setViendo] = useState<Borrador | null>(null);
+  const [html, setHtml] = useState("");
 
   function newDraft() {
     setSubject("");
@@ -65,41 +66,36 @@ export default function NewsletterAdminPage() {
     setComposing(true);
   }
 
-  async function openDraft(d: Borrador) {
+  function openDraft(d: Borrador) {
     setError(null);
     setNote(null);
-    try {
-      const r = await adminFetch<{ html: string }>("/api/admin/newsletter", {
-        method: "POST",
-        body: JSON.stringify({ action: "preview", draftId: d.id }),
-      });
-      setViendo({ d, html: r.html });
-      setFromDraft(d.id);
-      setSubject(d.subject);
-      setPreviewText(d.previewText);
-      setContentHtml(d.contentHtml);
-    } catch (e) {
-      setError(e instanceof AdminFetchError ? e.message : "Could not open it.");
-    }
-  }
-
-  /** Escape hatch: flattens the layout into the editor. Says so before doing it. */
-  function editByHand(d: Borrador) {
-    if (!confirm("Editing by hand drops the layout the team built (columns, Mike's tip). Continue?"))
-      return;
+    setViendo(d);
+    setFromDraft(d.id);
     setSubject(d.subject);
     setPreviewText(d.previewText);
     setContentHtml(d.contentHtml);
-    setFromDraft(d.id);
-    setEditorKey((k) => k + 1);
-    setViendo(null);
-    setComposing(true);
-    setNote("Loaded into the composer. The layout is gone: what you send is what you see here.");
+  }
+
+  async function saveDraft() {
+    if (!fromDraft) return;
+    setBusy("save");
+    try {
+      await adminFetch("/api/admin/newsletter", {
+        method: "POST",
+        body: JSON.stringify({ action: "save", draftId: fromDraft, subject, previewText, contentHtml }),
+      });
+      setNote("Saved.");
+      await refresh();
+    } catch (e) {
+      setError(e instanceof AdminFetchError ? e.message : "Could not save it.");
+    } finally {
+      setBusy(null);
+    }
   }
   const [subscribers, setSubscribers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<null | "test" | "send" | "sync" | "discard">(null);
+  const [busy, setBusy] = useState<null | "test" | "send" | "sync" | "discard" | "save">(null);
   const [note, setNote] = useState<string | null>(null);
   const [subs, setSubs] = useState<Subscriber[]>([]);
   const [subsLoaded, setSubsLoaded] = useState(false);
@@ -126,6 +122,21 @@ export default function NewsletterAdminPage() {
       .catch(() => {})
       .finally(() => setSubsLoaded(true));
   }, [user]);
+
+  // **El preview sigue a lo que escribís, no a lo guardado.** Se espera medio
+  // segundo: pedirlo por tecla serían cien llamadas para ver un cambio.
+  useEffect(() => {
+    if (!viendo) return;
+    const t = setTimeout(() => {
+      adminFetch<{ html: string }>("/api/admin/newsletter", {
+        method: "POST",
+        body: JSON.stringify({ action: "preview", contentHtml, previewText }),
+      })
+        .then((r) => setHtml(r.html))
+        .catch(() => {});
+    }, 500);
+    return () => clearTimeout(t);
+  }, [viendo, contentHtml, previewText]);
 
   async function refresh() {
     const d = await adminFetch<{ campaigns: Campaign[]; drafts: Borrador[]; subscribers: number }>("/api/admin/newsletter");
@@ -410,34 +421,44 @@ export default function NewsletterAdminPage() {
       {tab === "newsletters" && viendo && (
         <>
           <Card className="p-5">
-            <p className="text-xs uppercase tracking-wider text-slate-400">Subject</p>
-            <p className="mt-1 text-base text-slate-800">{viendo.d.subject}</p>
-            <p className="mt-3 text-xs uppercase tracking-wider text-slate-400">Preview text</p>
-            <p className="mt-1 text-sm text-slate-600">{viendo.d.previewText}</p>
+            <label className="text-xs uppercase tracking-wider text-slate-400">Subject</label>
+            <input value={subject} onChange={(e) => setSubject(e.target.value)}
+                   className={`${input} mt-1 w-full text-base`} />
+            <label className="mt-4 block text-xs uppercase tracking-wider text-slate-400">Preview text</label>
+            <input value={previewText} onChange={(e) => setPreviewText(e.target.value)}
+                   className={`${input} mt-1 w-full`} />
           </Card>
 
-          {/* El mail entero, tal como va a llegar. En un iframe y no en un div
-              porque el mail trae su propio <style> y su propio <body>: metido en
-              la página, sus reglas se mezclan con las del admin y lo que se ve
-              deja de ser lo que se manda. */}
-          <Card className="overflow-hidden p-0">
-            <iframe
-              title="Preview"
-              srcDoc={viendo.html}
-              sandbox=""
-              className="h-[70vh] w-full border-0 bg-white"
-            />
-          </Card>
+          {/* Dos áreas: lo que escribís y lo que llega. El HTML de un mail no
+              pasa por un WYSIWYG sin perder la mitad, así que se edita como
+              texto; lo que lo hace usable es que el de al lado sea el mail de
+              verdad y no una aproximación. */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="flex flex-col p-0">
+              <div className="px-4 py-2 text-xs uppercase tracking-wider text-slate-400">HTML</div>
+              <textarea
+                value={contentHtml}
+                onChange={(e) => setContentHtml(e.target.value)}
+                spellCheck={false}
+                className="h-[65vh] w-full resize-none rounded-b-[4px] border-0 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 outline-none"
+              />
+            </Card>
+            <Card className="flex flex-col overflow-hidden p-0">
+              <div className="px-4 py-2 text-xs uppercase tracking-wider text-slate-400">
+                What lands in the inbox
+              </div>
+              {/* iframe y no div: el mail trae su propio <style> y su propio
+                  <body>, y metido en la página sus reglas se mezclan con las del
+                  admin. Ahí lo que se ve deja de ser lo que se manda. */}
+              <iframe title="Preview" srcDoc={html} sandbox=""
+                      className="h-[65vh] w-full border-0 bg-white" />
+            </Card>
+          </div>
 
           <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="email"
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                placeholder="you@example.com"
-                className={`${input} w-56`}
-              />
+              <input type="email" value={testEmail} onChange={(e) => setTestEmail(e.target.value)}
+                     placeholder="you@example.com" className={`${input} w-56`} />
               <button onClick={sendTest} disabled={busy !== null} className={btnGhost}>
                 {busy === "test" ? "Sending…" : "Send test"}
               </button>
@@ -446,11 +467,10 @@ export default function NewsletterAdminPage() {
               <button onClick={() => setViendo(null)} disabled={busy !== null} className={btnGhost}>
                 Back
               </button>
-              <button onClick={() => editByHand(viendo.d)} disabled={busy !== null} className={btnGhost}
-                      title="Drops the layout and opens it in the editor">
-                Edit by hand
+              <button onClick={saveDraft} disabled={busy !== null} className={btnGhost}>
+                {busy === "save" ? "Saving…" : "Save"}
               </button>
-              <button onClick={() => discard(viendo.d)} disabled={busy !== null} className={btnGhost}>
+              <button onClick={() => discard(viendo)} disabled={busy !== null} className={btnGhost}>
                 Discard
               </button>
               <button onClick={sendToAll} disabled={busy !== null} className={btnPrimary}>
