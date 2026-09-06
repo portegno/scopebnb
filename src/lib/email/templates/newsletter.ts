@@ -18,6 +18,18 @@ export function newsletterEmail(
   const previewText = opts.previewText ?? "";
   const unsubscribeUrl = opts.unsubscribeUrl ?? "{{{RESEND_UNSUBSCRIBE_URL}}}";
 
+  // An edition written by the Portegno team arrives as a whole document: the
+  // agency owns the email engine now, because building an email that does not
+  // break is craft and it is the same craft for every business. What stays here
+  // is what is ours: the sending account, the domain, and how this provider
+  // spells an unsubscribe link.
+  //
+  // Wrapping it again would nest a full `<html>` inside another one, which some
+  // clients render and others silently drop.
+  if (/^\s*<(!doctype|html)/i.test(bodyHtml)) {
+    return { html: bodyHtml.replaceAll("{{UNSUBSCRIBE}}", unsubscribeUrl) };
+  }
+
   const html = `<!doctype html>
 <html>
   <head>
