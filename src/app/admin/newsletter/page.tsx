@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { Card } from "@/components/admin/ui";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { adminFetch, AdminFetchError } from "@/lib/admin/client";
@@ -25,6 +26,8 @@ const fmtDate = (t: { seconds: number } | null) =>
       })
     : "—";
 
+type Borrador = Campaign & { contentHtml: string };
+
 export default function NewsletterAdminPage() {
   const { user } = useAuth();
 
@@ -36,6 +39,11 @@ export default function NewsletterAdminPage() {
   const [editorKey, setEditorKey] = useState(0);
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  // Ediciones que el equipo de Portegno ya escribio y esperan que alguien las
+  // lea y las mande. Se cargan al compositor: nadie manda un mail salvo una
+  // persona apretando Send acá.
+  const [drafts, setDrafts] = useState<Borrador[]>([]);
+  const [fromDraft, setFromDraft] = useState<string | null>(null);
   const [subscribers, setSubscribers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,9 +52,10 @@ export default function NewsletterAdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    adminFetch<{ campaigns: Campaign[]; subscribers: number }>("/api/admin/newsletter")
+    adminFetch<{ campaigns: Campaign[]; drafts: Borrador[]; subscribers: number }>("/api/admin/newsletter")
       .then((d) => {
         setCampaigns(d.campaigns);
+        setDrafts(d.drafts ?? []);
         setSubscribers(d.subscribers);
       })
       .catch((e) =>
@@ -60,8 +69,9 @@ export default function NewsletterAdminPage() {
   }, [user]);
 
   async function refresh() {
-    const d = await adminFetch<{ campaigns: Campaign[]; subscribers: number }>("/api/admin/newsletter");
+    const d = await adminFetch<{ campaigns: Campaign[]; drafts: Borrador[]; subscribers: number }>("/api/admin/newsletter");
     setCampaigns(d.campaigns);
+    setDrafts(d.drafts ?? []);
     setSubscribers(d.subscribers);
   }
 
@@ -94,12 +104,13 @@ export default function NewsletterAdminPage() {
     try {
       await adminFetch("/api/admin/newsletter", {
         method: "POST",
-        body: JSON.stringify({ action: "send", subject, previewText, contentHtml }),
+        body: JSON.stringify({ action: "send", subject, previewText, contentHtml, draftId: fromDraft }),
       });
       setNote(`Newsletter sent to ${subscribers} subscriber${subscribers === 1 ? "" : "s"}.`);
       setSubject("");
       setPreviewText("");
       setContentHtml("");
+      setFromDraft(null);
       setEditorKey((k) => k + 1);
       await refresh();
     } catch (e) {
@@ -143,6 +154,38 @@ export default function NewsletterAdminPage() {
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
       {note && <p className="text-sm text-emerald-600">{note}</p>}
+
+      {drafts.length > 0 && (
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold text-slate-800">Written by the team</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Load one into the composer, read it, and send it yourself. Nothing goes out on its own.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {drafts.map((d) => (
+              <li key={d.id} className="flex items-center justify-between gap-3 rounded border border-slate-200 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-slate-800">{d.subject}</p>
+                  <p className="truncate text-xs text-slate-500">{d.previewText}</p>
+                </div>
+                <button
+                  className={btnGhost}
+                  onClick={() => {
+                    setSubject(d.subject);
+                    setPreviewText(d.previewText);
+                    setContentHtml(d.contentHtml);
+                    setFromDraft(d.id);
+                    setEditorKey((k) => k + 1);
+                    setNote("Loaded into the composer. Read it before sending.");
+                  }}
+                >
+                  Load
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="p-5">
         <div>

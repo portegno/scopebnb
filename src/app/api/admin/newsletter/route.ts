@@ -2,16 +2,24 @@ import { NextResponse } from "next/server";
 import { withAdmin, AdminError } from "@/lib/admin/auth";
 import { sendEmail, createAndSendBroadcast, syncAudience } from "@/lib/email/client";
 import { newsletterEmail } from "@/lib/email/templates/newsletter";
-import { listCampaigns, recordCampaign } from "@/lib/newsletter/campaigns";
+import { listCampaigns, listDrafts, dropDraft, recordCampaign } from "@/lib/newsletter/campaigns";
 import { subscriberCount, listSubscriberEmails } from "@/lib/newsletter/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET /api/admin/newsletter — campaign history + current subscriber count. */
+/**
+ * GET /api/admin/newsletter — campaign history, drafts waiting, and the current
+ * subscriber count. Drafts are editions the Portegno team already wrote: they
+ * load into the composer, they are not sent by anyone but a person here.
+ */
 export const GET = withAdmin(async () => {
-  const [campaigns, subscribers] = await Promise.all([listCampaigns(), subscriberCount()]);
-  return NextResponse.json({ campaigns, subscribers });
+  const [campaigns, drafts, subscribers] = await Promise.all([
+    listCampaigns(),
+    listDrafts(),
+    subscriberCount(),
+  ]);
+  return NextResponse.json({ campaigns, drafts, subscribers });
 }, "newsletter.manage");
 
 /**
@@ -28,6 +36,7 @@ export const POST = withAdmin(async (req, { identity }) => {
     previewText?: string;
     contentHtml?: string;
     testEmail?: string;
+    draftId?: string;
   };
   const action = body.action ?? "";
 
@@ -71,6 +80,9 @@ export const POST = withAdmin(async (req, { identity }) => {
     });
 
     if (!result.ok) throw new AdminError(502, `Broadcast failed: ${result.error}`);
+    // The draft is dropped once it went out: keeping both would show the same
+    // edition twice, once as waiting and once as sent.
+    if (body.draftId) await dropDraft(body.draftId).catch(() => {});
     return NextResponse.json({ ok: true, campaign });
   }
 

@@ -5,7 +5,12 @@ import { adminDb } from "@/lib/firebase/admin";
 
 const COL = "newsletterCampaigns";
 
-export type CampaignStatus = "sent" | "failed";
+// "borrador" es el estado que faltaba. El panel mandaba apenas se apretaba el
+// boton, asi que no habia donde dejar una edicion escrita esperando, y sin eso
+// el equipo de Portegno no podia escribirla: mandar un mail es lo mas
+// irreversible que hay, y un borrador es lo que permite que lo escriba uno y lo
+// mande otro.
+export type CampaignStatus = "sent" | "failed" | "borrador";
 
 export type Campaign = {
   id: string;
@@ -57,8 +62,28 @@ export async function recordCampaign(data: NewCampaign): Promise<Campaign> {
   return serialize(ref.id, snap.data() ?? {});
 }
 
-/** Campaign history, newest first. */
+/**
+ * Campaign history, newest first. Drafts are not history: they have not been
+ * read by anyone yet, so they belong in the composer, not in the log.
+ */
 export async function listCampaigns(): Promise<Campaign[]> {
   const snap = await adminDb.collection(COL).orderBy("createdAt", "desc").limit(50).get();
-  return snap.docs.map((d) => serialize(d.id, d.data()));
+  return snap.docs.map((d) => serialize(d.id, d.data())).filter((c) => c.status !== "borrador");
+}
+
+/** Editions written by the team and waiting to be read and sent. */
+export async function listDrafts(): Promise<(Campaign & { contentHtml: string })[]> {
+  const snap = await adminDb
+    .collection(COL)
+    .where("status", "==", "borrador")
+    .limit(20)
+    .get();
+  return snap.docs
+    .map((d) => ({ ...serialize(d.id, d.data()), contentHtml: d.data().contentHtml ?? "" }))
+    .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+}
+
+/** A draft stops being a draft when it goes out: it is dropped, not kept twice. */
+export async function dropDraft(id: string): Promise<void> {
+  await adminDb.collection(COL).doc(id).delete();
 }
