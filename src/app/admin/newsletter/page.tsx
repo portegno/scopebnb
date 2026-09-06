@@ -50,6 +50,10 @@ export default function NewsletterAdminPage() {
   // qué se había mandado había que pasar por encima de un formulario vacío.
   const [tab, setTab] = useState<"newsletters" | "subscribers">("newsletters");
   const [composing, setComposing] = useState(false);
+  // La edición que escribió el equipo se **mira**, no se edita. Su HTML es HTML
+  // de mail de verdad (tablas, estilos en línea) y el compositor lo aplastaría:
+  // TipTap parsea contra su propio esquema y tira todo lo que no conoce.
+  const [viendo, setViendo] = useState<{ d: Borrador; html: string } | null>(null);
 
   function newDraft() {
     setSubject("");
@@ -61,14 +65,36 @@ export default function NewsletterAdminPage() {
     setComposing(true);
   }
 
-  function loadDraft(d: Borrador) {
+  async function openDraft(d: Borrador) {
+    setError(null);
+    setNote(null);
+    try {
+      const r = await adminFetch<{ html: string }>("/api/admin/newsletter", {
+        method: "POST",
+        body: JSON.stringify({ action: "preview", draftId: d.id }),
+      });
+      setViendo({ d, html: r.html });
+      setFromDraft(d.id);
+      setSubject(d.subject);
+      setPreviewText(d.previewText);
+      setContentHtml(d.contentHtml);
+    } catch (e) {
+      setError(e instanceof AdminFetchError ? e.message : "Could not open it.");
+    }
+  }
+
+  /** Escape hatch: flattens the layout into the editor. Says so before doing it. */
+  function editByHand(d: Borrador) {
+    if (!confirm("Editing by hand drops the layout the team built (columns, Mike's tip). Continue?"))
+      return;
     setSubject(d.subject);
     setPreviewText(d.previewText);
     setContentHtml(d.contentHtml);
     setFromDraft(d.id);
     setEditorKey((k) => k + 1);
-    setNote("Loaded into the composer. Read it before sending.");
+    setViendo(null);
     setComposing(true);
+    setNote("Loaded into the composer. The layout is gone: what you send is what you see here.");
   }
   const [subscribers, setSubscribers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -146,6 +172,7 @@ export default function NewsletterAdminPage() {
       setFromDraft(null);
       setEditorKey((k) => k + 1);
       setComposing(false);
+      setViendo(null);
       await refresh();
     } catch (e) {
       setError(e instanceof AdminFetchError ? e.message : "Send failed.");
@@ -186,7 +213,7 @@ export default function NewsletterAdminPage() {
       // If it was the one loaded in the composer, the composer no longer points
       // at anything: clearing the link avoids sending and then trying to drop a
       // draft that is already gone.
-      if (fromDraft === d.id) setFromDraft(null);
+      if (fromDraft === d.id) { setFromDraft(null); setViendo(null); }
       setNote("Draft discarded.");
       await refresh();
     } catch (e) {
@@ -227,7 +254,7 @@ export default function NewsletterAdminPage() {
             {busy === "sync" ? "Syncing…" : "Sync audience"}
           </button>
         )}
-        {tab === "newsletters" && !composing && (
+        {tab === "newsletters" && !composing && !viendo && (
           <button onClick={newDraft} className={btnPrimary}>
             New newsletter
           </button>
@@ -299,7 +326,7 @@ export default function NewsletterAdminPage() {
         </>
       )}
 
-      {tab === "newsletters" && !composing && (
+      {tab === "newsletters" && !composing && !viendo && (
         <>
           {drafts.length > 0 ? (
         <Card className="p-5">
@@ -322,9 +349,9 @@ export default function NewsletterAdminPage() {
                 <div className="flex shrink-0 items-center gap-2">
                 <button
                   className={btnGhost}
-                  onClick={() => loadDraft(d)}
+                  onClick={() => openDraft(d)}
                 >
-                  Load
+                  Open
                 </button>
                 <button
                   className={btnGhost}
@@ -377,6 +404,60 @@ export default function NewsletterAdminPage() {
           </Card>
         )}
       </div>
+        </>
+      )}
+
+      {tab === "newsletters" && viendo && (
+        <>
+          <Card className="p-5">
+            <p className="text-xs uppercase tracking-wider text-slate-400">Subject</p>
+            <p className="mt-1 text-base text-slate-800">{viendo.d.subject}</p>
+            <p className="mt-3 text-xs uppercase tracking-wider text-slate-400">Preview text</p>
+            <p className="mt-1 text-sm text-slate-600">{viendo.d.previewText}</p>
+          </Card>
+
+          {/* El mail entero, tal como va a llegar. En un iframe y no en un div
+              porque el mail trae su propio <style> y su propio <body>: metido en
+              la página, sus reglas se mezclan con las del admin y lo que se ve
+              deja de ser lo que se manda. */}
+          <Card className="overflow-hidden p-0">
+            <iframe
+              title="Preview"
+              srcDoc={viendo.html}
+              sandbox=""
+              className="h-[70vh] w-full border-0 bg-white"
+            />
+          </Card>
+
+          <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={`${input} w-56`}
+              />
+              <button onClick={sendTest} disabled={busy !== null} className={btnGhost}>
+                {busy === "test" ? "Sending…" : "Send test"}
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setViendo(null)} disabled={busy !== null} className={btnGhost}>
+                Back
+              </button>
+              <button onClick={() => editByHand(viendo.d)} disabled={busy !== null} className={btnGhost}
+                      title="Drops the layout and opens it in the editor">
+                Edit by hand
+              </button>
+              <button onClick={() => discard(viendo.d)} disabled={busy !== null} className={btnGhost}>
+                Discard
+              </button>
+              <button onClick={sendToAll} disabled={busy !== null} className={btnPrimary}>
+                {busy === "send" ? "Sending…" : `Send to ${subscribers} subscriber${subscribers === 1 ? "" : "s"}`}
+              </button>
+            </div>
+          </Card>
         </>
       )}
 

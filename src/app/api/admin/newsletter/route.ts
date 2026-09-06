@@ -50,6 +50,18 @@ export const POST = withAdmin(async (req, { identity }) => {
     return NextResponse.json({ ok: true });
   }
 
+  // What the subscriber will actually see. The team writes real email HTML
+  // (tables, inline styles) and the composer would flatten it: TipTap parses
+  // against its own schema and drops everything it does not know. So a team
+  // edition is previewed and sent as it is, never loaded into the editor.
+  if (action === "preview") {
+    const drafts = await listDrafts();
+    const d = drafts.find((x) => x.id === (body.draftId ?? "").trim());
+    if (!d) throw new AdminError(404, "No such draft");
+    const { html } = newsletterEmail(d.contentHtml, { previewText: d.previewText, unsubscribeUrl: "#" });
+    return NextResponse.json({ ok: true, html, subject: d.subject });
+  }
+
   if (action === "sync") {
     const emails = await listSubscriberEmails();
     const result = await syncAudience(emails);
