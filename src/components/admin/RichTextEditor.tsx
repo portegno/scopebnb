@@ -6,6 +6,8 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { SizedImage } from "./extensions/sizedImage";
+import { TableKit } from "@tiptap/extension-table";
+import { KeepAttrs } from "./extensions/keepAttrs";
 import { AstroFigure } from "./extensions/astroFigure";
 import { uploadBlogImage } from "@/lib/blog/upload";
 
@@ -62,6 +64,12 @@ export function RichTextEditor({
     immediatelyRender: false, // avoids SSR hydration mismatch in Next
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
+      // Tables and the attributes an email layout hangs from. Without them the
+      // editor parses a newsletter against a schema that has no idea what a two
+      // column block is, and gives back a stack of paragraphs. It happened once,
+      // to Mike's tip, and that is how it was found.
+      TableKit.configure({ table: { resizable: false } }),
+      KeepAttrs,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       SizedImage.configure({ inline: false }),
       AstroFigure,
