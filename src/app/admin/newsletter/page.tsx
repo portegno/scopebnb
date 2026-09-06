@@ -55,6 +55,16 @@ export default function NewsletterAdminPage() {
   // TipTap parsea contra su propio esquema y tira todo lo que no conoce.
   const [viendo, setViendo] = useState<Borrador | null>(null);
   const [html, setHtml] = useState("");
+  // Un mail se abre más en el teléfono que en la compu, y ahí la fila de dos
+  // columnas es lo primero que se rompe: la miniatura y el texto no entran al
+  // lado. Ver los dos anchos es la única forma de saberlo antes de mandarlo.
+  const [ancho, setAncho] = useState<"desktop" | "mobile">("desktop");
+  // **Dos formas de tocar lo mismo, y no son equivalentes.** El HTML es la
+  // verdad; el visual es cómodo y tiene un costo: TipTap parsea contra su propio
+  // esquema y tira las tablas y los estilos en línea, o sea la maquetación que
+  // armó diseño. Se puede mirar en visual sin romper nada; se rompe al escribir.
+  const [modo, setModo] = useState<"html" | "visual">("html");
+  const [avisado, setAvisado] = useState(false);
 
   function newDraft() {
     setSubject("");
@@ -435,23 +445,87 @@ export default function NewsletterAdminPage() {
               verdad y no una aproximación. */}
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="flex flex-col p-0">
-              <div className="px-4 py-2 text-xs uppercase tracking-wider text-slate-400">HTML</div>
-              <textarea
-                value={contentHtml}
-                onChange={(e) => setContentHtml(e.target.value)}
-                spellCheck={false}
-                className="h-[65vh] w-full resize-none rounded-b-[4px] border-0 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 outline-none"
-              />
+              <div className="flex items-center justify-between gap-2 px-4 py-2">
+                <span className="text-xs uppercase tracking-wider text-slate-400">Source</span>
+                <div className="flex gap-1">
+                  {(["html", "visual"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        if (m === "visual") setEditorKey((k) => k + 1);
+                        setModo(m);
+                      }}
+                      className={`rounded-[4px] px-2 py-1 text-xs transition-colors ${
+                        modo === m ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      {m === "html" ? "HTML" : "Visual"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {modo === "html" ? (
+                <textarea
+                  value={contentHtml}
+                  onChange={(e) => setContentHtml(e.target.value)}
+                  spellCheck={false}
+                  className="h-[65vh] w-full resize-none rounded-b-[4px] border-0 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 outline-none"
+                />
+              ) : (
+                <div className="h-[65vh] overflow-auto p-4">
+                  {/* El aviso aparece una sola vez y recién cuando podría doler:
+                      mirar en visual no rompe nada, escribir sí. */}
+                  {!avisado && (
+                    <p className="mb-3 rounded-[4px] bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Editing here drops what the editor does not understand: the two column blocks,
+                      Mike&#39;s tip and the inline styles. Fine for fixing a line; not for keeping
+                      the layout.
+                    </p>
+                  )}
+                  <RichTextEditor
+                    key={editorKey}
+                    initialHtml={contentHtml}
+                    onChange={(h) => {
+                      setAvisado(true);
+                      setContentHtml(h);
+                    }}
+                  />
+                </div>
+              )}
             </Card>
             <Card className="flex flex-col overflow-hidden p-0">
-              <div className="px-4 py-2 text-xs uppercase tracking-wider text-slate-400">
-                What lands in the inbox
+              <div className="flex items-center justify-between gap-2 px-4 py-2">
+                <span className="text-xs uppercase tracking-wider text-slate-400">
+                  What lands in the inbox
+                </span>
+                <div className="flex gap-1">
+                  {(["desktop", "mobile"] as const).map((a) => (
+                    <button
+                      key={a}
+                      onClick={() => setAncho(a)}
+                      className={`rounded-[4px] px-2 py-1 text-xs transition-colors ${
+                        ancho === a ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      {a === "desktop" ? "Desktop" : "Mobile"}
+                    </button>
+                  ))}
+                </div>
               </div>
               {/* iframe y no div: el mail trae su propio <style> y su propio
                   <body>, y metido en la página sus reglas se mezclan con las del
                   admin. Ahí lo que se ve deja de ser lo que se manda. */}
-              <iframe title="Preview" srcDoc={html} sandbox=""
-                      className="h-[65vh] w-full border-0 bg-white" />
+              {/* En mobile se angosta el iframe, no se escala: escalarlo mostraría
+                  el mismo layout más chico, que es justo lo que no se quiere ver.
+                  A 375px el mail reflowea de verdad, como en el teléfono. */}
+              <div className={ancho === "mobile" ? "flex h-[65vh] justify-center overflow-auto bg-slate-200 py-3" : "h-[65vh]"}>
+                <iframe
+                  title="Preview"
+                  srcDoc={html}
+                  sandbox=""
+                  className={`border-0 bg-white ${ancho === "mobile" ? "h-full w-[375px] shrink-0 rounded-[4px] shadow" : "h-full w-full"}`}
+                />
+              </div>
             </Card>
           </div>
 
