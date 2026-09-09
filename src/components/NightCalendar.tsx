@@ -136,10 +136,15 @@ export function NightCalendar({
                 disabled
                   ? undefined
                   : isStart
-                    ? { backgroundColor: q.color }
+                    ? // Single night keeps the moon-tier colour (price varies); the week is
+                      // one flat price, so its start is a neutral accent, not a tier colour.
+                      { backgroundColor: span > 1 ? "#6ea8fe" : q.color }
                     : inSpan
                       ? { backgroundColor: "rgba(110,168,254,0.22)" }
-                      : ({ boxShadow: `inset 0 0 0 1px ${q.color}`, "--tier-bg": `${q.color}33` } as CSSProperties)
+                      : span > 1
+                        ? // Week mode: no per-night price tiers, so a neutral outline.
+                          ({ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.14)", "--tier-bg": "rgba(255,255,255,0.06)" } as CSSProperties)
+                        : ({ boxShadow: `inset 0 0 0 1px ${q.color}`, "--tier-bg": `${q.color}33` } as CSSProperties)
               }
               className={`relative flex aspect-square items-center justify-center rounded-md text-sm transition-colors ${
                 tooSoon
