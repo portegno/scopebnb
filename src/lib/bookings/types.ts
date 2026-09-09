@@ -32,6 +32,11 @@ export type CapturePlan = {
 export type Booking = {
   id: string;
   product?: "managed" | "remote";
+  // Remote Control plan: a single night or a 7-night week (flat rate).
+  remotePlan?: "nightly" | "week";
+  // Number of consecutive nights the booking spans (1 for a single night, 7 for
+  // the remote week). Absent means 1.
+  nights?: number;
   targetName?: string;
   ra?: number;
   dec?: number;

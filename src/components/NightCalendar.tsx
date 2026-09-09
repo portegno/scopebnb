@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { moonIllumination } from "@/lib/visibility";
 import { nightTier, fmtPrice } from "@/lib/pricing";
+import { addDaysYmd, ymdSpan } from "@/lib/dates";
 
 /**
  * Month calendar of upcoming nights. Each night shows its moon-darkness quality
@@ -22,15 +23,24 @@ export function NightCalendar({
   utcOffset,
   today,
   reserved,
+  spanNights = 1,
 }: {
   selected: string;
   onSelect: (ymd: string) => void;
   utcOffset: number;
   today: string; // YYYY-MM-DD
   reserved?: Set<string>; // booked nights (YYYY-MM-DD), shown as unavailable
+  // When > 1, a click picks the FIRST of `spanNights` consecutive nights; only
+  // dates whose whole span is free can start, and the span is highlighted.
+  spanNights?: number;
 }) {
+  const span = Math.max(1, spanNights);
+  const isReserved = (y: string) => !!reserved?.has(y);
   const [tY, tM, tD] = today.split("-").map(Number);
   const [view, setView] = useState({ y: tY, m: tM - 1 }); // m is 0-indexed
+  // Hover preview of the span (multi-night only): shows the nights a start would
+  // take before you commit.
+  const [hover, setHover] = useState<string | null>(null);
 
   const first = new Date(Date.UTC(view.y, view.m, 1));
   const startWeekday = first.getUTCDay();
@@ -67,7 +77,10 @@ export function NightCalendar({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] text-muted">
+      <div
+        className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] text-muted"
+        onMouseLeave={() => setHover(null)}
+      >
         {WEEKDAYS.map((w, i) => (
           <div key={i} className="py-1">
             {w}
@@ -80,17 +93,27 @@ export function NightCalendar({
           const isToday = cellMs === todayMs;
           // Today and earlier can't be booked: we can't process a same-day order.
           const tooSoon = cellMs <= todayMs;
-          const booked = !tooSoon && !!reserved?.has(ymd);
+          const booked = !tooSoon && isReserved(ymd);
           const illum = moonIllumination(jdForLocalMidnight(view.y, view.m, d, utcOffset)).fraction;
           const q = nightTier(illum);
-          const isSel = ymd === selected;
-          const disabled = tooSoon || booked;
+          // Can a stay START here? For a single night, just not booked. For a
+          // week, every night in the span must be free.
+          const spanFree = !tooSoon && (span === 1 ? !booked : ymdSpan(ymd, span).every((dd) => !isReserved(dd)));
+          const noSpan = span > 1 && !tooSoon && !booked && !spanFree; // free tonight, but no full week from here
+          // Selection: `selected` is the start; highlight the whole span. When
+          // hovering a valid start, preview that span instead.
+          const activeStart = span > 1 ? (hover ?? selected) : selected;
+          const selEnd = activeStart ? addDaysYmd(activeStart, span - 1) : "";
+          const isStart = activeStart !== "" && ymd === activeStart;
+          const inSpan = span > 1 && activeStart !== "" && ymd >= activeStart && ymd <= selEnd && !isStart;
+          const disabled = tooSoon || booked || noSpan;
           return (
             <button
               key={ymd}
               type="button"
               disabled={disabled}
               onClick={() => onSelect(ymd)}
+              onMouseEnter={span > 1 && !disabled ? () => setHover(ymd) : undefined}
               title={
                 isToday
                   ? "Too soon: same-day bookings can't be processed"
@@ -98,23 +121,33 @@ export function NightCalendar({
                     ? "Past"
                     : booked
                       ? "Booked. Choose another night"
-                      : `${Math.round(illum * 100)}% moon · ${q.label} · ${fmtPrice(q.price)}/night`
+                      : noSpan
+                        ? `Not enough consecutive open nights for a ${span}-night week`
+                        : span > 1
+                          ? `Start a ${span}-night week here (through ${addDaysYmd(ymd, span - 1)})`
+                          : `${Math.round(illum * 100)}% moon · ${q.label} · ${fmtPrice(q.price)}/night`
               }
               style={
                 disabled
                   ? undefined
-                  : isSel
+                  : isStart
                     ? { backgroundColor: q.color }
-                    : ({ boxShadow: `inset 0 0 0 1px ${q.color}`, "--tier-bg": `${q.color}33` } as CSSProperties)
+                    : inSpan
+                      ? { backgroundColor: "rgba(110,168,254,0.22)" }
+                      : ({ boxShadow: `inset 0 0 0 1px ${q.color}`, "--tier-bg": `${q.color}33` } as CSSProperties)
               }
               className={`flex aspect-square items-center justify-center rounded-md text-sm transition-colors ${
                 tooSoon
                   ? "cursor-not-allowed text-muted/30"
                   : booked
                     ? "cursor-not-allowed text-muted/40 line-through"
-                    : isSel
-                      ? "font-semibold text-background"
-                      : "cal-day text-foreground"
+                    : noSpan
+                      ? "cursor-not-allowed text-muted/25"
+                      : isStart
+                        ? "font-semibold text-background"
+                        : inSpan
+                          ? "font-medium text-foreground"
+                          : "cal-day text-foreground"
               }`}
             >
               {d}
@@ -123,11 +156,18 @@ export function NightCalendar({
         })}
       </div>
 
-      {reserved && reserved.size > 0 && (
+      {span > 1 ? (
         <p className="mt-4 text-[11px] text-muted">
-          Outlined nights are available · <span className="line-through">struck-through</span> nights are
-          already booked
+          Pick the first of {span} consecutive nights. Dimmed nights can&apos;t start a full week.
         </p>
+      ) : (
+        reserved &&
+        reserved.size > 0 && (
+          <p className="mt-4 text-[11px] text-muted">
+            Outlined nights are available · <span className="line-through">struck-through</span> nights are
+            already booked
+          </p>
+        )
       )}
     </div>
   );

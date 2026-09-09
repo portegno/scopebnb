@@ -54,3 +54,11 @@ export const REMOTE_SURCHARGE = 1.1;
 export function remotePrice(usd: number): number {
   return Math.round(usd * REMOTE_SURCHARGE);
 }
+
+/**
+ * Remote Control weekly plan: the rig is yours for 7 consecutive nights at a
+ * flat rate — the best value, and the option we steer bookers toward. Priced
+ * well below 7 nightly rentals so a full week is the obvious choice.
+ */
+export const REMOTE_WEEK_NIGHTS = 7;
+export const REMOTE_WEEK_PRICE = 300;
