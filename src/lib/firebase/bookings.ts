@@ -8,6 +8,9 @@ import type { CapturePlan } from "@/lib/bookings/types";
  *  Imaging only; Remote Control bookings are just a night + price. */
 export type BookingInput = {
   product?: "managed" | "remote"; // defaults to "managed"
+  // Remote Control plan + span. "week" = 7 consecutive nights at a flat rate.
+  remotePlan?: "nightly" | "week";
+  nights?: number; // consecutive nights; defaults to 1
   // Target + framing (Managed Imaging only)
   targetName?: string;
   ra?: number;

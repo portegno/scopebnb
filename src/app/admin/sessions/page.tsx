@@ -86,9 +86,8 @@ export default function AdminSessions() {
       }
       return true;
     });
-    // Pending: soonest night first. Completed: most recent night first.
-    const dir = tab === "pending" ? 1 : -1;
-    return rows.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "") * dir);
+    // Order by arrival: newest bookings (most recently created) first.
+    return rows.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
   }, [orders, tab, search, statusFilter, productFilter, from, to]);
 
   const total = tab === "pending" ? counts.pending : counts.completed;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Section, Eyebrow, CTA, Card } from "@/components/ui";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { NIGHT_TIERS, fmtPrice, remotePrice, INTEGRATION_FEE } from "@/lib/pricing";
+import { NIGHT_TIERS, fmtPrice, remotePrice, INTEGRATION_FEE, REMOTE_WEEK_PRICE, REMOTE_WEEK_NIGHTS } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Pricing" };
 
@@ -66,15 +66,31 @@ export default function Pricing() {
           </div>
           <h2 className="mt-1 text-lg font-semibold">You drive the rig yourself</h2>
           <p className="mt-1 text-sm text-muted">
-            Rent the telescope for the whole night and operate it remotely with N.I.N.A., pointing it at
-            anything you like.
+            Rent the telescope and operate it remotely with N.I.N.A., pointing it at anything you like.
           </p>
+
+          {/* Featured: the full-week plan, the best value. */}
+          <div className="mt-4 rounded-[4px] bg-surface-2 p-4 ring-1 ring-gold/40">
+            <div className="flex items-center justify-between gap-2">
+              <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-background">
+                Most popular
+              </span>
+              <span className="text-2xl font-semibold text-gold">{fmtPrice(REMOTE_WEEK_PRICE)}</span>
+            </div>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              Full week · {REMOTE_WEEK_NIGHTS} nights in a row
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              ≈ {fmtPrice(Math.round(REMOTE_WEEK_PRICE / REMOTE_WEEK_NIGHTS))}/night. Best odds of clear skies, far
+              cheaper than booking nightly.
+            </p>
+          </div>
+
+          <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted">Or by the night</p>
           <TierTable remote />
           <p className="mt-4 text-xs text-muted">Per night, hands-on. 10% above the managed rate.</p>
           <div className="mt-6">
-            <CTA href="/book?mode=remote" variant="secondary">
-              Reserve a night
-            </CTA>
+            <CTA href="/book?mode=remote">Reserve your week</CTA>
           </div>
         </Card>
       </div>
