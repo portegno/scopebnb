@@ -595,29 +595,51 @@ export default function Book() {
             </Link>
 
             <div className="flex w-full flex-1 flex-col rounded-[4px] bg-surface p-6 ring-1 ring-hairline">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Price per night</h3>
-            <ul className="mt-5 flex-1 divide-y divide-hairline">
-              {NIGHT_TIERS.map((t) => {
-                const dimmed = tier ? t.key !== tier.key : false;
-                return (
-                  <li
-                    key={t.key}
-                    className={`flex items-center justify-between gap-3 py-3 transition-opacity duration-300 ${
-                      dimmed ? "opacity-25" : "opacity-100"
-                    }`}
-                  >
-                    <span className="flex items-center gap-3 text-base text-foreground/90">
-                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.color }} />
-                      {t.key === "dark" ? "Dark (new moon)" : t.label}
-                    </span>
-                    <span className="text-2xl font-semibold text-gold">{fmtPrice(priceOf(t.price))}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="mt-5 text-xs leading-relaxed text-muted">
-              Darker (new-moon) nights image fainter targets, so they&apos;re priced highest.
-            </p>
+              {isRemoteWeek ? (
+                <>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Full week</h3>
+                  <div className="mt-5 flex flex-1 flex-col justify-center">
+                    <p className="text-5xl font-semibold leading-none tracking-tight text-gold">
+                      {fmtPrice(REMOTE_WEEK_PRICE)}
+                    </p>
+                    <p className="mt-2 text-sm text-foreground/90">
+                      One flat rate · {REMOTE_WEEK_NIGHTS} nights in a row
+                    </p>
+                    <p className="mt-1 text-sm text-gold-soft">
+                      ≈ {fmtPrice(Math.round(REMOTE_WEEK_PRICE / REMOTE_WEEK_NIGHTS))}/night
+                    </p>
+                  </div>
+                  <p className="mt-5 text-xs leading-relaxed text-muted">
+                    One price for the whole week, no matter the moon. Far cheaper than booking nightly.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Price per night</h3>
+                  <ul className="mt-5 flex-1 divide-y divide-hairline">
+                    {NIGHT_TIERS.map((t) => {
+                      const dimmed = tier ? t.key !== tier.key : false;
+                      return (
+                        <li
+                          key={t.key}
+                          className={`flex items-center justify-between gap-3 py-3 transition-opacity duration-300 ${
+                            dimmed ? "opacity-25" : "opacity-100"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3 text-base text-foreground/90">
+                            <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.color }} />
+                            {t.key === "dark" ? "Dark (new moon)" : t.label}
+                          </span>
+                          <span className="text-2xl font-semibold text-gold">{fmtPrice(priceOf(t.price))}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p className="mt-5 text-xs leading-relaxed text-muted">
+                    Darker (new-moon) nights image fainter targets, so they&apos;re priced highest.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
