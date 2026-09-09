@@ -7,6 +7,9 @@ import { Section, Eyebrow, Card } from "@/components/ui";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { AltitudeChart } from "@/components/AltitudeChart";
 import { NightCalendar } from "@/components/NightCalendar";
+import { BookingPayPanel } from "@/components/BookingPayPanel";
+import { REMOTE_GUIDE_PDF } from "@/components/BookingDetailBody";
+import { HOLD_MS } from "@/lib/bookings/hold";
 import { useAuth } from "@/lib/firebase/useAuth";
 import { createBooking } from "@/lib/firebase/bookings";
 import { trackEvent } from "@/lib/analytics";
@@ -114,7 +117,7 @@ export default function Book() {
     magnitude?: number | null;
   } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [booking, setBooking] = useState<{ id?: string; busy?: boolean; error?: string }>({});
+  const [booking, setBooking] = useState<{ id?: string; busy?: boolean; error?: string; paid?: boolean; heldUntil?: number }>({});
   const [framerUrl, setFramerUrl] = useState<string | null>(null);
   const router = useRouter();
   const { user } = useAuth();
@@ -151,6 +154,7 @@ export default function Book() {
         sessionEnd: session.end,
         durationHours: +(session.end - session.start).toFixed(2),
         priceUsd: tier?.price,
+        totalUsd: managedTotal,
         nightTier: tier?.key,
         maxAltitude: a.maxAltitude,
         darkHours: a.darkHours,
@@ -159,7 +163,7 @@ export default function Book() {
           : null,
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
       });
-      setBooking({ id });
+      setBooking({ id, heldUntil: Date.now() + HOLD_MS });
       // Marketing conversion: a managed booking request, with its value.
       trackEvent("generate_lead", {
         currency: "USD",
@@ -188,11 +192,12 @@ export default function Book() {
         nights: spanNights,
         date: selectedDate,
         priceUsd: remoteTotal,
+        totalUsd: remoteTotal,
         nightTier: night.tier.key,
         moon: { illumPct: night.illumPct, separationDeg: 0, phase: night.phase },
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
       });
-      setBooking({ id });
+      setBooking({ id, heldUntil: Date.now() + HOLD_MS });
       // Marketing conversion: a remote-control booking request, with its value.
       trackEvent("generate_lead", {
         currency: "USD",
@@ -258,6 +263,9 @@ export default function Book() {
   // Managed total = night price + optional integrated-image add-on.
   const managedTotal = tier ? tier.price + (wantsIntegration ? INTEGRATION_FEE : 0) : 0;
   // Remote week = 7 consecutive nights at a flat rate; nightly = one night.
+  // Whether online payment is live. When off (no PayPal client id yet), the
+  // booking flow falls back to "request → admin confirms".
+  const paymentsOn = !!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
   const isRemoteWeek = mode === "remote" && remotePlan === "week";
   const spanNights = isRemoteWeek ? REMOTE_WEEK_NIGHTS : 1;
   const weekEnd = selectedDate ? addDaysYmd(selectedDate, REMOTE_WEEK_NIGHTS - 1) : "";
@@ -1308,14 +1316,34 @@ export default function Book() {
             <p className="rounded-[4px] bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-hairline">
               {current.name} isn&apos;t imageable on {nightLabel} from this site. Pick another target or date.
             </p>
+          ) : booking.paid ? (
+            <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
+              <p className="text-sm">
+                Paid and confirmed · <span className="font-semibold">{framingName.trim() || current.name}</span> on{" "}
+                <span className="font-semibold text-gold-soft">{nightLabel}</span>
+                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedTotal)}</span></>}
+                {wantsIntegration && <span className="text-muted"> (incl. integrated image)</span>}. We&apos;ll capture your target.
+              </p>
+              <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
+                View in your dashboard →
+              </Link>
+            </div>
+          ) : booking.id && paymentsOn && booking.heldUntil ? (
+            <BookingPayPanel
+              bookingId={booking.id}
+              amountUsd={managedTotal}
+              heldUntil={booking.heldUntil}
+              label="night"
+              onPaid={() => setBooking((b) => ({ ...b, paid: true }))}
+              onReset={() => setBooking({})}
+            />
           ) : booking.id ? (
             <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
               <p className="text-sm">
                 Booking requested for <span className="font-semibold">{framingName.trim() || current.name}</span> on{" "}
                 <span className="font-semibold text-gold-soft">{nightLabel}</span>
-                {session && <> · {fmtHour(session.start)}–{fmtHour(session.end)}</>}
-                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedTotal)}</span></>}
-                {wantsIntegration && <span className="text-muted"> (incl. integrated image)</span>}. We&apos;ll confirm the night.
+                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedTotal)}</span></>}. We&apos;ll
+                confirm your night shortly.
               </p>
               <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
                 View in your dashboard →
@@ -1329,7 +1357,7 @@ export default function Book() {
                 disabled={booking.busy}
                 className="inline-flex h-11 items-center justify-center rounded-[4px] bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
               >
-                {booking.busy ? "Saving…" : user ? "Confirm booking →" : "Log in to book →"}
+                {booking.busy ? "Saving…" : user ? (paymentsOn ? "Continue to payment →" : "Confirm booking →") : "Log in to book →"}
               </button>
               {session && (
                 <span className="text-sm text-muted">
@@ -1429,15 +1457,48 @@ export default function Book() {
           </div>
 
           <div className="mt-6">
-            {booking.id ? (
+            {booking.paid ? (
               <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
                 <p className="text-sm">
-                  {isRemoteWeek ? "Remote Control week requested for " : "Remote Control night requested for "}
+                  Paid and confirmed ·{" "}
                   <span className="font-semibold text-gold-soft">
                     {isRemoteWeek ? `${nightLabel} → ${weekEndLabel}` : nightLabel}
                   </span>{" "}
                   · <span className="font-semibold text-gold-soft">{fmtPrice(remoteTotal)}</span>. We&apos;ll send your
                   remote-desktop access details.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <a
+                    href={REMOTE_GUIDE_PDF}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[4px] bg-gold px-4 text-sm font-semibold text-background hover:bg-gold/90"
+                  >
+                    ↓ Remote imaging guide (PDF)
+                  </a>
+                  <Link href="/dashboard" className="text-sm font-semibold text-accent hover:underline">
+                    View in your dashboard →
+                  </Link>
+                </div>
+              </div>
+            ) : booking.id && paymentsOn && booking.heldUntil ? (
+              <BookingPayPanel
+                bookingId={booking.id}
+                amountUsd={remoteTotal}
+                heldUntil={booking.heldUntil}
+                label={isRemoteWeek ? "week" : "night"}
+                onPaid={() => setBooking((b) => ({ ...b, paid: true }))}
+                onReset={() => setBooking({})}
+              />
+            ) : booking.id ? (
+              <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
+                <p className="text-sm">
+                  Remote Control {isRemoteWeek ? "week" : "night"} requested for{" "}
+                  <span className="font-semibold text-gold-soft">
+                    {isRemoteWeek ? `${nightLabel} → ${weekEndLabel}` : nightLabel}
+                  </span>{" "}
+                  · <span className="font-semibold text-gold-soft">{fmtPrice(remoteTotal)}</span>. We&apos;ll confirm and
+                  send your remote-desktop access details.
                 </p>
                 <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
                   View in your dashboard →
@@ -1451,7 +1512,7 @@ export default function Book() {
                   disabled={booking.busy}
                   className="inline-flex h-11 items-center justify-center rounded-[4px] bg-gold px-6 text-sm font-semibold text-background hover:bg-gold/90 disabled:opacity-50"
                 >
-                  {booking.busy ? "Saving…" : user ? "Confirm booking →" : "Log in to book →"}
+                  {booking.busy ? "Saving…" : user ? (paymentsOn ? "Continue to payment →" : "Confirm booking →") : "Log in to book →"}
                 </button>
                 <span className="text-sm text-muted">
                   <span className="font-medium text-gold-soft">{nightLabel}</span> ·{" "}

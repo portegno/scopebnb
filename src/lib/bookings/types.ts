@@ -50,6 +50,9 @@ export type Booking = {
   sessionEnd?: number;
   durationHours?: number;
   priceUsd?: number;
+  // The definitive amount to charge (night/week price + any add-ons). Set at
+  // booking time so payment never has to recompute it.
+  totalUsd?: number;
   nightTier?: string;
   score?: number;
   maxAltitude?: number;
@@ -59,6 +62,21 @@ export type Booking = {
   contact?: { email?: string; name?: string };
   userId?: string;
   status?: BookingStatus;
+  // Admin-only flag: a test/fake order, excluded from business metrics,
+  // occupancy and availability so it never affects real numbers or the calendar.
+  isTest?: boolean;
+  // Payment (PayPal). Set server-side after a successful capture.
+  payment?: {
+    provider: "paypal";
+    orderId: string;
+    captureId: string;
+    amountUsd: number;
+    payerEmail?: string;
+    payerName?: string;
+    feeUsd?: number; // PayPal fee
+    netUsd?: number; // amount after fee
+  } | null;
+  paidAt?: { seconds: number } | null;
   // Set once a session is captured/delivered: id of its client-facing session
   // report (see src/data/sessions.ts → /report/[id]).
   reportId?: string;

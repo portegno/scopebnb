@@ -26,7 +26,7 @@ function serialize(id: string, d: FirebaseFirestore.DocumentData) {
 
 type Body =
   | { action: "set-status"; status?: unknown }
-  | { action: "claim" | "release" | "review" | "unreview" };
+  | { action: "claim" | "release" | "review" | "unreview" | "mark-test" | "unmark-test" };
 
 /**
  * PATCH /api/admin/orders/[id] — admin order actions. Body:
@@ -73,6 +73,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         requirePermission(identity, "orders.review");
         update = { reviewedBy: FieldValue.delete(), reviewedAt: FieldValue.delete() };
         break;
+      case "mark-test":
+        requirePermission(identity, "orders.status");
+        update = { isTest: true };
+        break;
+      case "unmark-test":
+        requirePermission(identity, "orders.status");
+        update = { isTest: FieldValue.delete() };
+        break;
       default:
         throw new AdminError(400, "Unknown action");
     }
@@ -85,6 +93,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: e.message }, { status: e.status });
     }
     console.error("[admin] PATCH order error:", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
+/** DELETE /api/admin/orders/[id] — permanently remove an order. */
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const identity = await requireAdmin(req);
+    requirePermission(identity, "orders.status");
+    const { id } = await params;
+    await adminDb.doc(`bookings/${id}`).delete();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    if (e instanceof AdminError) return NextResponse.json({ error: e.message }, { status: e.status });
+    console.error("[admin] DELETE order error:", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

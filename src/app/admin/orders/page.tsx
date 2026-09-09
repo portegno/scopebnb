@@ -12,7 +12,7 @@ import { BOOKING_STATUSES, STATUS_LABEL, STATUS_TRANSITIONS, type BookingStatus 
 type SortKey = "date" | "priceUsd" | "createdAt";
 type PatchBody =
   | { action: "set-status"; status: BookingStatus }
-  | { action: "claim" | "release" | "review" | "unreview" };
+  | { action: "claim" | "release" | "review" | "unreview" | "mark-test" | "unmark-test" };
 
 const shortEmail = (email?: string | null) => (email ? email.split("@")[0] : "");
 
@@ -35,6 +35,9 @@ export default function AdminOrders() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Booking | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  // Multi-select for bulk actions (mark/unmark test, delete).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
   const [productFilter, setProductFilter] = useState<"all" | "managed" | "remote">("all");
@@ -113,6 +116,71 @@ export default function AdminOrders() {
   const release = (o: Booking) => mutate(o, { action: "release" }, { assignedTo: null, assignedAt: null });
   const review = (o: Booking) => mutate(o, { action: "review" }, { reviewedBy: myEmail });
   const unreview = (o: Booking) => mutate(o, { action: "unreview" }, { reviewedBy: null, reviewedAt: null });
+  const markTest = (o: Booking) => mutate(o, { action: "mark-test" }, { isTest: true });
+  const unmarkTest = (o: Booking) => mutate(o, { action: "unmark-test" }, { isTest: false });
+
+  const toggleRow = (id: string) =>
+    setSelectedIds((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  async function bulkPatch(action: "mark-test" | "unmark-test", optimistic: Partial<Booking>) {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    setBulkBusy(true);
+    const prev = orders;
+    setOrders((rows) => rows.map((o) => (selectedIds.has(o.id) ? { ...o, ...optimistic } : o)));
+    try {
+      await Promise.all(
+        ids.map((id) => adminFetch(`/api/admin/orders/${id}`, { method: "PATCH", body: JSON.stringify({ action }) })),
+      );
+      setSelectedIds(new Set());
+    } catch (e) {
+      setOrders(prev);
+      alert(e instanceof AdminFetchError ? e.message : "Could not update orders");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} order${ids.length > 1 ? "s" : ""} permanently? This can't be undone.`)) return;
+    setBulkBusy(true);
+    const prev = orders;
+    setOrders((rows) => rows.filter((o) => !selectedIds.has(o.id)));
+    setSelected((s) => (s && selectedIds.has(s.id) ? null : s));
+    try {
+      await Promise.all(ids.map((id) => adminFetch(`/api/admin/orders/${id}`, { method: "DELETE" })));
+      setSelectedIds(new Set());
+    } catch (e) {
+      setOrders(prev);
+      alert(e instanceof AdminFetchError ? e.message : "Could not delete orders");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function removeOrder(order: Booking) {
+    if (!confirm(`Delete this order permanently? This can't be undone.\n\n${order.targetName ?? (order.product === "remote" ? "Remote" : "Managed")} · ${order.date ?? ""}`))
+      return;
+    setSavingId(order.id);
+    const prev = orders;
+    setOrders((rows) => rows.filter((o) => o.id !== order.id));
+    setSelected(null);
+    try {
+      await adminFetch(`/api/admin/orders/${order.id}`, { method: "DELETE" });
+    } catch (e) {
+      setOrders(prev);
+      alert(e instanceof AdminFetchError ? e.message : "Could not delete order");
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   return (
     <div>
@@ -160,6 +228,30 @@ export default function AdminOrders() {
             </span>
           </div>
 
+          {canStatus && selectedIds.size > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-[4px] border border-slate-300 bg-white px-3 py-2">
+              <span className="text-sm font-medium text-slate-700">{selectedIds.size} selected</span>
+              <span className="mx-1 h-4 w-px bg-slate-200" />
+              <button type="button" disabled={bulkBusy} onClick={() => bulkPatch("mark-test", { isTest: true })} className={btn}>
+                Mark as test
+              </button>
+              <button type="button" disabled={bulkBusy} onClick={() => bulkPatch("unmark-test", { isTest: false })} className={btn}>
+                Unmark test
+              </button>
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={bulkDelete}
+                className="rounded-[4px] border border-rose-300 bg-white px-3 py-1 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+              >
+                {bulkBusy ? "Working…" : "Delete selected"}
+              </button>
+              <button type="button" onClick={() => setSelectedIds(new Set())} className="ml-auto text-sm text-slate-500 hover:text-slate-800">
+                Clear
+              </button>
+            </div>
+          )}
+
           {visible.length === 0 ? (
             <p className="mt-8 text-sm text-slate-500">No orders match.</p>
           ) : (
@@ -167,6 +259,24 @@ export default function AdminOrders() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-100 text-xs uppercase tracking-wider text-slate-400">
                   <tr>
+                    {canStatus && (
+                      <th className="w-9 px-3 py-2">
+                        <input
+                          type="checkbox"
+                          aria-label="Select all"
+                          className="h-4 w-4 cursor-pointer accent-surface-2"
+                          checked={visible.length > 0 && visible.every((o) => selectedIds.has(o.id))}
+                          ref={(el) => {
+                            if (el)
+                              el.indeterminate =
+                                selectedIds.size > 0 && !visible.every((o) => selectedIds.has(o.id));
+                          }}
+                          onChange={(e) =>
+                            setSelectedIds(e.target.checked ? new Set(visible.map((o) => o.id)) : new Set())
+                          }
+                        />
+                      </th>
+                    )}
                     <Th onClick={() => toggleSort("date")} active={sort.key === "date"} dir={sort.dir}>
                       Night
                     </Th>
@@ -186,7 +296,18 @@ export default function AdminOrders() {
                   {visible.map((o) => {
                     const saving = savingId === o.id;
                     return (
-                      <tr key={o.id} className="hover:bg-slate-100">
+                      <tr key={o.id} className={`hover:bg-slate-100 ${selectedIds.has(o.id) ? "bg-blue-50" : ""}`}>
+                        {canStatus && (
+                          <td className="px-3 py-2.5 align-top">
+                            <input
+                              type="checkbox"
+                              aria-label="Select order"
+                              className="h-4 w-4 cursor-pointer accent-surface-2"
+                              checked={selectedIds.has(o.id)}
+                              onChange={() => toggleRow(o.id)}
+                            />
+                          </td>
+                        )}
                         <td className="cursor-pointer px-3 py-2.5 align-top text-slate-700" onClick={() => setSelected(o)}>
                           {o.date ?? "—"}
                           {o.sessionStart != null && o.sessionEnd != null && (
@@ -196,8 +317,13 @@ export default function AdminOrders() {
                           )}
                         </td>
                         <td className="cursor-pointer px-3 py-2.5 align-top" onClick={() => setSelected(o)}>
-                          <span className="block text-slate-800">
+                          <span className="flex items-center gap-2 text-slate-800">
                             {o.product === "remote" ? <span className="text-slate-500">Remote night</span> : (o.targetName ?? "—")}
+                            {o.isTest && (
+                              <span className="rounded-[4px] bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                                Test
+                              </span>
+                            )}
                           </span>
                           {showCustomers && (
                             <span className="block text-xs text-slate-400">{o.contact?.name ?? o.contact?.email ?? ""}</span>
@@ -305,6 +431,27 @@ export default function AdminOrders() {
                         Mark reviewed
                       </button>
                     ))}
+                </div>
+              )}
+              {canStatus && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+                  {selected.isTest ? (
+                    <button type="button" disabled={savingId === selected.id} onClick={() => unmarkTest(selected)} className={btn}>
+                      Unmark test
+                    </button>
+                  ) : (
+                    <button type="button" disabled={savingId === selected.id} onClick={() => markTest(selected)} className={btn}>
+                      Mark as test
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={savingId === selected.id}
+                    onClick={() => removeOrder(selected)}
+                    className="rounded-[4px] px-3 py-1 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    Delete order
+                  </button>
                 </div>
               )}
             </div>

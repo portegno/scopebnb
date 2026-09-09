@@ -33,6 +33,7 @@ export const GET = withAdmin(async (req, { identity }) => {
   let total = 0;
   let revenueRealized = 0;
   let revenuePipeline = 0;
+  let feesTotal = 0; // PayPal fees on realized (paid) revenue
   let upcomingNights = 0;
   const upcomingSessions: Booking[] = [];
 
@@ -40,6 +41,7 @@ export const GET = withAdmin(async (req, { identity }) => {
 
   snap.forEach((doc) => {
     const d = doc.data();
+    if (d.isTest) return; // fake orders never affect business metrics
     const status = (BOOKING_STATUSES.includes(d.status) ? d.status : "requested") as BookingStatus;
     const createdMs = (d.createdAt?.seconds ?? 0) * 1000;
     const inRange = createdMs >= from && createdMs <= to;
@@ -50,9 +52,23 @@ export const GET = withAdmin(async (req, { identity }) => {
       if (d.product === "remote") byProduct.remote++;
       else byProduct.managed++;
       if (d.nightTier) byTier[d.nightTier] = (byTier[d.nightTier] ?? 0) + 1;
-      const price = typeof d.priceUsd === "number" ? d.priceUsd : 0;
-      if (status === "captured" || status === "delivered") revenueRealized += price;
-      else if (status === "requested" || status === "confirmed") revenuePipeline += price;
+      // Charge the real total (night/week + add-ons), not just the base price.
+      const amount = typeof d.totalUsd === "number" ? d.totalUsd : typeof d.priceUsd === "number" ? d.priceUsd : 0;
+      // Money in hand (a captured PayPal payment, or a captured/delivered
+      // session) is realized; an unpaid request/confirmed is still pipeline.
+      const paid = !!d.payment || status === "captured" || status === "delivered";
+      if (paid) {
+        revenueRealized += amount;
+        // Actual PayPal fee for this sale (falls back to gross-minus-net, else 0
+        // when PayPal didn't report a breakdown, e.g. older/manual entries).
+        const fee =
+          typeof d.payment?.feeUsd === "number"
+            ? d.payment.feeUsd
+            : typeof d.payment?.netUsd === "number"
+              ? amount - d.payment.netUsd
+              : 0;
+        feesTotal += fee;
+      } else if (status === "requested" || status === "confirmed") revenuePipeline += amount;
     }
 
     if (typeof d.date === "string" && d.date >= today && status !== "cancelled") {
@@ -84,7 +100,13 @@ export const GET = withAdmin(async (req, { identity }) => {
       byProduct,
       byTier,
       revenue: seeRevenue
-        ? { realized: revenueRealized, pipeline: revenuePipeline, total: revenueRealized + revenuePipeline }
+        ? {
+            realized: revenueRealized,
+            pipeline: revenuePipeline,
+            total: revenueRealized + revenuePipeline,
+            fees: Math.round(feesTotal * 100) / 100,
+            net: Math.round((revenueRealized - feesTotal) * 100) / 100,
+          }
         : null,
       upcomingNights,
     },

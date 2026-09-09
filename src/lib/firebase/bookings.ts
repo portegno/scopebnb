@@ -29,6 +29,7 @@ export type BookingInput = {
   durationHours?: number;
   // Pricing snapshot (scaled by night tier)
   priceUsd?: number;
+  totalUsd?: number; // definitive amount to charge (price + add-ons)
   nightTier?: string; // "dark" | "good" | "bright" | "full"
   // Quality snapshot at booking time
   score?: number;

@@ -8,6 +8,8 @@ import { useAuth, signOut } from "@/lib/firebase/useAuth";
 import { BookingDetailBody, fmtHour } from "@/components/BookingDetailBody";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Booking } from "@/lib/bookings/types";
+import { addDaysYmd } from "@/lib/dates";
+import { fmtPrice } from "@/lib/pricing";
 
 export default function Dashboard() {
   const { user, loading, enabled } = useAuth();
@@ -123,6 +125,17 @@ export default function Dashboard() {
               ? Math.min((Math.floor(selectedIndex / cols) + 1) * cols - 1, bookings.length - 1)
               : -1;
           const selected = selectedIndex >= 0 ? bookings[selectedIndex] : null;
+          // Card labels: remote bookings have no target, so name them by plan and
+          // show the week's date range; every card shows its price + paid state.
+          const isRemote = b.product === "remote";
+          const nights = b.nights ?? 1;
+          const title = isRemote ? (nights > 1 ? "Remote week" : "Remote night") : b.targetName ?? "Target";
+          const dateLine =
+            isRemote && nights > 1 && b.date
+              ? `${b.date} → ${addDaysYmd(b.date, nights - 1)} · ${nights} nights`
+              : b.date;
+          const amount = b.totalUsd ?? b.priceUsd;
+          const paid = !!b.payment || !!b.paidAt;
           return (
             <Fragment key={b.id}>
               <button
@@ -139,11 +152,11 @@ export default function Dashboard() {
                 )}
                 <div className="p-5">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-semibold">{b.targetName ?? "Target"}</h3>
+                    <h3 className="font-semibold">{title}</h3>
                     <StatusBadge status={b.status} />
                   </div>
                   <p className="mt-2 text-sm text-muted">
-                    {b.date}
+                    {dateLine}
                     {b.sessionStart != null && b.sessionEnd != null && (
                       <>
                         {" "}· {fmtHour(b.sessionStart)}–{fmtHour(b.sessionEnd)}
@@ -154,6 +167,20 @@ export default function Dashboard() {
                     <p className="mt-1 text-xs text-muted">
                       {b.maxAltitude != null && <>peaks {b.maxAltitude}° · {b.darkHours}h dark</>}
                       {b.moon && <> · Moon {b.moon.illumPct}% @ {b.moon.separationDeg}°</>}
+                    </p>
+                  )}
+                  {amount != null && (
+                    <p className="mt-2 flex items-center gap-2 text-sm">
+                      <span className="font-semibold text-gold">{fmtPrice(amount)}</span>
+                      {paid ? (
+                        <span className="rounded-[4px] bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-300">
+                          Paid
+                        </span>
+                      ) : b.status !== "cancelled" ? (
+                        <span className="rounded-[4px] bg-surface-2 px-1.5 py-0.5 text-xs font-medium text-muted">
+                          Payment pending
+                        </span>
+                      ) : null}
                     </p>
                   )}
                   <p
