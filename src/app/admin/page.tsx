@@ -17,7 +17,7 @@ type Stats = {
   byStatus: Record<BookingStatus, number>;
   byProduct: { managed: number; remote: number };
   byTier: Record<string, number>;
-  revenue: { realized: number; pipeline: number; total: number } | null;
+  revenue: { realized: number; pipeline: number; total: number; fees: number; net: number } | null;
   upcomingNights: number;
 };
 
@@ -211,6 +211,12 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
             {days.map((d) => {
               const booking = display.days[String(d)];
               const blk = display.blocks[String(d)];
+              // Join consecutive days of the same sale with one continuous
+              // underline (rounded at the group's ends).
+              const nextBooking = display.days[String(d + 1)];
+              const prevBooking = display.days[String(d - 1)];
+              const connectRight = !!booking && !!nextBooking && nextBooking.bookingId === booking.bookingId;
+              const connectLeft = !!booking && !!prevBooking && prevBooking.bookingId === booking.bookingId;
               const date = ymd(d);
               const isFree = !booking && !blk;
               const isSel = selected.has(date);
@@ -242,7 +248,7 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
               const tip = blk
                 ? `Blocked by ${blk.blockedBy} · ${date}${blk.note ? ` · ${blk.note}` : ""}`
                 : booking
-                  ? `${date} · ${booking.product === "remote" ? "Remote night" : (booking.targetName ?? "Booked")} · ${booking.status}`
+                  ? `${date} · ${booking.customerName ? `${booking.customerName} · ` : ""}${booking.product === "remote" ? "Remote" : (booking.targetName ?? "Booked")} · ${booking.status}`
                   : `${date}${isPast ? " · past" : " · free"}`;
 
               return (
@@ -263,9 +269,16 @@ function MonthOccupancy({ canBlock }: { canBlock: boolean }) {
                   style={cellStyle}
                   className={`group relative flex h-9 flex-1 items-center justify-center rounded-[3px] border text-[10px] font-medium ${cls} ${
                     isSel ? "ring-2 ring-slate-400" : ""
-                  } ${interactive ? "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-slate-400/60" : "cursor-default"}`}
+                  } ${interactive ? "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-slate-400/60" : "cursor-default"} ${
+                    connectLeft ? "-ml-1 rounded-l-none border-l-0" : ""
+                  } ${connectRight ? "rounded-r-none" : ""}`}
                 >
                   {isToday && <span className="absolute -top-1.5 inset-x-1 h-1 rounded-full bg-surface-2" />}
+                  {booking && (
+                    <span className="pointer-events-none absolute left-1 top-0.5 text-[9px] font-bold leading-none opacity-90">
+                      $
+                    </span>
+                  )}
                   {d}
                   <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-[4px] bg-surface-2 px-2 py-1 text-[11px] font-normal text-white opacity-0 shadow-lg transition-all duration-150 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100">
                     {tip}
@@ -747,6 +760,13 @@ export default function AdminOverview() {
             <Metric label="Bookings" value={stats.total} sub={rangeLabel} />
             {stats.revenue && (
               <Metric label="Pipeline revenue" value={usd(stats.revenue.pipeline)} sub={`${usd(stats.revenue.realized)} realized`} />
+            )}
+            {stats.revenue && (
+              <Metric
+                label="Net revenue"
+                value={usd(stats.revenue.net)}
+                sub={`${usd(stats.revenue.realized)} paid − ${usd(stats.revenue.fees)} PayPal fees`}
+              />
             )}
             <Metric label="Upcoming nights" value={stats.upcomingNights} sub="not cancelled, today onward" />
             <Metric label="Managed / Remote" value={`${stats.byProduct.managed} / ${stats.byProduct.remote}`} sub="bookings in range" />

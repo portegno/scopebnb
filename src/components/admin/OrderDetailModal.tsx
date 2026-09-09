@@ -110,6 +110,17 @@ export function OrderDetailModal({
                 {b.wantsIntegration && <span className="font-medium text-amber-600"> · integrated image</span>}
               </Row>
             )}
+            {b.payment && (
+              <Row label="Payment">
+                <span className="font-medium text-emerald-600">Paid · PayPal</span>
+                {typeof b.payment.feeUsd === "number" && (
+                  <span className="block text-xs text-slate-400">
+                    ${b.payment.amountUsd} gross − ${b.payment.feeUsd} fee = ${b.payment.netUsd ?? (b.payment.amountUsd - b.payment.feeUsd).toFixed(2)} net
+                  </span>
+                )}
+                {b.payment.payerEmail && <span className="block text-xs text-slate-400">{b.payment.payerEmail}</span>}
+              </Row>
+            )}
             {b.createdAt?.seconds && <Row label="Requested">{fmtDate(b.createdAt.seconds)}</Row>}
             {extraRows}
             <Row label="Booking ID">

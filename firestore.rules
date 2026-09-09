@@ -10,12 +10,15 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Bookings: a signed-in user can create their own and read/manage only theirs.
+    // Bookings: a signed-in user can create and read only their own. Updates and
+    // deletes go exclusively through the Admin SDK (status changes, and PayPal
+    // payment capture), so payment/status can't be forged from the client.
     match /bookings/{bookingId} {
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null
+      allow read: if request.auth != null
         && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     // Admin-user assignments (email -> permissions) are accessed exclusively via

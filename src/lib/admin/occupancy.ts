@@ -2,6 +2,7 @@ import "server-only";
 
 import { adminDb } from "@/lib/firebase/admin";
 import { listBlocks } from "@/lib/admin/blocks";
+import { ymdSpan } from "@/lib/dates";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/bookings/status";
 import { nightTier, type NightTierKey } from "@/lib/pricing";
 import { moonIllumination } from "@/lib/visibility";
@@ -44,10 +45,10 @@ export async function computeOccupancy(
   const days: Record<string, DaySummary> = {};
   snap.forEach((doc) => {
     const d = doc.data();
+    if (d.isTest) return; // fake orders don't occupy the calendar
     const status = (BOOKING_STATUSES.includes(d.status) ? d.status : "requested") as BookingStatus;
-    if (status === "cancelled" || typeof d.date !== "string" || !d.date.startsWith(prefix)) return;
-    const day = String(parseInt(d.date.slice(8, 10), 10));
-    if (days[day]) return;
+    if (status === "cancelled" || typeof d.date !== "string") return;
+
     const summary: DaySummary = {
       tier: typeof d.nightTier === "string" ? d.nightTier : "occupied",
       bookingId: doc.id,
@@ -57,7 +58,15 @@ export async function computeOccupancy(
     if (typeof d.targetName === "string") summary.targetName = d.targetName;
     if (opts.seeCustomers && d.contact?.name) summary.customerName = d.contact.name;
     if (opts.seeRevenue && typeof d.priceUsd === "number") summary.priceUsd = d.priceUsd;
-    days[day] = summary;
+
+    // A multi-night stay (e.g. the 7-night remote week) occupies every night in
+    // its span, not just the start date. Mark each night that falls this month.
+    const nights = typeof d.nights === "number" && d.nights > 0 ? d.nights : 1;
+    for (const night of ymdSpan(d.date, nights)) {
+      if (!night.startsWith(prefix)) continue;
+      const day = String(parseInt(night.slice(8, 10), 10));
+      if (!days[day]) days[day] = summary;
+    }
   });
 
   const blocks: Record<string, { blockedBy: string; note: string }> = {};

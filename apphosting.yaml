@@ -88,3 +88,18 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # PayPal. Payments are OFF until live credentials are added: the client id is
+  # empty (so the checkout falls back to "request → admin confirms") and the
+  # PAYPAL_SECRET secret is intentionally not wired yet. To go live: create the
+  # secret (firebase apphosting:secrets:set PAYPAL_SECRET), re-add its block
+  # here, set the live NEXT_PUBLIC_PAYPAL_CLIENT_ID and PAYPAL_ENV=live.
+  - variable: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+    value: ""
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: PAYPAL_ENV
+    value: live
+    availability:
+      - RUNTIME
