@@ -486,7 +486,7 @@ export default function Book() {
 
       {/* Remote plan: full week (featured) vs single night. */}
       {mode === "remote" && (
-        <div className="mt-6 max-w-3xl">
+        <div className="mt-6 mb-16 max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-wider text-muted">Choose your plan</p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <button

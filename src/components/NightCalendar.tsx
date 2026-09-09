@@ -107,6 +107,11 @@ export function NightCalendar({
           const isStart = activeStart !== "" && ymd === activeStart;
           const inSpan = span > 1 && activeStart !== "" && ymd >= activeStart && ymd <= selEnd && !isStart;
           const disabled = tooSoon || booked || noSpan;
+          // Chain the span: draw a connector into the gap toward the next night,
+          // unless this is the span's last night, the week's last column, or the
+          // last day shown this month.
+          const isRowEnd = i % 7 === 6;
+          const connectRight = span > 1 && (isStart || inSpan) && ymd !== selEnd && !isRowEnd && d < daysInMonth;
           return (
             <button
               key={ymd}
@@ -136,7 +141,7 @@ export function NightCalendar({
                       ? { backgroundColor: "rgba(110,168,254,0.22)" }
                       : ({ boxShadow: `inset 0 0 0 1px ${q.color}`, "--tier-bg": `${q.color}33` } as CSSProperties)
               }
-              className={`flex aspect-square items-center justify-center rounded-md text-sm transition-colors ${
+              className={`relative flex aspect-square items-center justify-center rounded-md text-sm transition-colors ${
                 tooSoon
                   ? "cursor-not-allowed text-muted/30"
                   : booked
@@ -150,6 +155,12 @@ export function NightCalendar({
                           : "cal-day text-foreground"
               }`}
             >
+              {connectRight && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 right-[-7px] z-10 h-[3px] w-3.5 -translate-y-1/2 rounded-full bg-gold"
+                />
+              )}
               {d}
             </button>
           );
