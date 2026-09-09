@@ -448,12 +448,14 @@ export default function Book() {
             title: "Request an image",
             tag: "Managed",
             desc: "We frame and capture it for you. You get the session's lights plus calibration frames within 24h, ready to stack. No remote-control skills needed.",
+            popular: false,
           },
           {
             key: "remote",
             title: "Take control",
             tag: "Remote · N.I.N.A.",
-            desc: "Rent the rig and drive it yourself for the whole night, pointing it at any target you like.",
+            desc: "Rent the rig and drive it yourself, pointing it at any target you like. Best value by the week.",
+            popular: true,
           },
         ] as const).map((m) => {
           const active = mode === m.key;
@@ -462,10 +464,15 @@ export default function Book() {
               key={m.key}
               type="button"
               onClick={() => setMode(m.key)}
-              className={`flex h-full flex-col rounded-[4px] bg-surface p-6 text-left transition-colors ${
-                active ? "ring-2 ring-accent" : "ring-1 ring-hairline hover:bg-surface-2"
+              className={`relative flex h-full flex-col rounded-[4px] bg-surface p-6 text-left transition-colors ${
+                active ? "ring-2 ring-accent" : m.popular ? "ring-1 ring-gold/40 hover:bg-surface-2" : "ring-1 ring-hairline hover:bg-surface-2"
               }`}
             >
+              {m.popular && (
+                <span className="absolute -top-2.5 left-4 rounded-full bg-gold px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-background">
+                  Most popular
+                </span>
+              )}
               <span className="text-xs font-semibold uppercase tracking-wider text-accent">{m.tag}</span>
               <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{m.title}</h3>
               <p className="mt-3 flex-1 text-sm text-muted">{m.desc}</p>
