@@ -77,6 +77,9 @@ export type Booking = {
     netUsd?: number; // amount after fee
   } | null;
   paidAt?: { seconds: number } | null;
+  // Set once the booking-confirmation email has been sent, so it's never sent
+  // twice (client request + payment capture both try).
+  confirmationEmailSentAt?: { seconds: number } | null;
   // Set once a session is captured/delivered: id of its client-facing session
   // report (see src/data/sessions.ts → /report/[id]).
   reportId?: string;
