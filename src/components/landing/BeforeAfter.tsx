@@ -40,17 +40,69 @@ export function BeforeAfter({
     setX(Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100)));
   };
 
+  /**
+   * **Por qué no alcanza con onPointerMove.** La primera versión sólo escuchaba
+   * el movimiento con el botón apretado, y no andaba: al apretar encima de una
+   * imagen el navegador arranca su propio arrastrar-y-soltar, y desde ese
+   * momento los eventos de puntero dejan de llegar. El handle se dibujaba, se
+   * podía apretar, y no se movía.
+   *
+   * Se arregla por los dos lados: las imágenes dejan de ser arrastrables y
+   * dejan de recibir eventos, y el contenedor **captura el puntero**, que
+   * además es lo que hace que siga funcionando cuando el mouse se va del
+   * recuadro — al llegar al borde uno sigue moviéndose, y sin captura ahí se
+   * corta.
+   */
+  const arrastrando = useRef(false);
+
+  const alApretar = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    arrastrando.current = true;
+    // La captura es una mejora, no el mecanismo: si el navegador la rechaza, el
+    // arrastre tiene que seguir andando igual. Colgar el guard de que la
+    // captura haya funcionado es hacer que un slider deje de moverse por algo
+    // que nadie va a mirar.
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* da igual */ }
+    mover(e.clientX);
+  };
+
+  const alMover = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!arrastrando.current) return;
+    mover(e.clientX);
+  };
+
+  const alSoltar = (e: React.PointerEvent<HTMLDivElement>) => {
+    arrastrando.current = false;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* da igual */ }
+  };
+
   return (
     <figure className="m-0">
       <div
         ref={caja}
-        className="relative aspect-[3/2] w-full touch-pan-y overflow-hidden rounded-xl border border-hairline select-none"
-        onPointerMove={(e) => e.buttons === 1 && mover(e.clientX)}
-        onPointerDown={(e) => mover(e.clientX)}
+        className="relative aspect-[3/2] w-full cursor-ew-resize touch-none overflow-hidden rounded-xl border border-hairline select-none"
+        onPointerDown={alApretar}
+        onPointerMove={alMover}
+        onPointerUp={alSoltar}
+        onPointerCancel={alSoltar}
       >
-        <Image src={a} alt={alt} fill sizes="(max-width: 768px) 100vw, 720px" className="object-cover" />
+        <Image
+          src={a}
+          alt={alt}
+          fill
+          draggable={false}
+          sizes="(max-width: 768px) 100vw, 720px"
+          className="pointer-events-none object-cover select-none"
+        />
         <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${x}%)` }}>
-          <Image src={b} alt="" fill sizes="(max-width: 768px) 100vw, 720px" className="object-cover" />
+          <Image
+            src={b}
+            alt=""
+            fill
+            draggable={false}
+            sizes="(max-width: 768px) 100vw, 720px"
+            className="pointer-events-none object-cover select-none"
+          />
         </div>
 
         <span className="pointer-events-none absolute top-3 left-3 rounded bg-black/55 px-2 py-1 font-mono text-[10px] tracking-widest text-foreground/90 uppercase">
@@ -69,18 +121,22 @@ export function BeforeAfter({
           </span>
         </div>
 
-        {/* The real control, for a keyboard and for a screen reader. The wipe
-            above is the mouse affordance; this is the one that always works. */}
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={x}
-          onChange={(e) => setX(Number(e.target.value))}
-          aria-label={`Wipe between ${labelA} and ${labelB}`}
-          className="absolute inset-x-0 bottom-0 w-full cursor-ew-resize opacity-0"
-        />
       </div>
+
+      {/* El control de verdad, para teclado y para lector de pantalla.
+          **Antes era una capa invisible encima de la imagen**, y eso hacía dos
+          cosas malas: se comía los clicks de la franja de abajo y no se podía
+          ver ni enfocar. Ahora vive debajo, se ve, y el arrastre de arriba es
+          el atajo con mouse. */}
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={x}
+        onChange={(e) => setX(Number(e.target.value))}
+        aria-label={`Wipe between ${labelA} and ${labelB}`}
+        className="mt-3 w-full cursor-ew-resize accent-gold"
+      />
     </figure>
   );
 }
