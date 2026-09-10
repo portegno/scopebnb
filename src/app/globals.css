@@ -369,3 +369,92 @@ html.warp .aurora {
   background-repeat: repeat;
   background-size: 320px 320px;
 }
+
+/* ─── Landings ────────────────────────────────────────────────────────────
+   A landing is one photograph, one promise and one action, arriving from a
+   cold email. It goes heavy on motion because in astrophotography a sober
+   page says there is nobody on this side who looks at the sky — and every
+   effect here only touches `transform` and `opacity`, because anything that
+   animates layout stutters on a mid-range phone and whoever tests it on a
+   laptop never sees it.
+   Rules for all of it live in the agency repo: Agentes_etapa1/LANDINGS.md. */
+
+/* The hero photo breathes: 24s of scale, no frame dropped. Long and slow on
+   purpose — a zoom you can notice is a zoom that distracts from the picture. */
+.lp-kenburns {
+  overflow: hidden;
+}
+.lp-kenburns > * {
+  animation: lpKenBurns 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes lpKenBurns {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to   { transform: scale(1.13) translate3d(-1.2%, -1.6%, 0); }
+}
+
+/* Readable text over a real photograph without flattening it: a gradient from
+   the bottom, not a scrim over the whole frame. */
+.lp-scrim {
+  background:
+    linear-gradient(to top, var(--background) 2%, rgba(5, 7, 15, 0.72) 34%, rgba(5, 7, 15, 0.12) 68%, rgba(5, 7, 15, 0.45) 100%);
+}
+
+/* The scroll-parallax star layers. Positioned by SkyParallax, which writes
+   nothing but `transform` and does nothing at all on a touch screen. */
+.lp-stars {
+  position: absolute;
+  inset: -30% 0 -30% 0;
+  background-repeat: repeat;
+  will-change: transform;
+}
+.lp-stars--far {
+  background-image:
+    radial-gradient(1px 1px at 15% 22%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 62% 48%, rgba(180, 205, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 84% 76%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 38% 88%, rgba(255, 220, 190, 0.4), transparent);
+  background-size: 320px 320px;
+  opacity: 0.4;
+}
+.lp-stars--near {
+  background-image:
+    radial-gradient(6px 6px at 28% 34%, rgba(150, 190, 255, 0.16), transparent 70%),
+    radial-gradient(1.6px 1.6px at 28% 34%, rgba(230, 240, 255, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 72% 62%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.4px 1.4px at 92% 18%, rgba(255, 214, 170, 0.7), transparent);
+  background-size: 560px 560px;
+  opacity: 0.5;
+}
+
+/* One primary action, and it looks like one. The same button, the same words,
+   at the top and at the bottom: two different primary CTAs are not two chances,
+   they are none. */
+.lp-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.6rem;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #06090f;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  box-shadow: 0 10px 28px -12px rgba(245, 179, 74, 0.75);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.lp-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px -12px rgba(245, 179, 74, 0.9);
+}
+.lp-cta:active { transform: translateY(0); }
+
+/* Everything above stops here. Not a courtesy: parallax and drifting frames
+   make some people genuinely nauseous, and the person who writes the effect
+   doesn't have the setting on, so they never watch it fail. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-kenburns > * { animation: none; transform: scale(1.04); }
+  .lp-cta { transition: none; }
+  .lp-cta:hover { transform: none; }
+}
