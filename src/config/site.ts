@@ -5,6 +5,13 @@
 export const site = {
   name: "ScopeBnB",
   tagline: "Rent a world-class telescope under Bortle 1 skies in Texas.",
+  // Canonical production origin (no trailing slash). Used for metadataBase,
+  // sitemap, robots and structured data absolute URLs.
+  url: "https://scopebnb.com",
+  email: "contact@scopebnb.com",
+  // One-paragraph description used for SEO/social/LLM structured data.
+  description:
+    "ScopeBnB rents a world-class remote astrophotography rig under Bortle 1 dark skies at Starfront Observatories in Rockwood, Texas. Book managed imaging where our team captures your target, or take full remote control of the telescope with N.I.N.A. Around 270 clear nights a year, weather-guaranteed sessions, and a flat $300 for a full week of remote imaging.",
   location: {
     observatory: "Starfront Observatories",
     address: ["c/o Starfront Observatories", "1724 County Road 244", "Rockwood, TX 76873"],

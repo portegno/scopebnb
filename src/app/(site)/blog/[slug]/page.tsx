@@ -5,6 +5,8 @@ import { Section } from "@/components/ui";
 import { ArticleContent } from "@/components/blog/ArticleContent";
 import { LevelMeter } from "@/components/blog/LevelMeter";
 import { getPublishedBySlug } from "@/lib/blog/store";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { blogPostingLd } from "@/lib/seo/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,22 @@ function pickMike(seed: string): string {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const post = await getPublishedBySlug((await params).slug);
   if (!post) return { title: "Blog" };
-  return { title: post.title, description: post.excerpt || undefined };
+  const description = post.excerpt || undefined;
+  const images = post.coverImage ? [post.coverImage] : ["/images/hero/foto1.jpg"];
+  return {
+    title: post.title,
+    description,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description,
+      url: `/blog/${post.slug}`,
+      images,
+      publishedTime: post.publishedAt?.seconds ? new Date(post.publishedAt.seconds * 1000).toISOString() : undefined,
+    },
+    twitter: { card: "summary_large_image", title: post.title, description, images },
+  };
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -29,6 +46,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <Section>
+      <JsonLd data={blogPostingLd(post)} />
       <article className="mx-auto max-w-3xl">
         <Link href="/blog" className="text-sm text-muted transition-colors hover:text-foreground">
           ← All posts

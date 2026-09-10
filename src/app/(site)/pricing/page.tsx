@@ -3,7 +3,12 @@ import { Section, Eyebrow, CTA, Card } from "@/components/ui";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { NIGHT_TIERS, fmtPrice, remotePrice, INTEGRATION_FEE, REMOTE_WEEK_PRICE, REMOTE_WEEK_NIGHTS } from "@/lib/pricing";
 
-export const metadata: Metadata = { title: "Pricing" };
+export const metadata: Metadata = {
+  title: "Pricing",
+  description:
+    "Managed imaging from $65 to $100 per night by sky darkness, a flat $300 for a full remote week (7 nights), and a $25 integrated-image add-on. No subscription.",
+  alternates: { canonical: "/pricing" },
+};
 
 function TierTable({ remote = false }: { remote?: boolean }) {
   return (

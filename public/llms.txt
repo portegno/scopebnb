@@ -1,0 +1,29 @@
+# ScopeBnB
+
+> ScopeBnB rents a world-class remote astrophotography telescope under Bortle 1 dark skies at Starfront Observatories in Rockwood, Texas. Anyone, anywhere can capture deep-sky images without owning equipment.
+
+ScopeBnB gives you a professional imaging rig under some of the darkest skies in the continental United States (Bortle 1, roughly 270 clear nights a year). You book online and choose how you want to work:
+
+- **Managed imaging**: our team frames and captures your chosen target and delivers the session's calibrated light frames plus calibration frames (darks and flats) as 16-bit FITS to your dashboard within 24 hours. No experience needed. Priced by how dark the sky is that night, from $65 to $100 per night.
+- **Remote control (N.I.N.A.)**: rent the rig and drive it yourself, pointing at any target you like. The most popular option is a full week of seven consecutive nights for a flat $300.
+- **Integrated image add-on ($25)**: optional processing where we calibrate, stack and finish your data into a ready-to-stretch image.
+
+The rig is a wide-field setup (about 3° × 2° field of view), ideal for large nebulae and rich star fields. There is no subscription; you only pay when you book. Bad-weather nights are automatically rescheduled at no extra cost (weather guarantee).
+
+Location: Starfront Observatories, 1724 County Road 244, Rockwood, TX 76873 (approx. 31.55° N, 99.38° W, elevation 472 m). Contact: contact@scopebnb.com
+
+## Key pages
+- [Home](https://scopebnb.com/): what ScopeBnB is and how it works
+- [Book a night](https://scopebnb.com/book): choose managed or remote, pick your nights, choose a target
+- [Pricing](https://scopebnb.com/pricing): nightly tiers, the $300 remote week, and add-ons
+- [FAQ](https://scopebnb.com/faq): experience needed, weather guarantee, what you receive, targets, subscription
+- [Blog](https://scopebnb.com/blog): guides and field notes on astrophotography under dark skies
+
+## Facts
+- Sky quality: Bortle 1 (darkest class)
+- Clear nights: ~270 per year
+- Managed imaging: $65–$100 per night, delivered within 24 hours
+- Remote week: $300 for 7 consecutive nights (best value, most popular)
+- Integrated image add-on: $25
+- Equipment: wide-field rig, ~3° × 2° field of view
+- No subscription; weather guarantee with free rescheduling
