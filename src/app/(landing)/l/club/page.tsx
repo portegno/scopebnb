@@ -48,7 +48,7 @@ const PASOS = [
   {
     n: "01",
     t: "Pick your week",
-    d: "Seven nights in a row, on dates that suit the club. One rig, one sky — the calendar is real availability, not a queue.",
+    d: "Seven nights in a row, on dates that suit the club. One rig, one sky, so the calendar is real availability and not a queue.",
   },
   {
     n: "02",
@@ -65,11 +65,11 @@ const PASOS = [
 const OBJECIONES = [
   {
     q: "Does someone in the club need to know N.I.N.A.?",
-    a: "No. That's what the first-night call is for, and you get the remote imaging guide in writing so nobody has to remember it. If a member already runs N.I.N.A. at home, they'll be at ease in ten minutes — it's the same software, pointed at better sky.",
+    a: "No. That's what the first-night call is for, and you get the remote imaging guide in writing so nobody has to remember it. If a member already runs N.I.N.A. at home, they'll be at ease in ten minutes: it's the same software, pointed at better sky.",
   },
   {
     q: "What if the week is clouded out?",
-    a: "Around 270 nights a year are clear here, so a whole week lost is unlikely — but weather isn't your problem: nights lost to cloud are made up. That's why the week is sold as seven nights and not as seven dates.",
+    a: "Around 270 nights a year are clear here, so a whole week lost is unlikely. Weather isn't your problem either: nights lost to cloud are made up. That's why the week is sold as seven nights and not as seven dates.",
   },
   {
     q: "Can several members use it during the week?",
@@ -77,7 +77,7 @@ const OBJECIONES = [
   },
   {
     q: "Who owns the data?",
-    a: "You do. All of it, raw, with calibration. There's no watermark, no exclusivity and nothing held back — what your members do with it afterwards is entirely theirs.",
+    a: "You do. All of it, raw, with calibration. There's no watermark, no exclusivity and nothing held back. What your members do with it afterwards is entirely theirs.",
   },
 ];
 
@@ -130,7 +130,7 @@ export default async function ClubLanding({
           eyebrow="For astronomy clubs"
           club={enlace?.cuentaNombre ?? null}
           title={<>Your club&apos;s gear is fine. Your sky isn&apos;t.</>}
-          sub="Seven consecutive nights on a professional rig under Bortle 1 skies in West Texas, driven by your own members. $300 for the week — across a membership, that's a few dollars a head."
+          sub="Seven consecutive nights on a professional rig under Bortle 1 skies in West Texas, driven by your own members. $300 for the week, which across a membership is a few dollars a head."
           image="/images/hero/foto2.jpg"
           imageAlt="Emission nebula photographed from the ScopeBnB rig in Rockwood, Texas"
         >

@@ -30,7 +30,7 @@ const PASOS = [
   {
     n: "01",
     t: "Choose the night",
-    d: "Availability is real — one rig, one sky. Pick a date and see what's above the horizon that night.",
+    d: "Availability is real: one rig, one sky. Pick a date and see what's above the horizon that night.",
   },
   {
     n: "02",
@@ -55,7 +55,7 @@ const OBJECIONES = [
   },
   {
     q: "What comes back to me?",
-    a: "Every light frame from the session plus calibration. They're yours — stack and process them however you like.",
+    a: "Every light frame from the session plus calibration. They're yours. Stack and process them however you like.",
   },
   {
     q: "How dark is Bortle 1, really?",
@@ -97,7 +97,7 @@ export default function NightLanding() {
         <Title kicker="What comes back">One frame of seventy-four.</Title>
         <Lead>
           A single 180-second exposure through a dual-narrowband filter, auto-stretched, nothing
-          else done to it. Drag to see how the same data reads in mono and in duochrome — this is
+          else done to it. Drag to see how the same data reads in mono and in duochrome. This is
           what lands in your folder, before you&apos;ve processed anything.
         </Lead>
         <Reveal delay={120}>
