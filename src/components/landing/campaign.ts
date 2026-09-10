@@ -31,15 +31,28 @@ export function accountName(slug: string | null): string | null {
     .join(" ");
 }
 
-/** The tracking params of the current URL, ready to append to an internal href. */
-export function carriedQuery(params: URLSearchParams): string {
-  const out = new URLSearchParams();
+/**
+ * An internal href with the campaign params merged into whatever it already
+ * carries.
+ *
+ * **Merged and not appended.** Gluing `?utm_source=…` onto an href turns
+ * `/book?mode=remote` into `/book?mode=remote?utm_source=…`, which navigates
+ * fine, loads fine, and leaves `mode` holding a value that isn't a mode. The
+ * page looks right and two parameters are wrong.
+ *
+ * The href's own params win: if a link deliberately sets `utm_source`, that was
+ * a decision, and this shouldn't quietly overwrite it.
+ */
+export function conCampania(href: string, params: URLSearchParams): string {
+  const [ruta, query = ""] = href.split("#")[0].split("?");
+  const hash = href.includes("#") ? `#${href.split("#")[1]}` : "";
+  const out = new URLSearchParams(query);
   for (const k of CARRY) {
     const v = params.get(k);
-    if (v) out.set(k, v);
+    if (v && !out.has(k)) out.set(k, v);
   }
   const s = out.toString();
-  return s ? `?${s}` : "";
+  return `${ruta}${s ? `?${s}` : ""}${hash}`;
 }
 
 /**
