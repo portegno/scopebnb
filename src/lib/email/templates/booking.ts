@@ -4,6 +4,7 @@ import { INTEGRATION_FEE } from "@/lib/pricing";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://scopebnb.com";
 const MIKE_IMG = `${SITE_URL}/images/mike.png`;
+const LOGO_IMG = `${SITE_URL}/logo-white-email.png`;
 
 /** "2026-09-09" -> "Wed, Sep 9, 2026" (parsed as UTC so the day never shifts). */
 function fmtDate(ymd?: string): string {
@@ -62,6 +63,9 @@ const wrap = (inner: string) => `<!doctype html>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#05070f;padding:32px 16px;">
       <tr><td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0b0f1d;border:1px solid rgba(255,255,255,0.08);border-radius:4px;">
+          <tr><td align="center" style="padding:28px 32px 4px 32px;">
+            <img src="${LOGO_IMG}" width="150" alt="ScopeBnB" style="display:block;width:150px;height:auto;" />
+          </td></tr>
           ${inner}
           <tr><td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.08);font-family:Arial,Helvetica,sans-serif;">
             <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7391;">
@@ -75,7 +79,7 @@ const wrap = (inner: string) => `<!doctype html>
 </html>`;
 
 const header = (eyebrow: string, title: string, lead: string) => `
-  <tr><td style="padding:32px 32px 8px 32px;font-family:Arial,Helvetica,sans-serif;">
+  <tr><td style="padding:16px 32px 8px 32px;font-family:Arial,Helvetica,sans-serif;">
     <p style="margin:0;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#ffd591;font-weight:bold;">${eyebrow}</p>
     <h1 style="margin:12px 0 0 0;font-size:24px;line-height:1.25;color:#e8ebf5;font-weight:600;">${title}</h1>
     <p style="margin:16px 0 0 0;font-size:15px;line-height:1.6;color:#9aa3bd;">${lead}</p>
