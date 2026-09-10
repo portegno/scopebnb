@@ -87,7 +87,15 @@ export default function Home() {
         <h2 className="mt-2 text-3xl font-semibold tracking-tight">Pick your path</h2>
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           {products.map((p) => (
-            <Card key={p.id} className="flex flex-col">
+            <Card
+              key={p.id}
+              className={`relative flex flex-col${p.popular ? " ring-1 ring-gold/40" : ""}`}
+            >
+              {p.popular && (
+                <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#05070f]">
+                  Most popular
+                </span>
+              )}
               <p className="text-xs uppercase tracking-wider text-accent">{p.audience}</p>
               <h3 className="mt-2 text-xl font-semibold">{p.name}</h3>
               <p className="mt-2 text-sm text-muted">{p.blurb}</p>
@@ -103,7 +111,7 @@ export default function Home() {
                 href={p.href}
                 className="mt-6 text-sm font-semibold text-gold hover:text-gold-soft hover:underline"
               >
-                Book a night →
+                {p.cta ?? "Book a night"} →
               </Link>
             </Card>
           ))}
