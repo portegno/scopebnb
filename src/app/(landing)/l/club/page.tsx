@@ -93,10 +93,18 @@ const OBJECIONES = [
 const OBJETIVOS: Objetivo[] = [
   { src: "/images/targets/m31-andromeda.jpg", objeto: "Andromeda Galaxy",
     catalogo: "M31 · with M32 and M110", alto: true },
+  // El mismo campo, ancho y cerca: el encuadre es una decisión que se toma
+  // antes de arrancar la secuencia, y eso se muestra mejor de lo que se cuenta.
   { src: "/images/targets/ic1396-elephants-trunk-wide.jpg",
-    objeto: "Elephant's Trunk Nebula", catalogo: "IC 1396A · narrowband" },
+    objeto: "Elephant's Trunk Nebula", catalogo: "IC 1396A · wide field" },
   { src: "/images/targets/ic1396-elephants-trunk-detail.jpg",
-    objeto: "Elephant's Trunk, closer", catalogo: "IC 1396A · narrowband" },
+    objeto: "The same field, closer", catalogo: "IC 1396A" },
+  // Y la tercera es el mismo objeto procesado en banda angosta. Para alguien
+  // que fotografía, ver dos paletas del mismo dato dice que lo que se lleva es
+  // material y no una foto terminada: la decisión de cómo se ve sigue siendo
+  // suya.
+  { src: "/images/targets/ic1396-elephants-trunk-narrowband.jpg",
+    objeto: "And processed as narrowband", catalogo: "IC 1396A · SHO" },
 ];
 
 const DATOS = [
@@ -186,9 +194,9 @@ export default async function ClubLanding({
       <Section>
         <Title kicker="What comes out of it">Targets shot on this rig.</Title>
         <Lead>
-          The same telescope your members would be driving, on the nights it was pointed at these.
-          Wide field and detail on the same object: the framing is a choice you make before the
-          sequence starts.
+          The same telescope your members would be driving, on the nights it was pointed at
+          these. Wide field, detail and a narrowband treatment of the same object: what comes
+          back is material, so how it ends up looking is still your decision.
         </Lead>
         <Galeria objetivos={OBJETIVOS} />
       </Section>
