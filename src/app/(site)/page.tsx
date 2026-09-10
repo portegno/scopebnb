@@ -89,14 +89,16 @@ export default function Home() {
           {products.map((p) => (
             <Card
               key={p.id}
-              className={`relative flex flex-col${p.popular ? " ring-1 ring-gold/40" : ""}`}
+              className={`relative flex h-full flex-col${p.popular ? " ring-1 ring-gold/40" : ""}`}
             >
               {p.popular && (
-                <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#05070f]">
+                <span className="absolute right-6 top-6 rounded-full bg-gold px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#05070f]">
                   Most popular
                 </span>
               )}
-              <p className="text-xs uppercase tracking-wider text-accent">{p.audience}</p>
+              <p className={`text-xs uppercase tracking-wider text-accent${p.popular ? " pr-28" : ""}`}>
+                {p.audience}
+              </p>
               <h3 className="mt-2 text-xl font-semibold">{p.name}</h3>
               <p className="mt-2 text-sm text-muted">{p.blurb}</p>
               <ul className="mt-4 space-y-2 text-sm">
@@ -109,7 +111,7 @@ export default function Home() {
               </ul>
               <Link
                 href={p.href}
-                className="mt-6 text-sm font-semibold text-gold hover:text-gold-soft hover:underline"
+                className="mt-auto pt-6 text-sm font-semibold text-gold hover:text-gold-soft hover:underline"
               >
                 {p.cta ?? "Book a night"} →
               </Link>
