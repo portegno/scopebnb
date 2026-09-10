@@ -17,6 +17,9 @@
 /** The params worth carrying. Anything else is noise we don't need to keep. */
 const CARRY = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
+const nombrar = (ws: string[]) =>
+  ws.map((w) => (w.length <= 2 ? w : w[0].toUpperCase() + w.slice(1))).join(" ");
+
 /** Turns `club-astronomico-cordoba` into `Club Astronomico Cordoba`. */
 export function accountName(slug: string | null): string | null {
   if (!slug) return null;
@@ -24,11 +27,16 @@ export function accountName(slug: string | null): string | null {
   // A slug is what we sent; anything else came from somewhere we don't control
   // and doesn't get printed on the page.
   if (!/^[a-z0-9-]{2,60}$/.test(clean)) return null;
-  return clean
-    .split("-")
-    .filter(Boolean)
-    .map((w) => (w.length <= 2 ? w : w[0].toUpperCase() + w.slice(1)))
-    .join(" ");
+  const palabras = clean.split("-").filter(Boolean);
+  // German clubs are almost all "… e.V.", and the slug flattens that to "e-v".
+  // Left alone it comes back as "Volkssternwarte Langwedel e v", which is the
+  // club's own name misspelled at the top of a cold page — the one place you
+  // cannot afford to look careless. Eight of the first eight accounts Verónica
+  // recorded end this way, so it's the common case, not an edge one.
+  if (palabras.length >= 2 && palabras.at(-2) === "e" && palabras.at(-1) === "v") {
+    return `${nombrar(palabras.slice(0, -2))} e.V.`;
+  }
+  return nombrar(palabras);
 }
 
 /**
