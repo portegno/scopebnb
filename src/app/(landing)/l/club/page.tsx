@@ -5,6 +5,8 @@ import { LeadForm } from "@/components/landing/LeadForm";
 import { SkyParallax } from "@/components/landing/SkyParallax";
 import { BeforeAfter } from "@/components/landing/BeforeAfter";
 import { Galeria, type Objetivo } from "@/components/landing/Galeria";
+import { Equipo } from "@/components/landing/Equipo";
+import { equipment, fieldOfView } from "@/data/equipment";
 import { Reveal } from "@/components/landing/Reveal";
 import { Personaje } from "@/components/landing/Personaje";
 import { Section, Title, Lead, Steps, Objections, Facts } from "@/components/landing/parts";
@@ -244,6 +246,22 @@ export default async function ClubLanding({
             still take the scope on Thursday.
           </p>
         </Personaje>
+      </Section>
+
+      {/* El equipo, después de la galería y no antes: primero lo que sale, y
+          recién cuando alguien quiere saber cómo, el cómo. */}
+      <Section>
+        <Title kicker="The rig">What it can frame.</Title>
+        <Lead>
+          If your members already image remotely, the question is not whether this rig is good.
+          It is whether it frames what yours cannot. That is a focal length question, so here is
+          the answer first.
+        </Lead>
+        <Equipo
+          campo={`${fieldOfView.widthDeg}° × ${fieldOfView.heightDeg}°`}
+          escala={`${fieldOfView.pixelScaleArcsec}″`}
+          partes={equipment.map((e) => ({ que: e.role, cual: `${e.name}. ${e.detail}` }))}
+        />
       </Section>
 
       <Section>
