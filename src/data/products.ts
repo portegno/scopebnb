@@ -8,6 +8,10 @@ export type Product = {
   href: string;
   blurb: string;
   bullets: string[];
+  /** Highlight this path (adds a "Most popular" badge and a gold ring). */
+  popular?: boolean;
+  /** Call-to-action label. Defaults to "Book a night". */
+  cta?: string;
 };
 
 export const products: Product[] = [
@@ -37,5 +41,7 @@ export const products: Product[] = [
       "Your sequences, your targets, your way",
       "Pro-grade gear under Bortle 1 skies",
     ],
+    popular: true,
+    cta: "Book a night or an entire week",
   },
 ];
