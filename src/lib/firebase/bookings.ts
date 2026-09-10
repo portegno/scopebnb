@@ -44,18 +44,44 @@ export type BookingInput = {
  * Persist a managed-imaging booking. Requires Firebase to be configured and
  * the user to be signed in (anonymous auth is fine for MVP).
  */
+/**
+ * The campaign link this visitor arrived on, if any.
+ *
+ * Read from the cookie the proxy set when they opened a landing — which may
+ * have been weeks ago, from a cold email, on a different day than this booking.
+ * That gap is the whole reason the cookie exists: a club takes the idea to a
+ * meeting and comes back later, and without this the booking arrives belonging
+ * to nobody.
+ *
+ * **This is the last link in the chain.** The agency knows what it spent
+ * chasing each club; the booking is where that spend either paid off or didn't.
+ * Without this line, "what did it cost us to get this customer" stays a
+ * division — total spend over total sales — which does not say that the spend
+ * caused the sale.
+ */
+function enlaceDeCampania(): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|;\s*)sb_l=([a-z0-9]{4,32})(?:;|$)/);
+  return m ? m[1] : null;
+}
+
 export async function createBooking(input: BookingInput): Promise<string> {
   if (!db) throw new Error("Firebase is not configured");
   const uid = auth?.currentUser?.uid;
   if (!uid) throw new Error("Not signed in");
 
   const { product = "managed", ...rest } = input;
+  const enlace = enlaceDeCampania();
   const ref = await addDoc(collection(db, "bookings"), {
     ...rest,
     product,
     userId: uid,
     status: "requested",
     createdAt: serverTimestamp(),
+    // Only when there is one: a field that is sometimes null and sometimes
+    // absent reads the same, and absent is the honest shape for "this person
+    // did not come from a campaign".
+    ...(enlace ? { enlace } : {}),
   });
   return ref.id;
 }
