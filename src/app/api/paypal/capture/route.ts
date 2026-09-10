@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { captureOrder, paypalConfigured } from "@/lib/paypal/client";
+import { sendBookingConfirmation } from "@/lib/bookings/confirmationEmail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,6 +76,14 @@ export async function POST(req: Request) {
     statusUpdatedAt: FieldValue.serverTimestamp(),
     statusUpdatedBy: "paypal",
   });
+
+  // Send the confirmation email now the booking is paid. Best-effort: a mail
+  // failure must not fail the payment (which already succeeded).
+  try {
+    await sendBookingConfirmation(bookingId);
+  } catch (e) {
+    console.error("[booking-email] confirmation after capture failed:", e);
+  }
 
   return NextResponse.json({ ok: true, amountUsd: cap.amountUsd });
 }

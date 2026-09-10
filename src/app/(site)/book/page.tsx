@@ -131,6 +131,24 @@ export default function Book() {
   const scrollCarousel = (dir: 1 | -1) =>
     carouselRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
 
+  // Fire-and-forget booking-confirmation email. Best-effort: never blocks or
+  // breaks the flow. Only used in request mode; when payments are on, the email
+  // is sent server-side from the capture endpoint after a successful payment.
+  function sendConfirmationEmail(id: string) {
+    void (async () => {
+      try {
+        const token = await user?.getIdToken();
+        if (!token) return;
+        await fetch(`/api/bookings/${id}/confirmation-email`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+        });
+      } catch {
+        /* best-effort */
+      }
+    })();
+  }
+
   async function continueToCheckout() {
     if (!current || !framing || !session) return;
     if (!user) {
@@ -164,6 +182,7 @@ export default function Book() {
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
       });
       setBooking({ id, heldUntil: Date.now() + HOLD_MS });
+      if (!paymentsOn) sendConfirmationEmail(id);
       // Marketing conversion: a managed booking request, with its value.
       trackEvent("generate_lead", {
         currency: "USD",
@@ -198,6 +217,7 @@ export default function Book() {
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
       });
       setBooking({ id, heldUntil: Date.now() + HOLD_MS });
+      if (!paymentsOn) sendConfirmationEmail(id);
       // Marketing conversion: a remote-control booking request, with its value.
       trackEvent("generate_lead", {
         currency: "USD",
