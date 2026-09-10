@@ -42,8 +42,8 @@ function decToDms(deg?: number): string | null {
 }
 
 const FILTER_LABELS: Record<string, string> = {
-  clear: "Clear — broadband true colour",
-  lextreme: "Optolong L-Extreme — Hα + OIII dual narrowband",
+  clear: "Clear (broadband true colour)",
+  lextreme: "Optolong L-Extreme (Hα + OIII dual narrowband)",
 };
 
 function chosenFilters(b: Booking): string | null {
@@ -145,10 +145,10 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
 
   if (!isRemote) {
     // ---- Managed imaging ----
-    subject = `We're on it — your image of ${b.targetName ?? "your target"} is booked`;
+    subject = `We're on it: your image of ${b.targetName ?? "your target"} is booked`;
     const rows: [string, string][] = [
       ["Service", "Managed imaging"],
-      ["Target", b.targetName ?? "—"],
+      ["Target", b.targetName ?? "your target"],
       ["Night", startLabel],
     ];
     const ra = raToHms(b.ra);
@@ -169,14 +169,14 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
       detailTable(rows) +
       policyBox(
         "Next steps",
-        `Before your night we'll send a short confirmation of the service — target, framing (coordinates and camera rotation)${chosenFilters(b) ? " and your chosen filter" : ""} — so everything is exactly how you want it.`,
+        `Before your night we'll send a short confirmation of the service: target, framing (coordinates and camera rotation)${chosenFilters(b) ? " and your chosen filter" : ""}, so everything is exactly how you want it.`,
       ) +
       policyBox(
         "Weather policy",
-        `Clear skies aren't guaranteed on any single date. If your night isn't usable, we automatically reschedule to the next good night at no extra cost — you don't have to do anything.`,
+        `Clear skies aren't guaranteed on any single date. If your night isn't usable, we automatically reschedule to the next good night at no extra cost. You don't have to do anything.`,
       ) +
       mikeNote(
-        `Nice pick. I'll make sure we frame it well and catch it at its best altitude. If the clouds roll in, don't worry — we just move you to the next clear night. Clear skies!`,
+        `Nice pick. I'll make sure we frame it well and catch it at its best altitude. If the clouds roll in, don't worry, we just move you to the next clear night. Clear skies!`,
       ) +
       cta();
 
@@ -186,7 +186,7 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
       `We'll capture ${b.targetName ?? "your target"} for you on ${startLabel}.`,
       `You'll get your calibrated light + calibration frames within 24h of the session.`,
       ``,
-      `Target: ${b.targetName ?? "—"}`,
+      `Target: ${b.targetName ?? "your target"}`,
       ra && dec ? `Coordinates: RA ${ra} · Dec ${dec}` : "",
       typeof b.rotation === "number" ? `Camera rotation: ${b.rotation}°` : "",
       filters ? `Filter: ${filters}` : "",
@@ -198,7 +198,7 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
     );
   } else if (isWeek) {
     // ---- Remote week (7 consecutive nights) ----
-    subject = `Your remote week is booked — ${startLabel} to ${endLabel}`;
+    subject = `Your remote week is booked: ${startLabel} to ${endLabel}`;
     inner =
       header(
         "Booking received",
@@ -206,7 +206,7 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
         `${hi}thanks for booking with ScopeBnB. You have full remote control of the rig with N.I.N.A. for ${nights} consecutive nights, from <strong style="color:#e8ebf5;">${startLabel}</strong> to <strong style="color:#e8ebf5;">${endLabel}</strong>.`,
       ) +
       detailTable([
-        ["Service", "Remote control — weekly"],
+        ["Service", "Remote control (weekly)"],
         ["Nights", `${nights} consecutive`],
         ["From", startLabel],
         ["To", endLabel],
@@ -217,11 +217,11 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
         `We'll send your remote-access details and a quick start guide before your first night so you're ready to drive the rig.`,
       ) +
       policyBox(
-        "Weather policy — weekly plan",
-        `The weekly plan is a fixed block. Once your opening night runs, the whole week runs as booked and we don't reschedule the remaining nights for weather — clear or cloudy, the rig is reserved for you across the full week. If the opening night can't run at all, get in touch and we'll sort out the week with you.`,
+        "Weather policy (weekly plan)",
+        `The weekly plan is a fixed block. Once your opening night runs, the whole week runs as booked and we don't reschedule the remaining nights for weather. Clear or cloudy, the rig is reserved for you across the full week. If the opening night can't run at all, get in touch and we'll sort out the week with you.`,
       ) +
       mikeNote(
-        `A whole week under Bortle 1 — that's the good stuff. Plan a few targets so you make the most of every clear hour. I'll get your access set up before night one. Clear skies!`,
+        `A whole week under Bortle 1. That's the good stuff. Plan a few targets so you make the most of every clear hour. I'll get your access set up before night one. Clear skies!`,
       ) +
       cta();
 
@@ -232,11 +232,11 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
       typeof b.totalUsd === "number" ? `Total: $${b.totalUsd}` : "",
       ``,
       `Next steps: we'll send remote-access details and a quick start guide before night one.`,
-      `Weather (weekly): once the opening night runs, the whole week runs as booked — we don't reschedule individual nights for weather. If the opening night can't run at all, get in touch.`,
+      `Weather (weekly): once the opening night runs, the whole week runs as booked. We don't reschedule individual nights for weather. If the opening night can't run at all, get in touch.`,
     );
   } else {
     // ---- Remote single night ----
-    subject = `Your remote night is booked — ${startLabel}`;
+    subject = `Your remote night is booked: ${startLabel}`;
     inner =
       header(
         "Booking received",
@@ -244,7 +244,7 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
         `${hi}thanks for booking with ScopeBnB. You have full remote control of the rig with N.I.N.A. on the night of <strong style="color:#e8ebf5;">${startLabel}</strong>.`,
       ) +
       detailTable([
-        ["Service", "Remote control — single night"],
+        ["Service", "Remote control (single night)"],
         ["Night", startLabel],
         ...(typeof b.totalUsd === "number" ? ([["Total", `$${b.totalUsd}`]] as [string, string][]) : []),
       ]) +
