@@ -4,6 +4,7 @@ import { Hero } from "@/components/landing/Hero";
 import { LeadForm } from "@/components/landing/LeadForm";
 import { SkyParallax } from "@/components/landing/SkyParallax";
 import { BeforeAfter } from "@/components/landing/BeforeAfter";
+import { Galeria, type Objetivo } from "@/components/landing/Galeria";
 import { Reveal } from "@/components/landing/Reveal";
 import { Personaje } from "@/components/landing/Personaje";
 import { Section, Title, Lead, Steps, Objections, Facts } from "@/components/landing/parts";
@@ -79,6 +80,23 @@ const OBJECIONES = [
     q: "Who owns the data?",
     a: "You do. All of it, raw, with calibration. There's no watermark, no exclusivity and nothing held back. What your members do with it afterwards is entirely theirs.",
   },
+];
+
+/**
+ * Lo que sale de este equipo.
+ *
+ * `captura` queda sin poner a propósito: las horas, el filtro y la cantidad de
+ * tomas son justo lo que un astrofotógrafo lee, y justo lo que sería fácil de
+ * inventar e imposible de verificar para quien mira. Se completa cuando alguien
+ * que lo sabe lo diga, y hasta entonces no se dibuja.
+ */
+const OBJETIVOS: Objetivo[] = [
+  { src: "/images/targets/m31-andromeda.jpg", objeto: "Andromeda Galaxy",
+    catalogo: "M31 · with M32 and M110", alto: true },
+  { src: "/images/targets/ic1396-elephants-trunk-wide.jpg",
+    objeto: "Elephant's Trunk Nebula", catalogo: "IC 1396A · narrowband" },
+  { src: "/images/targets/ic1396-elephants-trunk-detail.jpg",
+    objeto: "Elephant's Trunk, closer", catalogo: "IC 1396A · narrowband" },
 ];
 
 const DATOS = [
@@ -160,6 +178,19 @@ export default async function ClubLanding({
             it&apos;s ten dollars each, for a sky none of them can reach from home at any price.
           </p>
         </Reveal>
+      </Section>
+
+      {/* El resultado primero y la materia prima después. Un club decide mirando
+          lo que sale; el sub crudo explica cómo llega, y eso sólo interesa
+          cuando ya te interesó lo otro. */}
+      <Section>
+        <Title kicker="What comes out of it">Targets shot on this rig.</Title>
+        <Lead>
+          The same telescope your members would be driving, on the nights it was pointed at these.
+          Wide field and detail on the same object: the framing is a choice you make before the
+          sequence starts.
+        </Lead>
+        <Galeria objetivos={OBJETIVOS} />
       </Section>
 
       <Section>
