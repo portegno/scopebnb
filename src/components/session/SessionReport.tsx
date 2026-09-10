@@ -139,16 +139,20 @@ export function SessionReport({ report: r }: { report: SessionReportData }) {
           <Stat value={`${r.conditions.avgGuidingRms.toFixed(2)}"`} label="Guiding RMS" hint="total (RA + Dec), session RMS" />
         )}
         <Stat value={`${r.conditions.yieldPct}%`} label="Yield" hint="of open-sky time spent exposing" />
-        <Stat
-          value={
-            <span className="flex items-center gap-2">
-              <MoonPhase illumPct={r.conditions.moon.illumPct} waxing={r.conditions.moon.trend === "up"} />
-              {r.conditions.moon.illumPct}% {r.conditions.moon.trend === "down" ? "↓" : "↑"}
-            </span>
-          }
-          label="Moon"
-          hint={`${r.conditions.moon.phase} · ${r.conditions.moon.separationDeg}° away`}
-        />
+        <div className="rounded-[4px] bg-surface-2 p-4 ring-1 ring-hairline">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-2xl font-semibold tracking-tight text-foreground">
+                {r.conditions.moon.illumPct}% {r.conditions.moon.trend === "down" ? "↓" : "↑"}
+              </div>
+              <div className="mt-1 text-xs uppercase tracking-wider text-muted">Moon</div>
+              <div className="mt-1 text-[11px] leading-snug text-muted/80">
+                {r.conditions.moon.phase} · {r.conditions.moon.separationDeg}° away
+              </div>
+            </div>
+            <MoonPhase illumPct={r.conditions.moon.illumPct} waxing={r.conditions.moon.trend === "up"} size={56} />
+          </div>
+        </div>
       </div>
 
       {/* The night */}

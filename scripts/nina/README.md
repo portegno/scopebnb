@@ -31,11 +31,12 @@ it keeps the DSS2 field preview.
    - `upload-session.ps1`
    - `config.json` (copy `config.example.json` and fill in):
      ```json
-     { "endpoint": "https://<your-host>/api/sessions/ingest",
+     { "endpoint": "https://scopebnb.com/api/sessions/ingest",
        "secret":   "<same as server SESSION_INGEST_SECRET>" }
      ```
-   Keep `config.json` private - it holds the secret. The script writes its own
-   logs to `C:\ScopeBnB\logs\`.
+   Use the apex `scopebnb.com`, NOT `www.` - the `www` host 302-redirects to the
+   apex, and a redirect would drop the POST body. Keep `config.json` private - it
+   holds the secret. The script writes its own logs to `C:\ScopeBnB\logs\`.
 
 2. **Server:** set `SESSION_INGEST_SECRET` (long random string). For the signed
    uploads, the runtime service account needs **Service Account Token Creator**

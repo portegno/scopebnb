@@ -8,6 +8,8 @@ import { Reveal } from "@/components/landing/Reveal";
 import { Personaje } from "@/components/landing/Personaje";
 import { Section, Title, Lead, Steps, Objections, Facts } from "@/components/landing/parts";
 import { site } from "@/config/site";
+import { resolverEnlace, enlaceRecordado } from "@/lib/campaign/link";
+import { CampaignBeacon } from "@/components/landing/CampaignBeacon";
 
 /**
  * Landing 1 of 2 — the club offer.
@@ -86,9 +88,39 @@ const DATOS = [
   { k: "Clear nights / yr", v: String(site.location.clearNightsPerYear) },
 ];
 
-export default function ClubLanding() {
+/**
+ * The page resolves `?id=` on the server, which is what lets the mail carry a
+ * short code instead of the campaign written in the address bar. It also sets
+ * the cookie that survives the days between reading the mail and the club
+ * actually deciding — forwarding the code on internal links only covers the
+ * session, and the session is not where a committee makes up its mind.
+ *
+ * Reading searchParams makes this route dynamic, and that is a real trade: it
+ * stops being static. It buys the greeting arriving in the HTML instead of
+ * after hydration, which on a slow phone is the difference between the club
+ * seeing its own name and seeing it appear a second later.
+ */
+export default async function ClubLanding({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const { id } = await searchParams;
+  // The code from the URL, or the one this visitor arrived on earlier: a club
+  // that read the mail on Monday and comes back from the meeting on Thursday
+  // still gets its own page, and the booking still traces back.
+  const enlace = await resolverEnlace(id ?? (await enlaceRecordado()) ?? undefined);
+
   return (
     <>
+      {enlace ? (
+        <CampaignBeacon
+          codigo={enlace.codigo}
+          cuenta={enlace.cuenta}
+          campania={enlace.campania}
+          medio={enlace.medio}
+        />
+      ) : null}
       <Suspense fallback={null}>
         <SkyParallax />
       </Suspense>
@@ -96,6 +128,7 @@ export default function ClubLanding() {
       <Suspense fallback={<div className="min-h-[92svh]" />}>
         <Hero
           eyebrow="For astronomy clubs"
+          club={enlace?.cuentaNombre ?? null}
           title={<>Your club&apos;s gear is fine. Your sky isn&apos;t.</>}
           sub="Seven consecutive nights on a professional rig under Bortle 1 skies in West Texas, driven by your own members. $300 for the week — across a membership, that's a few dollars a head."
           image="/images/hero/foto2.jpg"

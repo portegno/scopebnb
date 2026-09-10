@@ -18,6 +18,7 @@ import { accountName } from "./campaign";
  */
 export function Hero({
   eyebrow,
+  club: clubDelServidor = null,
   title,
   sub,
   image,
@@ -25,6 +26,8 @@ export function Hero({
   children,
 }: {
   eyebrow: string;
+  /** The club's real name, already resolved from the link code on the server. */
+  club?: string | null;
   title: React.ReactNode;
   sub: string;
   image: string;
@@ -32,12 +35,19 @@ export function Hero({
   children: React.ReactNode;
 }) {
   const params = useSearchParams();
-  // Who we wrote to, taken from the link we sent. It's the one advantage
-  // outbound has over cold traffic and it costs nothing to use.
+  // Who we wrote to. The name comes from the server when the link carried a
+  // code — that way it is in the HTML, spelled the way the club spells it, and
+  // there is no moment where the page says "For astronomy clubs" and then
+  // swaps.
   //
-  // We print the name and nothing more. "For Club Astronomico Cordoba" is true;
-  // pretending to know what they were looking for is a lie that reads like one.
-  const club = accountName(params.get("utm_source"));
+  // The `utm_source` fallback stays for the links that already went out before
+  // codes existed. Those are real emails in real inboxes and they don't get to
+  // be reissued; it un-slugs the name, which is worse but readable.
+  //
+  // We print the name and nothing more. "For Volkssternwarte Kempten e.V." is
+  // true; pretending to know what they were looking for is a lie that reads
+  // like one.
+  const club = clubDelServidor ?? accountName(params.get("utm_source"));
 
   return (
     <section className="relative isolate flex min-h-[92svh] items-end overflow-hidden">
