@@ -34,6 +34,12 @@ import { addDaysYmd } from "@/lib/dates";
 
 type Mosaic = { cols: number; rows: number; overlap: number; panels: { ra: number; dec: number }[] };
 type Framing = { ra: number; dec: number; rotation: number; targetName: string; image?: string; mosaic?: Mosaic };
+
+// Soft opt-in notice shown at checkout: booking adds you to the newsletter, and
+// every edition carries an unsubscribe link. Shown before the confirm button so
+// the consent is given at the moment of booking.
+const NEWSLETTER_NOTICE =
+  "By booking, you'll also get occasional ScopeBnB updates and dark-sky tips. You can unsubscribe anytime.";
 type RankedTarget = Target & { visibility: Visibility };
 type Win = { start: number; end: number; hours: number } | null;
 type Current = {
@@ -1396,6 +1402,7 @@ export default function Book() {
                 </span>
               )}
               {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}
+              <p className="w-full text-xs text-muted">{NEWSLETTER_NOTICE}</p>
             </div>
           )}
         </div>
@@ -1540,6 +1547,7 @@ export default function Book() {
                   <span className="font-semibold text-gold">{fmtPrice(remoteTotal)}</span>
                 </span>
                 {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}
+                <p className="w-full text-xs text-muted">{NEWSLETTER_NOTICE}</p>
               </div>
             )}
           </div>
