@@ -2,7 +2,8 @@ import "server-only";
 
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
-import { sendEmail } from "@/lib/email/client";
+import { sendEmail, addToAudience } from "@/lib/email/client";
+import { subscribe } from "@/lib/newsletter/store";
 import { bookingConfirmationEmail } from "@/lib/email/templates/booking";
 import type { Booking } from "@/lib/bookings/types";
 
@@ -27,9 +28,22 @@ export async function sendBookingConfirmation(bookingId: string): Promise<Confir
   if (!snap.exists) return { ok: false, error: "not-found" };
 
   const data = snap.data()!;
-  if (data.confirmationEmailSentAt) return { ok: true, skipped: "already-sent" };
-
   const to = data.contact?.email as string | undefined;
+
+  // Soft opt-in: a customer who books is added to the newsletter. This is legal
+  // as a soft opt-in because the checkout shows a notice at booking time and
+  // every edition carries an unsubscribe link. Best-effort and idempotent, so
+  // it never blocks or double-adds; independent of the confirmation email.
+  if (to) {
+    try {
+      const r = await subscribe(to, "booking");
+      if (r.created) await addToAudience(to);
+    } catch (e) {
+      console.error("[booking-email] newsletter opt-in failed:", e);
+    }
+  }
+
+  if (data.confirmationEmailSentAt) return { ok: true, skipped: "already-sent" };
   if (!to) return { ok: true, skipped: "no-email" };
 
   const booking = { id: snap.id, ...data } as Booking;
