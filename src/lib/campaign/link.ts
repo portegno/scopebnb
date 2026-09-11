@@ -28,6 +28,15 @@ export type CampaignLink = {
   cuentaNombre: string | null;
   campania: string | null;
   medio: string | null;
+  /**
+   * The language the page should speak, set by the agency when the link was
+   * made. It travels here and not in the route because the link already knows
+   * which account it belongs to: if it knows who it is writing to, it knows
+   * which language. A route per language would have to be chosen when building
+   * the link, which is one more thing to forget, and the day somebody forgets
+   * it a club gets a mail in Italian that lands on a page in English.
+   */
+  idioma: string | null;
 };
 
 /** The link behind a code, or null. An unknown code is not an error. */
@@ -44,6 +53,7 @@ export async function resolverEnlace(codigo: string | undefined): Promise<Campai
       cuentaNombre: d.cuentaNombre ? String(d.cuentaNombre) : null,
       campania: d.campania ? String(d.campania) : null,
       medio: d.medio ? String(d.medio) : null,
+      idioma: d.idioma ? String(d.idioma) : null,
     };
   } catch {
     // A campaign page must render even if this lookup fails. Losing the

@@ -13,6 +13,7 @@ import { Section, Title, Lead, Steps, Objections, Facts } from "@/components/lan
 import { site } from "@/config/site";
 import { resolverEnlace, enlaceRecordado } from "@/lib/campaign/link";
 import { CampaignBeacon } from "@/components/landing/CampaignBeacon";
+import { copiaDe } from "./copia";
 
 /**
  * Landing 1 of 2 — the club offer.
@@ -40,6 +41,13 @@ import { CampaignBeacon } from "@/components/landing/CampaignBeacon";
  * `noindex`: a page addressed to one account has no business in search, where
  * it would appear stripped of its `utm_source` and personalised to nobody.
  */
+/**
+ * **La metadata queda en inglés a propósito.** La página es `noindex`, así que
+ * nadie la encuentra buscando: el título sólo se ve en la pestaña de quien ya
+ * abrió el mail, y ese ya tiene la página en su idioma. Hacerla dinámica
+ * obligaría a `generateMetadata`, que vuelve a leer el enlace para decorar una
+ * pestaña.
+ */
 export const metadata: Metadata = {
   title: "A week of Bortle 1 for your club",
   description:
@@ -47,42 +55,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const PASOS = [
-  {
-    n: "01",
-    t: "Pick your week",
-    d: "Seven nights in a row, on dates that suit the club. One rig, one sky, so the calendar is real availability and not a queue.",
-  },
-  {
-    n: "02",
-    t: "Half an hour on night one",
-    d: "A live call with whoever will be driving: connecting, framing, focus, and starting a sequence. After that the week is yours.",
-  },
-  {
-    n: "03",
-    t: "Everyone keeps everything",
-    d: "Every light frame and every calibration frame from all seven nights. Split them, stack them, or have five members process the same data and compare.",
-  },
-];
+/* PASOS se arma con la copia del idioma, adentro del componente. */
 
-const OBJECIONES = [
-  {
-    q: "Does someone in the club need to know N.I.N.A.?",
-    a: "No. That's what the first-night call is for, and you get the remote imaging guide in writing so nobody has to remember it. If a member already runs N.I.N.A. at home, they'll be at ease in ten minutes: it's the same software, pointed at better sky.",
-  },
-  {
-    q: "What if the week is clouded out?",
-    a: "Around 270 nights a year are clear here, so a whole week lost is unlikely. Weather isn't your problem either: nights lost to cloud are made up. That's why the week is sold as seven nights and not as seven dates.",
-  },
-  {
-    q: "Can several members use it during the week?",
-    a: "Yes, and that's the point. The club decides who drives which night. Nothing stops you from giving each night to a different member, or running one long project across all seven.",
-  },
-  {
-    q: "Who owns the data?",
-    a: "You do. All of it, raw, with calibration. There's no watermark, no exclusivity and nothing held back. What your members do with it afterwards is entirely theirs.",
-  },
-];
+/* OBJECIONES se arma con la copia del idioma, adentro del componente. */
 
 /**
  * Lo que sale de este equipo.
@@ -92,29 +67,19 @@ const OBJECIONES = [
  * inventar e imposible de verificar para quien mira. Se completa cuando alguien
  * que lo sabe lo diga, y hasta entonces no se dibuja.
  */
-const OBJETIVOS: Objetivo[] = [
-  { src: "/images/targets/m31-andromeda.jpg", objeto: "Andromeda Galaxy",
-    catalogo: "M31 · with M32 and M110", alto: true },
+const FOTOS = [
+  { src: "/images/targets/m31-andromeda.jpg", alto: true },
   // El mismo campo, ancho y cerca: el encuadre es una decisión que se toma
   // antes de arrancar la secuencia, y eso se muestra mejor de lo que se cuenta.
-  { src: "/images/targets/ic1396-elephants-trunk-wide.jpg",
-    objeto: "Elephant's Trunk Nebula", catalogo: "IC 1396A · wide field" },
-  { src: "/images/targets/ic1396-elephants-trunk-detail.jpg",
-    objeto: "The same field, closer", catalogo: "IC 1396A" },
+  { src: "/images/targets/ic1396-elephants-trunk-wide.jpg" },
+  { src: "/images/targets/ic1396-elephants-trunk-detail.jpg" },
   // Y la tercera es el mismo objeto procesado en banda angosta. Para alguien
   // que fotografía, ver dos paletas del mismo dato dice que lo que se lleva es
-  // material y no una foto terminada: la decisión de cómo se ve sigue siendo
-  // suya.
-  { src: "/images/targets/ic1396-elephants-trunk-narrowband.jpg",
-    objeto: "And processed as narrowband", catalogo: "IC 1396A · SHO" },
+  // material y no una foto terminada.
+  { src: "/images/targets/ic1396-elephants-trunk-narrowband.jpg" },
 ];
 
-const DATOS = [
-  { k: "Nights", v: "7" },
-  { k: "Flat price", v: "$300" },
-  { k: "Bortle", v: "1" },
-  { k: "Clear nights / yr", v: String(site.location.clearNightsPerYear) },
-];
+/* DATOS se arma con la copia del idioma, adentro del componente. */
 
 /**
  * The page resolves `?id=` on the server, which is what lets the mail carry a
@@ -139,6 +104,24 @@ export default async function ClubLanding({
   // still gets its own page, and the booking still traces back.
   const enlace = await resolverEnlace(id ?? (await enlaceRecordado()) ?? undefined);
 
+  // **El idioma sale del enlace.** Un club al que Verónica le escribió en
+  // italiano llega a una página en italiano; cualquiera que entre sin código la
+  // ve en inglés, que es el idioma en el que la casa puede sostener una
+  // conversación por escrito con quien sea.
+  const c = copiaDe(enlace?.idioma);
+  const OBJETIVOS: Objetivo[] = [
+    { ...FOTOS[0], objeto: c.objetivos.m31, catalogo: c.objetivos.m31cat },
+    { ...FOTOS[1], objeto: c.objetivos.ancho, catalogo: "IC 1396A · wide field" },
+    { ...FOTOS[2], objeto: c.objetivos.cerca, catalogo: "IC 1396A" },
+    { ...FOTOS[3], objeto: c.objetivos.banda, catalogo: "IC 1396A · SHO" },
+  ];
+  const DATOS = [
+    { k: c.datos.noches, v: "7" },
+    { k: c.datos.precio, v: "$300" },
+    { k: c.datos.bortle, v: "1" },
+    { k: c.datos.despejadas, v: String(site.location.clearNightsPerYear) },
+  ];
+
   return (
     <>
       {enlace ? (
@@ -155,18 +138,18 @@ export default async function ClubLanding({
 
       <Suspense fallback={<div className="min-h-[92svh]" />}>
         <Hero
-          eyebrow="For astronomy clubs"
+          eyebrow={c.hero.eyebrow}
           club={enlace?.cuentaNombre ?? null}
-          title={<>Your club&apos;s gear is fine. Your sky isn&apos;t.</>}
-          sub="Seven consecutive nights on a professional rig under Bortle 1 skies in West Texas, driven by your own members. $300 for the week, which across a membership is a few dollars a head."
+          title={c.hero.title}
+          sub={c.hero.sub}
           image="/images/hero/foto2.jpg"
-          imageAlt="Emission nebula photographed from the ScopeBnB rig in Rockwood, Texas"
+          imageAlt={c.hero.imageAlt}
         >
           <LeadForm
             landing="club"
-            cta="Ask about a week"
-            hint="One email. We'll reply with the open weeks and what the club needs to decide."
-            done="Got it. We'll write back with the weeks that are open and what the club needs to decide."
+            cta={c.form.cta}
+            hint={c.form.hint}
+            done={c.form.done}
           />
         </Hero>
       </Suspense>
@@ -175,18 +158,11 @@ export default async function ClubLanding({
           that explains the sky for three sections before saying what you get is
           a page that gets closed during the second one. */}
       <Section>
-        <Title kicker="What the club gets">One week, and everything that comes out of it.</Title>
-        <Lead>
-          Seven nights in a row on the rig, a half-hour call on the first night so somebody in the
-          club knows how to drive it, the remote imaging guide in writing, and every frame from
-          all seven nights. Three hundred dollars, flat, no subscription.
-        </Lead>
+        <Title kicker={c.oferta.kicker}>{c.oferta.title}</Title>
+        <Lead>{c.oferta.lead}</Lead>
         <Facts items={DATOS} />
         <Reveal delay={140}>
-          <p className="mt-6 max-w-2xl text-sm leading-relaxed text-muted">
-            The arithmetic is the part that only works for a club: split across thirty members
-            it&apos;s ten dollars each, for a sky none of them can reach from home at any price.
-          </p>
+          <p className="mt-6 max-w-2xl text-sm leading-relaxed text-muted">{c.oferta.cuenta}</p>
         </Reveal>
       </Section>
 
@@ -194,35 +170,24 @@ export default async function ClubLanding({
           lo que sale; el sub crudo explica cómo llega, y eso sólo interesa
           cuando ya te interesó lo otro. */}
       <Section>
-        <Title kicker="What comes out of it">Targets shot on this rig.</Title>
-        <Lead>
-          The same telescope your members would be driving, on the nights it was pointed at
-          these. Wide field, detail and a narrowband treatment of the same object: what comes
-          back is material, so how it ends up looking is still your decision.
-        </Lead>
+        <Title kicker={c.galeria.kicker}>{c.galeria.title}</Title>
+        <Lead>{c.galeria.lead}</Lead>
         <Galeria objetivos={OBJETIVOS} />
       </Section>
 
       <Section>
-        <Title kicker="What comes back">One frame of seventy-four. Times seven nights.</Title>
-        <Lead>
-          A single 180-second exposure through a dual-narrowband filter, auto-stretched and
-          nothing else done to it. Drag to see how the same data reads in mono and in duochrome.
-          One night is 74 of these; the week is seven of those nights.
-        </Lead>
+        <Title kicker={c.crudo.kicker}>{c.crudo.title}</Title>
+        <Lead>{c.crudo.lead}</Lead>
         <Reveal delay={120}>
           <div className="mt-10">
             <BeforeAfter
               a="/images/sessions/crescent-2026-07-11.jpg"
               b="/images/sessions/crescent-2026-07-11-color.jpg"
-              labelA="Mono"
-              labelB="Duochrome"
-              alt="Crescent Nebula (NGC 6888), single 180-second L-Extreme exposure"
+              labelA={c.crudo.mono}
+              labelB={c.crudo.duo}
+              alt={c.crudo.alt}
             />
-            <p className="mt-3 text-xs text-muted">
-              Crescent Nebula (NGC 6888) · 180 s · Optolong L-Extreme · 11 July 2026 · one light
-              frame of 74
-            </p>
+            <p className="mt-3 text-xs text-muted">{c.crudo.pie}</p>
           </div>
         </Reveal>
       </Section>
@@ -231,32 +196,21 @@ export default async function ClubLanding({
           a club is deciding is whether somebody picks up on night one. */}
       <Section>
         <Personaje
-          kicker="Night one"
-          title="Somebody walks you through it before you touch anything."
+          kicker={c.mike.kicker}
+          title={c.mike.title}
           image="/images/mike3.png"
-          alt="Mike, from ScopeBnB, standing beside the imaging rig"
+          alt={c.mike.alt}
         >
-          <p>
-            Half an hour on a call with whoever in the club is going to drive: connecting to the
-            rig, finding the target, framing it, focus, and starting the first sequence. By the
-            end of it the club has taken its own first frame.
-          </p>
-          <p>
-            You keep the written guide too, so the member who wasn&apos;t on the call on Monday can
-            still take the scope on Thursday.
-          </p>
+          <p>{c.mike.p1}</p>
+          <p>{c.mike.p2}</p>
         </Personaje>
       </Section>
 
       {/* El equipo, después de la galería y no antes: primero lo que sale, y
           recién cuando alguien quiere saber cómo, el cómo. */}
       <Section>
-        <Title kicker="The rig">What it can frame.</Title>
-        <Lead>
-          If your members already image remotely, the question is not whether this rig is good.
-          It is whether it frames what yours cannot. That is a focal length question, so here is
-          the answer first.
-        </Lead>
+        <Title kicker={c.equipo.kicker}>{c.equipo.title}</Title>
+        <Lead>{c.equipo.lead}</Lead>
         <Equipo
           campo={`${fieldOfView.widthDeg}° × ${fieldOfView.heightDeg}°`}
           escala={`${fieldOfView.pixelScaleArcsec}″`}
@@ -265,11 +219,11 @@ export default async function ClubLanding({
       </Section>
 
       <Section>
-        <Title kicker="How a week works">Three things happen, in this order.</Title>
-        <Steps items={PASOS} />
+        <Title kicker={c.pasos.kicker}>{c.pasos.title}</Title>
+        <Steps items={c.pasos.items} />
         <Reveal delay={280}>
           <p className="mt-8 text-sm text-muted">
-            The written guide is{" "}
+            {c.pasos.guia}
             {/* A plain <a>, not LandingLink: it's a file, not a page, and there
                 is nothing downstream to attribute. */}
             <a
@@ -278,25 +232,23 @@ export default async function ClubLanding({
               target="_blank"
               rel="noopener noreferrer"
             >
-              the remote imaging guide
+              {c.pasos.guiaLink}
             </a>
-            . It&apos;s the same one we walk through on the call.
+            {c.pasos.guiaFin}
           </p>
         </Reveal>
       </Section>
 
       <Section>
-        <Title kicker="Before you ask">The four questions every club asks.</Title>
-        <Objections items={OBJECIONES} />
+        <Title kicker={c.objeciones.kicker}>{c.objeciones.title}</Title>
+        <Objections items={c.objeciones.items} />
       </Section>
 
       {/* Same action, same words as the hero. Two different primary CTAs are not
           two chances, they are none. */}
       <Section className="pb-32 text-center">
         <Reveal>
-          <h2 className="mx-auto max-w-xl text-2xl leading-tight font-semibold text-balance sm:text-3xl">
-            Seven nights under the darkest sky in Texas, and your members keep every frame.
-          </h2>
+          <h2 className="mx-auto max-w-xl text-2xl leading-tight font-semibold text-balance sm:text-3xl">{c.cierre.title}</h2>
         </Reveal>
         <Reveal delay={80}>
           <div className="mt-8 flex justify-center">
