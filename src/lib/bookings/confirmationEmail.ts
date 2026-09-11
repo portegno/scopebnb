@@ -3,7 +3,7 @@ import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { sendEmail, addToAudience } from "@/lib/email/client";
-import { subscribe } from "@/lib/newsletter/store";
+import { subscribe, redeemDiscount } from "@/lib/newsletter/store";
 import { bookingConfirmationEmail } from "@/lib/email/templates/booking";
 import type { Booking } from "@/lib/bookings/types";
 
@@ -40,6 +40,17 @@ export async function sendBookingConfirmation(bookingId: string): Promise<Confir
       if (r.created) await addToAudience(to);
     } catch (e) {
       console.error("[booking-email] newsletter opt-in failed:", e);
+    }
+    // Burn the first-session discount if this booking used one. In the paid flow
+    // the capture already did this (redeemDiscount is idempotent); in request
+    // mode this is where it happens, since the booking's price is the discounted
+    // one the admin will charge.
+    if (data.discount?.code) {
+      try {
+        await redeemDiscount(to);
+      } catch (e) {
+        console.error("[booking-email] discount redeem failed:", e);
+      }
     }
   }
 

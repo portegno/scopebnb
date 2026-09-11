@@ -8,6 +8,7 @@ import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { AltitudeChart } from "@/components/AltitudeChart";
 import { NightCalendar } from "@/components/NightCalendar";
 import { BookingPayPanel } from "@/components/BookingPayPanel";
+import { DiscountField, type AppliedDiscount } from "@/components/DiscountField";
 import { REMOTE_GUIDE_PDF } from "@/components/BookingDetailBody";
 import { HOLD_MS } from "@/lib/bookings/hold";
 import { useAuth } from "@/lib/firebase/useAuth";
@@ -124,6 +125,8 @@ export default function Book() {
   } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [booking, setBooking] = useState<{ id?: string; busy?: boolean; error?: string; paid?: boolean; heldUntil?: number }>({});
+  // Newsletter first-session discount applied at checkout, validated server-side.
+  const [discount, setDiscount] = useState<AppliedDiscount | null>(null);
   const [framerUrl, setFramerUrl] = useState<string | null>(null);
   const router = useRouter();
   const { user } = useAuth();
@@ -178,7 +181,9 @@ export default function Book() {
         sessionEnd: session.end,
         durationHours: +(session.end - session.start).toFixed(2),
         priceUsd: tier?.price,
-        totalUsd: managedTotal,
+        subtotalUsd: managedTotal,
+        discount: discountFor(managedTotal),
+        totalUsd: managedCharge,
         nightTier: tier?.key,
         maxAltitude: a.maxAltitude,
         darkHours: a.darkHours,
@@ -192,7 +197,7 @@ export default function Book() {
       // Marketing conversion: a managed booking request, with its value.
       trackEvent("generate_lead", {
         currency: "USD",
-        value: managedTotal,
+        value: managedCharge,
         mode: "managed",
         night_tier: tier?.key,
         wants_integration: wantsIntegration,
@@ -217,7 +222,9 @@ export default function Book() {
         nights: spanNights,
         date: selectedDate,
         priceUsd: remoteTotal,
-        totalUsd: remoteTotal,
+        subtotalUsd: remoteTotal,
+        discount: discountFor(remoteTotal),
+        totalUsd: remoteCharge,
         nightTier: night.tier.key,
         moon: { illumPct: night.illumPct, separationDeg: 0, phase: night.phase },
         contact: { email: user.email ?? undefined, name: user.displayName ?? undefined },
@@ -227,7 +234,7 @@ export default function Book() {
       // Marketing conversion: a remote-control booking request, with its value.
       trackEvent("generate_lead", {
         currency: "USD",
-        value: remoteTotal,
+        value: remoteCharge,
         mode: "remote",
         remote_plan: remotePlan,
         night_tier: night.tier.key,
@@ -296,6 +303,16 @@ export default function Book() {
   const spanNights = isRemoteWeek ? REMOTE_WEEK_NIGHTS : 1;
   const weekEnd = selectedDate ? addDaysYmd(selectedDate, REMOTE_WEEK_NIGHTS - 1) : "";
   const remoteTotal = isRemoteWeek ? REMOTE_WEEK_PRICE : night ? remotePrice(night.tier.price) : 0;
+  // Apply the newsletter discount (if any) to the subtotal. managedTotal /
+  // remoteTotal are the subtotals; *Charge is what actually gets charged.
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const discountPct = discount?.percent ?? 0;
+  const withDiscount = (subtotal: number) => round2(subtotal * (1 - discountPct / 100));
+  const managedCharge = withDiscount(managedTotal);
+  const remoteCharge = withDiscount(remoteTotal);
+  // Build the discount snapshot stored on the booking (null when none).
+  const discountFor = (subtotal: number) =>
+    discount ? { code: discount.code, percent: discount.percent, amountUsd: round2(subtotal - withDiscount(subtotal)) } : null;
   const weekEndLabel = weekEnd
     ? new Date(`${weekEnd}T12:00:00Z`).toLocaleDateString("en-US", {
         weekday: "long",
@@ -1347,7 +1364,7 @@ export default function Book() {
               <p className="text-sm">
                 Paid and confirmed · <span className="font-semibold">{framingName.trim() || current.name}</span> on{" "}
                 <span className="font-semibold text-gold-soft">{nightLabel}</span>
-                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedTotal)}</span></>}
+                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedCharge)}</span></>}
                 {wantsIntegration && <span className="text-muted"> (incl. integrated image)</span>}. We&apos;ll capture your target.
               </p>
               <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
@@ -1357,7 +1374,7 @@ export default function Book() {
           ) : booking.id && paymentsOn && booking.heldUntil ? (
             <BookingPayPanel
               bookingId={booking.id}
-              amountUsd={managedTotal}
+              amountUsd={managedCharge}
               heldUntil={booking.heldUntil}
               label="night"
               onPaid={() => setBooking((b) => ({ ...b, paid: true }))}
@@ -1368,7 +1385,7 @@ export default function Book() {
               <p className="text-sm">
                 Booking requested for <span className="font-semibold">{framingName.trim() || current.name}</span> on{" "}
                 <span className="font-semibold text-gold-soft">{nightLabel}</span>
-                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedTotal)}</span></>}. We&apos;ll
+                {tier && <> · <span className="font-semibold text-gold-soft">{fmtPrice(managedCharge)}</span></>}. We&apos;ll
                 confirm your night shortly.
               </p>
               <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
@@ -1391,7 +1408,7 @@ export default function Book() {
                   {fmtHour(session.start)}–{fmtHour(session.end)} · {fmtDuration(session.end - session.start)}
                   {tier && (
                     <>
-                      {" "}· <span className="font-semibold text-gold">{fmtPrice(managedTotal)}</span>
+                      {" "}· <span className="font-semibold text-gold">{fmtPrice(managedCharge)}</span>
                       {wantsIntegration && (
                         <span className="text-muted">
                           {" "}({fmtPrice(tier.price)} night + {fmtPrice(INTEGRATION_FEE)} integration)
@@ -1402,6 +1419,14 @@ export default function Book() {
                 </span>
               )}
               {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}
+              {user && (
+                <DiscountField
+                  subtotal={managedTotal}
+                  discount={discount}
+                  getIdToken={async () => user?.getIdToken()}
+                  onChange={setDiscount}
+                />
+              )}
               <p className="w-full text-xs text-muted">{NEWSLETTER_NOTICE}</p>
             </div>
           )}
@@ -1444,7 +1469,7 @@ export default function Book() {
                   </span>
                 )}
                 <p className="mt-1 text-4xl font-semibold leading-none tracking-tight text-gold sm:text-5xl">
-                  {fmtPrice(remoteTotal)}
+                  {fmtPrice(remoteCharge)}
                 </p>
                 <p className="mt-1 text-xs text-muted">
                   {isRemoteWeek ? `flat, ${REMOTE_WEEK_NIGHTS} nights` : "flat, whole night"}
@@ -1491,7 +1516,7 @@ export default function Book() {
                   <span className="font-semibold text-gold-soft">
                     {isRemoteWeek ? `${nightLabel} → ${weekEndLabel}` : nightLabel}
                   </span>{" "}
-                  · <span className="font-semibold text-gold-soft">{fmtPrice(remoteTotal)}</span>. We&apos;ll send your
+                  · <span className="font-semibold text-gold-soft">{fmtPrice(remoteCharge)}</span>. We&apos;ll send your
                   remote-desktop access details.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -1511,7 +1536,7 @@ export default function Book() {
             ) : booking.id && paymentsOn && booking.heldUntil ? (
               <BookingPayPanel
                 bookingId={booking.id}
-                amountUsd={remoteTotal}
+                amountUsd={remoteCharge}
                 heldUntil={booking.heldUntil}
                 label={isRemoteWeek ? "week" : "night"}
                 onPaid={() => setBooking((b) => ({ ...b, paid: true }))}
@@ -1524,7 +1549,7 @@ export default function Book() {
                   <span className="font-semibold text-gold-soft">
                     {isRemoteWeek ? `${nightLabel} → ${weekEndLabel}` : nightLabel}
                   </span>{" "}
-                  · <span className="font-semibold text-gold-soft">{fmtPrice(remoteTotal)}</span>. We&apos;ll confirm and
+                  · <span className="font-semibold text-gold-soft">{fmtPrice(remoteCharge)}</span>. We&apos;ll confirm and
                   send your remote-desktop access details.
                 </p>
                 <Link href="/dashboard" className="mt-2 inline-block text-sm font-semibold text-accent hover:underline">
@@ -1544,9 +1569,17 @@ export default function Book() {
                 <span className="text-sm text-muted">
                   <span className="font-medium text-gold-soft">{nightLabel}</span> ·{" "}
                   {isRemoteWeek ? `${REMOTE_WEEK_NIGHTS} nights` : "whole night"} ·{" "}
-                  <span className="font-semibold text-gold">{fmtPrice(remoteTotal)}</span>
+                  <span className="font-semibold text-gold">{fmtPrice(remoteCharge)}</span>
                 </span>
                 {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}
+                {user && (
+                  <DiscountField
+                    subtotal={remoteTotal}
+                    discount={discount}
+                    getIdToken={async () => user?.getIdToken()}
+                    onChange={setDiscount}
+                  />
+                )}
                 <p className="w-full text-xs text-muted">{NEWSLETTER_NOTICE}</p>
               </div>
             )}

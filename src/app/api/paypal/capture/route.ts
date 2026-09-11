@@ -3,16 +3,18 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { captureOrder, paypalConfigured } from "@/lib/paypal/client";
 import { sendBookingConfirmation } from "@/lib/bookings/confirmationEmail";
+import { redeemDiscount } from "@/lib/newsletter/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function uidFromRequest(req: Request): Promise<string | null> {
+async function authFromRequest(req: Request): Promise<{ uid: string; email?: string } | null> {
   const header = req.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token) return null;
   try {
-    return (await adminAuth.verifyIdToken(token)).uid;
+    const decoded = await adminAuth.verifyIdToken(token);
+    return { uid: decoded.uid, email: decoded.email };
   } catch {
     return null;
   }
@@ -28,8 +30,9 @@ export async function POST(req: Request) {
   if (!paypalConfigured()) {
     return NextResponse.json({ error: "Payments are not configured yet." }, { status: 503 });
   }
-  const uid = await uidFromRequest(req);
-  if (!uid) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const auth = await authFromRequest(req);
+  if (!auth) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const uid = auth.uid;
 
   const body = (await req.json().catch(() => ({}))) as { bookingId?: string; orderId?: string };
   const bookingId = (body.bookingId ?? "").trim();
@@ -76,6 +79,15 @@ export async function POST(req: Request) {
     statusUpdatedAt: FieldValue.serverTimestamp(),
     statusUpdatedBy: "paypal",
   });
+
+  // Burn the first-session discount once the paying customer has used it.
+  if (b.discount?.code && auth.email) {
+    try {
+      await redeemDiscount(auth.email);
+    } catch (e) {
+      console.error("[paypal] discount redeem failed:", e);
+    }
+  }
 
   // Send the confirmation email now the booking is paid. Best-effort: a mail
   // failure must not fail the payment (which already succeeded).
