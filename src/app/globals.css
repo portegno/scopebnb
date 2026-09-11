@@ -396,8 +396,22 @@ html.warp .aurora {
 /* Readable text over a real photograph without flattening it: a gradient from
    the bottom, not a scrim over the whole frame. */
 .lp-scrim {
+  /* **El borde de abajo tiene que llegar al fondo de la pagina, no casi.**
+     Estaba en `var(--background) 2%`: o sea que a un 3% del borde inferior la
+     foto todavia se veia al 28%, y ahi la seccion terminaba de golpe contra la
+     siguiente. Se veia una linea horizontal a mitad de pantalla, como una foto
+     recortada con tijera.
+     Ahora el fondo es solido en el 12% de abajo, asi que la foto ya se apago
+     antes de que la seccion se corte y las dos se tocan en el mismo color. */
   background:
-    linear-gradient(to top, var(--background) 2%, rgba(5, 7, 15, 0.72) 34%, rgba(5, 7, 15, 0.12) 68%, rgba(5, 7, 15, 0.45) 100%);
+    linear-gradient(
+      to top,
+      var(--background) 0%,
+      var(--background) 12%,
+      rgba(5, 7, 15, 0.82) 30%,
+      rgba(5, 7, 15, 0.12) 68%,
+      rgba(5, 7, 15, 0.45) 100%
+    );
 }
 
 /* The scroll-parallax star layers. Positioned by SkyParallax, which writes
