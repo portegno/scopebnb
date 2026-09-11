@@ -50,7 +50,13 @@ export type Booking = {
   sessionEnd?: number;
   durationHours?: number;
   priceUsd?: number;
-  // The definitive amount to charge (night/week price + any add-ons). Set at
+  // Price before any discount (night/week price + add-ons). Kept so the server
+  // can recompute the charge from a trusted base when a discount is applied.
+  subtotalUsd?: number;
+  // Newsletter first-session discount applied to this booking, if any. The
+  // server re-validates the holder's right to it before charging.
+  discount?: { code: string; percent: number; amountUsd: number } | null;
+  // The definitive amount to charge (subtotal minus any discount). Set at
   // booking time so payment never has to recompute it.
   totalUsd?: number;
   nightTier?: string;

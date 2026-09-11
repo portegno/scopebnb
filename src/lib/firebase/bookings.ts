@@ -29,7 +29,9 @@ export type BookingInput = {
   durationHours?: number;
   // Pricing snapshot (scaled by night tier)
   priceUsd?: number;
-  totalUsd?: number; // definitive amount to charge (price + add-ons)
+  subtotalUsd?: number; // price + add-ons, before any discount
+  discount?: { code: string; percent: number; amountUsd: number } | null;
+  totalUsd?: number; // definitive amount to charge (subtotal minus discount)
   nightTier?: string; // "dark" | "good" | "bright" | "full"
   // Quality snapshot at booking time
   score?: number;
