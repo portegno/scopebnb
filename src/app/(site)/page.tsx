@@ -161,7 +161,7 @@ export default function Home() {
         </div>
       </Section>
 
-      {/* Newsletter — subscribe for a 10% first-session discount. */}
+      {/* Newsletter — subscribe for a first-session discount. */}
       <Section>
         <NewsletterSignup source="home" />
       </Section>

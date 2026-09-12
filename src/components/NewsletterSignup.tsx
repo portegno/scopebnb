@@ -2,6 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { NEWSLETTER_DISCOUNT_PERCENT } from "@/lib/newsletter/constants";
+
+const PCT = NEWSLETTER_DISCOUNT_PERCENT;
 
 /** Amber, bold eyebrow specific to the newsletter box (the shared Eyebrow is blue). */
 function NewsletterEyebrow() {
@@ -62,7 +65,7 @@ function useSubscribe(source: string) {
 
 /**
  * Newsletter subscription box. Leaving an email joins the list and unlocks a
- * 10% discount on the subscriber's first session; the discount code is revealed
+ * first-session discount; the discount code is revealed
  * on success. Talks to POST /api/newsletter (Admin SDK writes the subscriber).
  *
  * `variant="full"` is the standalone hero-sized block (home). `variant="compact"`
@@ -106,7 +109,7 @@ export function NewsletterSignup({
                 <p className="mt-1 text-sm text-foreground/90">
                   {s.alreadySubscribed
                     ? "You are already on the list. Here is your code again:"
-                    : "You are in. Use this code at checkout for 10% off:"}
+                    : `You are in. Use this code at checkout for ${PCT}% off:`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2 rounded-[4px] bg-surface-2 px-4 py-2.5 ring-1 ring-hairline">
@@ -121,7 +124,7 @@ export function NewsletterSignup({
               <div className="sm:max-w-xs">
                 <NewsletterEyebrow />
                 <p className="mt-1 text-sm font-semibold text-foreground">
-                  Get 10% off your first session
+                  Get {PCT}% off your first session
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
                   Subscribe for tips and your discount code.
@@ -172,7 +175,7 @@ export function NewsletterSignup({
             <p className="mt-3 text-muted">
               {s.alreadySubscribed
                 ? "Here is your first-session discount code again, in case you need it:"
-                : "Here is your 10% off code for your first session:"}
+                : `Here is your ${PCT}% off code for your first session:`}
             </p>
             <div className="mt-5 inline-flex items-center gap-3 rounded-[4px] bg-surface-2 px-5 py-3 ring-1 ring-hairline">
               <span className="font-mono text-lg font-semibold tracking-[0.15em] text-gold-soft">
@@ -181,17 +184,17 @@ export function NewsletterSignup({
               <CopyButton value={s.code} />
             </div>
             <p className="mt-4 text-xs text-muted">
-              Apply it at checkout for 10% off your first booked session.
+              Apply it at checkout for {PCT}% off your first booked session.
             </p>
           </>
         ) : (
           <>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-              Get 10% off your first session
+              Get {PCT}% off your first session
             </h2>
             <p className="mt-3 text-muted">
               Drop your email for imaging tips, dark-sky forecasts, and target guides.
-              Subscribe now and we will send a 10% discount code for your first session.
+              Subscribe now and we will send a {PCT}% discount code for your first session.
             </p>
 
             <form onSubmit={s.submit} className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row">
