@@ -1661,7 +1661,7 @@ export default function Book() {
         </div>
       )}
 
-      {/* Newsletter promo — nudge the 10% first-session discount while booking. */}
+      {/* Newsletter promo — nudge the first-session discount while booking. */}
       <div className="mt-12">
         <NewsletterSignup source="book" variant="compact" />
       </div>

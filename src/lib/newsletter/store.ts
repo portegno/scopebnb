@@ -5,13 +5,11 @@ import { adminDb } from "@/lib/firebase/admin";
 
 const COL = "newsletterSubscribers";
 
-/**
- * The perk for subscribing: a flat percentage off the subscriber's first
- * session, redeemable with this code at checkout. Single source of truth — the
- * signup UI reads these via /api/newsletter so the copy never drifts.
- */
-export const NEWSLETTER_DISCOUNT_PERCENT = 10;
-export const NEWSLETTER_DISCOUNT_CODE = "FIRSTLIGHT10";
+// Discount percent + code live in a client-safe module so the signup and
+// checkout UI share the same source of truth. Re-exported here so existing
+// server-side imports from this store keep working.
+export { NEWSLETTER_DISCOUNT_PERCENT, NEWSLETTER_DISCOUNT_CODE } from "./constants";
+import { NEWSLETTER_DISCOUNT_PERCENT, NEWSLETTER_DISCOUNT_CODE } from "./constants";
 
 /** Loose but practical email shape check (server-side gate). */
 export function isValidEmail(email: string): boolean {

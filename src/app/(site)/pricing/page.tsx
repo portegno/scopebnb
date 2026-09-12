@@ -126,7 +126,7 @@ export default function Pricing() {
         </p>
       </div>
 
-      {/* Newsletter promo — a 10% off nudge right where visitors compare prices. */}
+      {/* Newsletter promo — a first-session discount nudge where visitors compare prices. */}
       <div className="mt-8">
         <NewsletterSignup source="pricing" variant="compact" />
       </div>
