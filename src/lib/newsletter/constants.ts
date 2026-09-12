@@ -8,4 +8,10 @@
  * public — they're shown on the site — so UI components import them directly.
  */
 export const NEWSLETTER_DISCOUNT_PERCENT = 5;
-export const NEWSLETTER_DISCOUNT_CODE = "FIRSTLIGHT10";
+export const NEWSLETTER_DISCOUNT_CODE = "FIRSTLIGHT5";
+/**
+ * Codes still honored at checkout but no longer handed out — subscribers who
+ * already received an older code can still redeem it. Keep old codes here when
+ * the current one changes so nobody is left holding a dead code.
+ */
+export const LEGACY_DISCOUNT_CODES = ["FIRSTLIGHT10"];

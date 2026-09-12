@@ -9,7 +9,7 @@ const COL = "newsletterSubscribers";
 // checkout UI share the same source of truth. Re-exported here so existing
 // server-side imports from this store keep working.
 export { NEWSLETTER_DISCOUNT_PERCENT, NEWSLETTER_DISCOUNT_CODE } from "./constants";
-import { NEWSLETTER_DISCOUNT_PERCENT, NEWSLETTER_DISCOUNT_CODE } from "./constants";
+import { NEWSLETTER_DISCOUNT_PERCENT, NEWSLETTER_DISCOUNT_CODE, LEGACY_DISCOUNT_CODES } from "./constants";
 
 /** Loose but practical email shape check (server-side gate). */
 export function isValidEmail(email: string): boolean {
@@ -59,7 +59,9 @@ export type DiscountCheck =
  * discount hasn't been used yet. Read-only: does not mark it redeemed.
  */
 export async function checkDiscount(email: string, code: string): Promise<DiscountCheck> {
-  if (code.trim().toUpperCase() !== NEWSLETTER_DISCOUNT_CODE) return { valid: false, reason: "wrong-code" };
+  const entered = code.trim().toUpperCase();
+  const accepted = entered === NEWSLETTER_DISCOUNT_CODE || LEGACY_DISCOUNT_CODES.includes(entered);
+  if (!accepted) return { valid: false, reason: "wrong-code" };
   const id = email.trim().toLowerCase();
   const snap = await adminDb.collection(COL).doc(id).get();
   if (!snap.exists) return { valid: false, reason: "not-subscribed" };
