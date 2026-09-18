@@ -118,7 +118,7 @@ const EN: Copia = {
   equipo: {
     kicker: "The rig",
     title: "What it can frame.",
-    lead: "If your members already image remotely, the question is not whether this rig is good. It is whether it frames what yours cannot. That is a focal length question, so here is the answer first.",
+    lead: "If your members already image remotely, the useful question is what this rig adds to what they already shoot. That comes down to focal length and field of view, so here is the answer first.",
   },
   pasos: {
     kicker: "How a week works",
@@ -230,7 +230,7 @@ const ES: Copia = {
   equipo: {
     kicker: "El equipo",
     title: "Qué encuadra.",
-    lead: "Si los socios ya fotografían en remoto, la pregunta no es si este equipo es bueno. Es si encuadra lo que el de ustedes no puede. Eso es una pregunta de distancia focal, así que va la respuesta primero.",
+    lead: "Si los socios ya fotografían en remoto, la pregunta útil es qué le suma este equipo a lo que ya hacen. Eso depende de la distancia focal y del campo, así que va la respuesta primero.",
   },
   pasos: {
     kicker: "Cómo funciona una semana",
@@ -339,7 +339,7 @@ const IT: Copia = {
   equipo: {
     kicker: "La strumentazione",
     title: "Cosa riesce a inquadrare.",
-    lead: "Se i vostri soci fanno già imaging da remoto, la domanda non è se questa strumentazione sia buona. È se inquadra quello che la vostra non riesce a inquadrare. È una questione di lunghezza focale, quindi ecco prima la risposta.",
+    lead: "Se i vostri soci fanno già imaging da remoto, la domanda utile è cosa aggiunge questa strumentazione a quello che già fotografano. Dipende da lunghezza focale e campo inquadrato, quindi ecco prima la risposta.",
   },
   pasos: {
     kicker: "Come funziona una settimana",
