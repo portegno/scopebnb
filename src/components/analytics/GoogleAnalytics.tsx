@@ -10,6 +10,14 @@ import { useEffect, useRef } from "react";
  * the landing URL, so GA4 captures utm_* campaign params); this component then
  * sends a page_view on each client-side route change, which the App Router does
  * without a full reload.
+ *
+ * **Campaign links whose URL says nothing.** Outbound mail links carry only
+ * `?id=code` (the reader shouldn't see they are row seven of a campaign), so
+ * the landing leaves `window.__sbCampania` in its HTML and the first page_view
+ * goes out with a `page_location` carrying the utm_* params instead. GA4 reads
+ * campaign attribution from that field, so the session is attributed to the
+ * club and the campaign (medium `outbound`, never `email`, which is the
+ * newsletter's) while the address bar stays clean.
  */
 export function GoogleAnalytics({ gaId }: { gaId: string }) {
   const pathname = usePathname();
@@ -37,7 +45,18 @@ export function GoogleAnalytics({ gaId }: { gaId: string }) {
 function gtag(){dataLayer.push(arguments);}
 window.gtag = gtag;
 gtag('js', new Date());
-gtag('config', '${gaId}');`}
+var c = window.__sbCampania;
+if (c && c.fuente) {
+  var u = new URL(window.location.href);
+  u.searchParams.delete('id');
+  u.searchParams.set('utm_source', c.fuente);
+  u.searchParams.set('utm_medium', c.medio || 'outbound');
+  if (c.campania) u.searchParams.set('utm_campaign', c.campania);
+  u.searchParams.set('utm_id', c.codigo);
+  gtag('config', '${gaId}', { page_location: u.toString() });
+} else {
+  gtag('config', '${gaId}');
+}`}
       </Script>
     </>
   );

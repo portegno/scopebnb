@@ -125,6 +125,24 @@ export default async function ClubLanding({
   return (
     <>
       {enlace ? (
+        // **La campaña, antes de que cargue Analytics.** GA4 decide de dónde
+        // vino una sesión con su primer page_view, y lo lee de la URL. La URL de
+        // estos mails ya no dice nada (`?id=código`), así que sin esto cada
+        // visita de un contacto de Verónica caía en (direct). Se deja escrita
+        // acá, en el HTML del servidor, y `GoogleAnalytics` la usa en su config:
+        // un script inline se ejecuta al parsear, antes que los afterInteractive.
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__sbCampania=${JSON.stringify({
+              fuente: enlace.cuenta,
+              medio: enlace.medio ?? "outbound",
+              campania: enlace.campania,
+              codigo: enlace.codigo,
+            }).replace(/</g, "\\u003c")};`,
+          }}
+        />
+      ) : null}
+      {enlace ? (
         <CampaignBeacon
           codigo={enlace.codigo}
           cuenta={enlace.cuenta}

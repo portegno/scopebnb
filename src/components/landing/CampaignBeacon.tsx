@@ -43,6 +43,7 @@ export function CampaignBeacon({
   medio: string | null;
 }) {
   useEffect(() => {
+    contarLaVisita(codigo);
     const gtag = (window as unknown as { gtag?: Gtag }).gtag;
     if (typeof gtag !== "function") return;
 
@@ -61,4 +62,29 @@ export function CampaignBeacon({
   }, [codigo, cuenta, campania, medio]);
 
   return null;
+}
+
+/**
+ * Our own count of the visit, once per browser session.
+ *
+ * Once per session so a reload, or a club secretary going back and forth
+ * between the page and their mail, is one visit and not five. Not on the
+ * house's own machines: the site running locally is us, and counting it would
+ * make a link look opened by the club when it was opened by whoever tested it.
+ */
+function contarLaVisita(codigo: string) {
+  if (!/(^|\.)scopebnb\.com$/.test(window.location.hostname)) return;
+  const clave = `sb_visto_${codigo}`;
+  try {
+    if (sessionStorage.getItem(clave)) return;
+    sessionStorage.setItem(clave, "1");
+  } catch {
+    // Without storage we still count; at worst a reload counts twice.
+  }
+  fetch("/api/enlace-visto", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ codigo }),
+    keepalive: true,
+  }).catch(() => {});
 }
