@@ -82,7 +82,7 @@ const EN: Copia = {
   oferta: {
     kicker: "What the club gets",
     title: "One week, and everything that comes out of it.",
-    lead: "Seven nights in a row on the rig, a half-hour call on the first night so somebody in the club knows how to drive it, the remote imaging guide in writing, and every frame from all seven nights. Three hundred dollars, flat, no subscription.",
+    lead: "Seven nights in a row on the rig, a half-hour call on the first night so whoever drives it feels at home from the first frame, the remote imaging guide in writing, and every frame from all seven nights. Three hundred dollars, flat, no subscription.",
     cuenta:
       "The arithmetic is the part that only works for a club: split across thirty members it's ten dollars each, for a week under one of the darkest skies there is.",
   },
@@ -110,7 +110,7 @@ const EN: Copia = {
   },
   mike: {
     kicker: "Night one",
-    title: "Somebody walks you through it before you touch anything.",
+    title: "On the first night, we start it together.",
     alt: "Mike, from ScopeBnB, standing beside the imaging rig",
     p1: "Half an hour on a call with whoever in the club is going to drive: connecting to the rig, finding the target, framing it, focus, and starting the first sequence. By the end of it the club has taken its own first frame.",
     p2: "You keep the written guide too, so the member who wasn't on the call on Monday can still take the scope on Thursday.",
@@ -150,7 +150,7 @@ const EN: Copia = {
     items: [
       {
         q: "Does someone in the club need to know N.I.N.A.?",
-        a: "No. That's what the first-night call is for, and you get the remote imaging guide in writing so nobody has to remember it. If a member already runs N.I.N.A. at home, they'll be at ease in ten minutes: it's the same software, pointed at better sky.",
+        a: "No. That's what the first-night call is for, and you get the remote imaging guide in writing so nobody has to remember it. If a member already runs N.I.N.A. at home, they'll be at ease in ten minutes: it's the same software, pointed at a Bortle 1 sky.",
       },
       {
         q: "What if the week is clouded out?",
@@ -194,7 +194,7 @@ const ES: Copia = {
   oferta: {
     kicker: "Qué se lleva el club",
     title: "Una semana, y todo lo que salga de ella.",
-    lead: "Siete noches seguidas en el equipo, media hora de llamada la primera noche para que alguien del club aprenda a manejarlo, el manual de operación remota por escrito, y todas las tomas de las siete noches. Trescientos dólares, precio plano, sin suscripción.",
+    lead: "Siete noches seguidas en el equipo, media hora de llamada la primera noche para que quien lo maneje se sienta cómodo desde la primera toma, el manual de operación remota por escrito, y todas las tomas de las siete noches. Trescientos dólares, precio plano, sin suscripción.",
     cuenta:
       "La cuenta es la parte que sólo le cierra a un club: repartida entre treinta socios son diez dólares cada uno, por una semana bajo uno de los cielos más oscuros que hay.",
   },
@@ -222,7 +222,7 @@ const ES: Copia = {
   },
   mike: {
     kicker: "La primera noche",
-    title: "Alguien te lo explica antes de que toques nada.",
+    title: "La primera noche, lo arrancamos juntos.",
     alt: "Mike, de ScopeBnB, al lado del equipo de captura",
     p1: "Media hora de llamada con quien del club vaya a manejarlo: conectarse al equipo, encontrar el objeto, encuadrarlo, enfocar y arrancar la primera secuencia. Cuando termina, el club ya sacó su propia primera toma.",
     p2: "El manual escrito queda con ustedes, así el socio que no estuvo en la llamada del lunes puede igual tomar el telescopio el jueves.",
@@ -262,7 +262,7 @@ const ES: Copia = {
     items: [
       {
         q: "¿Alguien del club tiene que saber N.I.N.A.?",
-        a: "No. Para eso es la llamada de la primera noche, y el manual de operación remota queda por escrito para que nadie tenga que acordarse. Si algún socio ya usa N.I.N.A. en su casa, en diez minutos está cómodo: es el mismo software, apuntado a mejor cielo.",
+        a: "No. Para eso es la llamada de la primera noche, y el manual de operación remota queda por escrito para que nadie tenga que acordarse. Si algún socio ya usa N.I.N.A. en su casa, en diez minutos está cómodo: es el mismo software, apuntado a un cielo Bortle 1.",
       },
       {
         q: "¿Y si la semana se nubla?",
@@ -303,7 +303,7 @@ const IT: Copia = {
   oferta: {
     kicker: "Cosa ottiene il club",
     title: "Una settimana, e tutto quello che ne esce.",
-    lead: "Sette notti di fila sulla strumentazione, mezz'ora di call la prima notte perché qualcuno del club impari a guidarla, la guida all'imaging remoto per iscritto, e tutti i frame delle sette notti. Trecento dollari, prezzo fisso, senza abbonamento.",
+    lead: "Sette notti di fila sulla strumentazione, mezz'ora di call la prima notte perché chi la guida si senta a proprio agio fin dal primo frame, la guida all'imaging remoto per iscritto, e tutti i frame delle sette notti. Trecento dollari, prezzo fisso, senza abbonamento.",
     cuenta:
       "Il conto è la parte che torna solo a un club: divisi tra trenta soci sono dieci dollari a testa, per una settimana sotto uno dei cieli più bui che ci siano.",
   },
@@ -331,7 +331,7 @@ const IT: Copia = {
   },
   mike: {
     kicker: "La prima notte",
-    title: "Qualcuno ve lo spiega prima che tocchiate qualcosa.",
+    title: "La prima notte, lo avviamo insieme.",
     alt: "Mike, di ScopeBnB, accanto alla strumentazione di ripresa",
     p1: "Mezz'ora di call con chi del club la guiderà: collegarsi alla strumentazione, trovare l'oggetto, inquadrarlo, mettere a fuoco e avviare la prima sequenza. Alla fine il club ha già scattato il suo primo frame.",
     p2: "La guida scritta resta a voi, così il socio che lunedì non era in call può comunque prendere il telescopio il giovedì.",
@@ -371,7 +371,7 @@ const IT: Copia = {
     items: [
       {
         q: "Qualcuno del club deve saper usare N.I.N.A.?",
-        a: "No. Serve a questo la call della prima notte, e la guida all'imaging remoto resta per iscritto così nessuno deve ricordarsela. Se un socio usa già N.I.N.A. a casa, in dieci minuti è a suo agio: è lo stesso software, puntato su un cielo migliore.",
+        a: "No. Serve a questo la call della prima notte, e la guida all'imaging remoto resta per iscritto così nessuno deve ricordarsela. Se un socio usa già N.I.N.A. a casa, in dieci minuti è a suo agio: è lo stesso software, puntato su un cielo Bortle 1.",
       },
       {
         q: "E se la settimana è tutta nuvolosa?",
