@@ -70,7 +70,7 @@ const EN: Copia = {
   },
   hero: {
     eyebrow: "For astronomy clubs",
-    title: "Your club's gear is fine. Your sky isn't.",
+    title: "Seven nights of dark sky, shared by the whole club.",
     sub: "Seven consecutive nights on a professional rig under Bortle 1 skies in West Texas, driven by your own members. $300 for the week, which across a membership is a few dollars a head.",
     imageAlt: "Emission nebula photographed from the ScopeBnB rig in Rockwood, Texas",
   },
@@ -84,7 +84,7 @@ const EN: Copia = {
     title: "One week, and everything that comes out of it.",
     lead: "Seven nights in a row on the rig, a half-hour call on the first night so somebody in the club knows how to drive it, the remote imaging guide in writing, and every frame from all seven nights. Three hundred dollars, flat, no subscription.",
     cuenta:
-      "The arithmetic is the part that only works for a club: split across thirty members it's ten dollars each, for a sky none of them can reach from home at any price.",
+      "The arithmetic is the part that only works for a club: split across thirty members it's ten dollars each, for a week under one of the darkest skies there is.",
   },
   datos: { noches: "Nights", precio: "Flat price", bortle: "Bortle", despejadas: "Clear nights / yr" },
   galeria: {
@@ -179,9 +179,10 @@ const ES: Copia = {
   },
   hero: {
     eyebrow: "Para clubes de astronomía",
-    // El original dice "your gear is fine, your sky isn't". En castellano el
-    // posesivo repetido suena a traducción; la oposición se sostiene sola.
-    title: "El equipo del club está bien. El cielo no.",
+    // Hasta el 18 sep 2026 decía "El equipo del club está bien. El cielo no.",
+    // igual que en inglés e italiano. Gabriel lo cambió en los tres: a un club
+    // se lo invita a algo que suma, no se le dice que lo suyo no alcanza.
+    title: "Siete noches de cielo oscuro, para todo el club.",
     sub: "Siete noches seguidas en un equipo profesional bajo cielo Bortle 1 en el oeste de Texas, manejado por los propios socios. 300 dólares la semana, que repartidos entre los socios son unos pocos dólares por cabeza.",
     imageAlt: "Nebulosa de emisión fotografiada desde el equipo de ScopeBnB en Rockwood, Texas",
   },
@@ -195,7 +196,7 @@ const ES: Copia = {
     title: "Una semana, y todo lo que salga de ella.",
     lead: "Siete noches seguidas en el equipo, media hora de llamada la primera noche para que alguien del club aprenda a manejarlo, el manual de operación remota por escrito, y todas las tomas de las siete noches. Trescientos dólares, precio plano, sin suscripción.",
     cuenta:
-      "La cuenta es la parte que sólo le cierra a un club: repartida entre treinta socios son diez dólares cada uno, por un cielo al que ninguno llega desde su casa a ningún precio.",
+      "La cuenta es la parte que sólo le cierra a un club: repartida entre treinta socios son diez dólares cada uno, por una semana bajo uno de los cielos más oscuros que hay.",
   },
   datos: { noches: "Noches", precio: "Precio plano", bortle: "Bortle", despejadas: "Noches despejadas / año" },
   galeria: {
@@ -290,7 +291,7 @@ const IT: Copia = {
   },
   hero: {
     eyebrow: "Per i gruppi astrofili",
-    title: "La strumentazione del club va bene. Il cielo no.",
+    title: "Sette notti di cielo buio, per tutto il club.",
     sub: "Sette notti consecutive su una strumentazione professionale sotto cieli Bortle 1 nel Texas occidentale, guidata dai vostri soci. 300 dollari a settimana, che divisi tra i soci sono pochi dollari a testa.",
     imageAlt: "Nebulosa a emissione fotografata dalla strumentazione ScopeBnB a Rockwood, Texas",
   },
@@ -304,7 +305,7 @@ const IT: Copia = {
     title: "Una settimana, e tutto quello che ne esce.",
     lead: "Sette notti di fila sulla strumentazione, mezz'ora di call la prima notte perché qualcuno del club impari a guidarla, la guida all'imaging remoto per iscritto, e tutti i frame delle sette notti. Trecento dollari, prezzo fisso, senza abbonamento.",
     cuenta:
-      "Il conto è la parte che torna solo a un club: divisi tra trenta soci sono dieci dollari a testa, per un cielo che nessuno di loro raggiunge da casa a nessun prezzo.",
+      "Il conto è la parte che torna solo a un club: divisi tra trenta soci sono dieci dollari a testa, per una settimana sotto uno dei cieli più bui che ci siano.",
   },
   datos: { noches: "Notti", precio: "Prezzo fisso", bortle: "Bortle", despejadas: "Notti serene / anno" },
   galeria: {
