@@ -56,7 +56,9 @@ export async function POST(req: Request) {
   if (!(amountUsd > 0)) return NextResponse.json({ error: "Booking has no amount" }, { status: 409 });
 
   const product = b.product === "remote" ? "Remote Control" : "Managed Imaging";
-  const description = `ScopeBnB ${product} · ${b.remotePlan === "week" ? "7-night week" : b.date ?? "night"}`;
+  const remoteNights = typeof b.nights === "number" && b.nights > 0 ? b.nights : 1;
+  const remoteSpan = remoteNights >= 7 ? "7-night week" : `${remoteNights}-night block`;
+  const description = `ScopeBnB ${product} · ${b.product === "remote" ? remoteSpan : b.date ?? "night"}`;
 
   try {
     const { orderId } = await createOrder({ amountUsd, reference: bookingId, description });

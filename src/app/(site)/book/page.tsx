@@ -30,7 +30,7 @@ import {
   type Assessment,
   type AltitudeCurve,
 } from "@/lib/visibility";
-import { nightTier, fmtPrice, remotePrice, NIGHT_TIERS, INTEGRATION_FEE, REMOTE_WEEK_PRICE, REMOTE_WEEK_NIGHTS } from "@/lib/pricing";
+import { nightTier, fmtPrice, NIGHT_TIERS, INTEGRATION_FEE, REMOTE_PLANS, type RemotePlanKey } from "@/lib/pricing";
 import { addDaysYmd } from "@/lib/dates";
 
 type Mosaic = { cols: number; rows: number; overlap: number; panels: { ra: number; dec: number }[] };
@@ -91,9 +91,9 @@ function ymd(d: Date) {
 
 export default function Book() {
   const [mode, setMode] = useState<"managed" | "remote" | null>(null);
-  // Remote Control plan. Defaults to the week: it's the best value and the one
-  // we steer bookers toward.
-  const [remotePlan, setRemotePlan] = useState<"nightly" | "week">("week");
+  // Remote Control plan. Sold only as a fixed multi-night package (3 nights or a
+  // full week). Defaults to the week: best value and the one we steer toward.
+  const [remotePlan, setRemotePlan] = useState<RemotePlanKey>("week");
   const [framing, setFraming] = useState<Framing | null>(null);
   const [framingName, setFramingName] = useState(""); // user-editable label for the saved framing
   const [zoomed, setZoomed] = useState(false); // framing preview open in a full-size lightbox
@@ -249,9 +249,13 @@ export default function Book() {
     const local = new Date(Date.now() + site.location.utcOffset * 3600000);
     setToday(ymd(local));
     // No date pre-selected — the visitor picks a night from the calendar first.
-    // Deep-link support: /book?mode=managed|remote preselects the modality.
-    const m = new URLSearchParams(window.location.search).get("mode");
+    // Deep-link support: /book?mode=managed|remote preselects the modality, and
+    // /book?plan=short|week preselects the Remote Control package.
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get("mode");
     if (m === "managed" || m === "remote") setMode(m);
+    const p = params.get("plan");
+    if (p === "short" || p === "week") setRemotePlan(p);
   }, []);
 
   const ranked: RankedTarget[] = useMemo(
@@ -291,18 +295,17 @@ export default function Book() {
     return { tier: nightTier(moon.fraction), illumPct: Math.round(moon.fraction * 100), phase: moon.phase };
   }, [selectedDate]);
   const tier = night?.tier ?? null;
-  // Remote nights cost 10% more than managed — the price shown follows the chosen modality.
-  const priceOf = (base: number) => (mode === "remote" ? remotePrice(base) : base);
   // Managed total = night price + optional integrated-image add-on.
   const managedTotal = tier ? tier.price + (wantsIntegration ? INTEGRATION_FEE : 0) : 0;
-  // Remote week = 7 consecutive nights at a flat rate; nightly = one night.
   // Whether online payment is live. When off (no PayPal client id yet), the
   // booking flow falls back to "request → admin confirms".
   const paymentsOn = !!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-  const isRemoteWeek = mode === "remote" && remotePlan === "week";
-  const spanNights = isRemoteWeek ? REMOTE_WEEK_NIGHTS : 1;
-  const weekEnd = selectedDate ? addDaysYmd(selectedDate, REMOTE_WEEK_NIGHTS - 1) : "";
-  const remoteTotal = isRemoteWeek ? REMOTE_WEEK_PRICE : night ? remotePrice(night.tier.price) : 0;
+  // Remote Control is a fixed package: a block of consecutive nights at a flat
+  // price, independent of the moon. The picked package drives the span + price.
+  const remotePkg = mode === "remote" ? REMOTE_PLANS.find((p) => p.key === remotePlan) ?? REMOTE_PLANS[0] : null;
+  const spanNights = remotePkg ? remotePkg.nights : 1;
+  const stayEnd = selectedDate && remotePkg ? addDaysYmd(selectedDate, remotePkg.nights - 1) : "";
+  const remoteTotal = remotePkg ? remotePkg.price : 0;
   // Apply the newsletter discount (if any) to the subtotal. managedTotal /
   // remoteTotal are the subtotals; *Charge is what actually gets charged.
   const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -313,8 +316,8 @@ export default function Book() {
   // Build the discount snapshot stored on the booking (null when none).
   const discountFor = (subtotal: number) =>
     discount ? { code: discount.code, percent: discount.percent, amountUsd: round2(subtotal - withDiscount(subtotal)) } : null;
-  const weekEndLabel = weekEnd
-    ? new Date(`${weekEnd}T12:00:00Z`).toLocaleDateString("en-US", {
+  const stayEndLabel = stayEnd
+    ? new Date(`${stayEnd}T12:00:00Z`).toLocaleDateString("en-US", {
         weekday: "long",
         month: "short",
         day: "numeric",
@@ -535,65 +538,62 @@ export default function Book() {
         })}
       </div>
 
-      {/* Remote plan: full week (featured) vs single night. */}
+      {/* Remote plan: two fixed packages, the full week featured as best value. */}
       {mode === "remote" && (
         <div className="mt-6 mb-16 max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-wider text-muted">Choose your plan</p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => {
-                setRemotePlan("week");
-                setSelectedDate("");
-              }}
-              className={`relative flex flex-col rounded-[4px] bg-surface p-6 text-left transition-colors ${
-                remotePlan === "week" ? "ring-2 ring-gold" : "ring-1 ring-hairline hover:bg-surface-2"
-              }`}
-            >
-              <span className="absolute -top-2.5 left-4 rounded-full bg-gold px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-background">
-                Most popular
-              </span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gold">Full week · best value</span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-semibold tracking-tight text-foreground">{fmtPrice(REMOTE_WEEK_PRICE)}</span>
-                <span className="text-sm text-muted">/ {REMOTE_WEEK_NIGHTS} nights</span>
-              </div>
-              <p className="mt-0.5 text-xs text-gold-soft">≈ {fmtPrice(Math.round(REMOTE_WEEK_PRICE / REMOTE_WEEK_NIGHTS))}/night</p>
-              <p className="mt-3 flex-1 text-sm text-muted">
-                The rig is yours for {REMOTE_WEEK_NIGHTS} nights in a row, dusk to dawn. Best odds of clear skies, and
-                far cheaper than booking nightly.
-              </p>
-              <span className={`mt-5 text-sm font-semibold ${remotePlan === "week" ? "text-gold" : "text-muted"}`}>
-                {remotePlan === "week" ? "Selected ✓" : "Choose →"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setRemotePlan("nightly");
-                setSelectedDate("");
-              }}
-              className={`flex flex-col rounded-[4px] bg-surface p-6 text-left transition-colors ${
-                remotePlan === "nightly" ? "ring-2 ring-accent" : "ring-1 ring-hairline hover:bg-surface-2"
-              }`}
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider text-accent">Single night</span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-semibold tracking-tight text-foreground">
-                  {fmtPrice(remotePrice(NIGHT_TIERS[3].price))}
-                </span>
-                <span className="text-sm text-muted">/ night, from</span>
-              </div>
-              <p className="mt-0.5 text-xs text-muted">priced by moon darkness</p>
-              <p className="mt-3 flex-1 text-sm text-muted">
-                One night, dusk to dawn. {fmtPrice(remotePrice(NIGHT_TIERS[3].price))} to{" "}
-                {fmtPrice(remotePrice(NIGHT_TIERS[0].price))} depending on the moon.
-              </p>
-              <span className={`mt-5 text-sm font-semibold ${remotePlan === "nightly" ? "text-accent" : "text-muted"}`}>
-                {remotePlan === "nightly" ? "Selected ✓" : "Choose →"}
-              </span>
-            </button>
+            {REMOTE_PLANS.map((p) => {
+              const active = remotePlan === p.key;
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => {
+                    setRemotePlan(p.key);
+                    setSelectedDate("");
+                  }}
+                  className={`relative flex flex-col rounded-[4px] bg-surface p-6 text-left transition-colors ${
+                    active
+                      ? p.popular
+                        ? "ring-2 ring-gold"
+                        : "ring-2 ring-accent"
+                      : p.popular
+                        ? "ring-1 ring-gold/40 hover:bg-surface-2"
+                        : "ring-1 ring-hairline hover:bg-surface-2"
+                  }`}
+                >
+                  {p.popular && (
+                    <span className="absolute -top-2.5 left-4 rounded-full bg-gold px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-background">
+                      Most popular
+                    </span>
+                  )}
+                  <span
+                    className={`text-xs font-semibold uppercase tracking-wider ${p.popular ? "text-gold" : "text-accent"}`}
+                  >
+                    {p.popular ? "Full week · best value" : `${p.nights}-night block`}
+                  </span>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-3xl font-semibold tracking-tight text-foreground">{fmtPrice(p.price)}</span>
+                    <span className="text-sm text-muted">/ {p.nights} nights</span>
+                  </div>
+                  <p className={`mt-0.5 text-xs ${p.popular ? "text-gold-soft" : "text-muted"}`}>
+                    ≈ {fmtPrice(Math.round(p.price / p.nights))}/night
+                  </p>
+                  <p className="mt-3 flex-1 text-sm text-muted">
+                    The rig is yours for {p.nights} nights in a row, dusk to dawn.{" "}
+                    {p.popular
+                      ? "Best odds of clear skies, and the cheapest per night."
+                      : "A shorter run when a full week is more than you need."}
+                  </p>
+                  <span
+                    className={`mt-5 text-sm font-semibold ${active ? (p.popular ? "text-gold" : "text-accent") : "text-muted"}`}
+                  >
+                    {active ? "Selected ✓" : "Choose →"}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -605,7 +605,9 @@ export default function Book() {
         2 · Pick your night
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-muted">
-        Nights are graded by moon darkness. New-moon nights are best for faint targets.
+        {mode === "remote"
+          ? `Pick the first night of your ${spanNights}-night block. The rig is yours for the whole run, dusk to dawn. The moon glyph on each night is just a heads-up, it doesn't change the price.`
+          : "Each night shows the moon's phase. New-moon nights are darkest and best for faint targets, and priced highest."}
       </p>
       {today && (
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-stretch">
@@ -620,7 +622,7 @@ export default function Book() {
             />
           </div>
 
-          {/* Right column: sky-forecast shortcut + color-coded pricing */}
+          {/* Right column: sky-forecast shortcut + pricing (managed tiers / remote package) */}
           <div className="flex w-full flex-col gap-4 sm:w-80">
             <Link
               href="/forecast"
@@ -646,22 +648,24 @@ export default function Book() {
             </Link>
 
             <div className="flex w-full flex-1 flex-col rounded-[4px] bg-surface p-6 ring-1 ring-hairline">
-              {isRemoteWeek ? (
+              {remotePkg ? (
                 <>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Full week</h3>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">
+                    {remotePkg.popular ? "Full week" : `${remotePkg.nights}-night block`}
+                  </h3>
                   <div className="mt-5 flex flex-1 flex-col justify-center">
                     <p className="text-5xl font-semibold leading-none tracking-tight text-gold">
-                      {fmtPrice(REMOTE_WEEK_PRICE)}
+                      {fmtPrice(remotePkg.price)}
                     </p>
                     <p className="mt-2 text-sm text-foreground/90">
-                      One flat rate · {REMOTE_WEEK_NIGHTS} nights in a row
+                      One flat rate · {remotePkg.nights} nights in a row
                     </p>
                     <p className="mt-1 text-sm text-gold-soft">
-                      ≈ {fmtPrice(Math.round(REMOTE_WEEK_PRICE / REMOTE_WEEK_NIGHTS))}/night
+                      ≈ {fmtPrice(Math.round(remotePkg.price / remotePkg.nights))}/night
                     </p>
                   </div>
                   <p className="mt-5 text-xs leading-relaxed text-muted">
-                    One price for the whole week, no matter the moon. Far cheaper than booking nightly.
+                    One price for the whole block, no matter the moon. The rig is yours dusk to dawn every night.
                   </p>
                 </>
               ) : (
@@ -681,7 +685,7 @@ export default function Book() {
                             <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.color }} />
                             {t.key === "dark" ? "Dark (new moon)" : t.label}
                           </span>
-                          <span className="text-2xl font-semibold text-gold">{fmtPrice(priceOf(t.price))}</span>
+                          <span className="text-2xl font-semibold text-gold">{fmtPrice(t.price)}</span>
                         </li>
                       );
                     })}
@@ -696,22 +700,20 @@ export default function Book() {
         </div>
       )}
 
-      {isRemoteWeek && selectedDate && (
+      {remotePkg && selectedDate && (
         <div className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[4px] bg-gold/10 px-4 py-2.5 text-sm ring-1 ring-gold/30">
-          <span className="font-semibold uppercase tracking-wider text-gold-soft">Your week</span>
+          <span className="font-semibold uppercase tracking-wider text-gold-soft">Your stay</span>
           <span className="font-semibold text-foreground">
-            {nightLabel} → {weekEndLabel}
+            {nightLabel} → {stayEndLabel}
           </span>
-          <span className="text-muted">· {REMOTE_WEEK_NIGHTS} nights in a row · {fmtPrice(REMOTE_WEEK_PRICE)}</span>
+          <span className="text-muted">· {remotePkg.nights} nights in a row · {fmtPrice(remotePkg.price)}</span>
         </div>
       )}
 
       {!selectedDate && (
         <p className="mt-8 text-sm text-muted">
           {mode === "remote"
-            ? isRemoteWeek
-              ? "Pick the first night of your week above. We reserve 7 nights in a row."
-              : "Pick a night above to reserve the rig for the evening."
+            ? `Pick the first night of your stay above. We reserve ${spanNights} nights in a row.`
             : "Pick a night above to see the targets best placed that evening."}
         </p>
       )}
@@ -1436,7 +1438,7 @@ export default function Book() {
       )}
 
       {/* 3 · Confirm booking (Remote) — the whole night is yours, no target/framing */}
-      {mode === "remote" && selectedDate && night && (
+      {mode === "remote" && selectedDate && remotePkg && (
         <>
           <h2 id="step-confirm" className="mt-12 scroll-mt-24 text-sm font-semibold uppercase tracking-wider text-gold">
             3 · Confirm booking
@@ -1445,40 +1447,28 @@ export default function Book() {
           <Card className="mt-4 max-w-3xl">
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted">{isRemoteWeek ? "Your week" : "Your night"}</p>
-                <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{nightLabel}</p>
+                <p className="text-xs uppercase tracking-wider text-muted">Your stay</p>
+                <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                  {nightLabel} → {stayEndLabel}
+                </p>
                 <p className="mt-2 text-sm text-muted">
-                  {isRemoteWeek
-                    ? `${REMOTE_WEEK_NIGHTS} nights through ${weekEndLabel} · dusk to dawn, the rig is yours`
-                    : `${night.phase} · ${night.illumPct}% lit · dusk-to-dawn, the rig is yours`}
+                  {remotePkg.nights} nights in a row · dusk to dawn, the rig is yours
                 </p>
               </div>
               <div className="text-right">
-                {isRemoteWeek ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-                    Full week
-                  </span>
-                ) : (
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                    style={{ background: `${night.tier.color}22`, color: night.tier.color }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: night.tier.color }} />
-                    {night.tier.label} night
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                  {remotePkg.popular ? "Full week" : `${remotePkg.nights}-night block`}
+                </span>
                 <p className="mt-1 text-4xl font-semibold leading-none tracking-tight text-gold sm:text-5xl">
                   {fmtPrice(remoteCharge)}
                 </p>
-                <p className="mt-1 text-xs text-muted">
-                  {isRemoteWeek ? `flat, ${REMOTE_WEEK_NIGHTS} nights` : "flat, whole night"}
-                </p>
+                <p className="mt-1 text-xs text-muted">flat, {remotePkg.nights} nights</p>
               </div>
             </div>
             <p className="mt-5 text-sm text-muted">
-              You drive the rig yourself with N.I.N.A. {isRemoteWeek ? "for all 7 nights" : "for the whole night"}, and
-              point it at any target you like. No target selection or framing needed here.
+              You drive the rig yourself with N.I.N.A. for all {remotePkg.nights} nights, and point it at any target you
+              like. No target selection or framing needed here.
             </p>
           </Card>
 
@@ -1514,7 +1504,7 @@ export default function Book() {
                 <p className="text-sm">
                   Paid and confirmed ·{" "}
                   <span className="font-semibold text-gold-soft">
-                    {isRemoteWeek ? `${nightLabel} → ${weekEndLabel}` : nightLabel}
+                    {nightLabel} → {stayEndLabel}
                   </span>{" "}
                   · <span className="font-semibold text-gold-soft">{fmtPrice(remoteCharge)}</span>. We&apos;ll send your
                   remote-desktop access details.
@@ -1538,16 +1528,16 @@ export default function Book() {
                 bookingId={booking.id}
                 amountUsd={remoteCharge}
                 heldUntil={booking.heldUntil}
-                label={isRemoteWeek ? "week" : "night"}
+                label={remotePkg.popular ? "week" : "stay"}
                 onPaid={() => setBooking((b) => ({ ...b, paid: true }))}
                 onReset={() => setBooking({})}
               />
             ) : booking.id ? (
               <div className="rounded-[4px] bg-emerald-500/10 p-4 ring-1 ring-hairline">
                 <p className="text-sm">
-                  Remote Control {isRemoteWeek ? "week" : "night"} requested for{" "}
+                  Remote Control {remotePkg.popular ? "week" : `${remotePkg.nights}-night stay`} requested for{" "}
                   <span className="font-semibold text-gold-soft">
-                    {isRemoteWeek ? `${nightLabel} → ${weekEndLabel}` : nightLabel}
+                    {nightLabel} → {stayEndLabel}
                   </span>{" "}
                   · <span className="font-semibold text-gold-soft">{fmtPrice(remoteCharge)}</span>. We&apos;ll confirm and
                   send your remote-desktop access details.
@@ -1567,9 +1557,10 @@ export default function Book() {
                   {booking.busy ? "Saving…" : user ? (paymentsOn ? "Continue to payment →" : "Confirm booking →") : "Log in to book →"}
                 </button>
                 <span className="text-sm text-muted">
-                  <span className="font-medium text-gold-soft">{nightLabel}</span> ·{" "}
-                  {isRemoteWeek ? `${REMOTE_WEEK_NIGHTS} nights` : "whole night"} ·{" "}
-                  <span className="font-semibold text-gold">{fmtPrice(remoteCharge)}</span>
+                  <span className="font-medium text-gold-soft">
+                    {nightLabel} → {stayEndLabel}
+                  </span>{" "}
+                  · {remotePkg.nights} nights · <span className="font-semibold text-gold">{fmtPrice(remoteCharge)}</span>
                 </span>
                 {booking.error && <p className="w-full text-sm text-red-300">{booking.error}</p>}
                 {user && (

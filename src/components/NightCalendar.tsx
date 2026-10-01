@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { moonIllumination } from "@/lib/visibility";
-import { nightTier, fmtPrice } from "@/lib/pricing";
+import { MoonPhase } from "@/components/MoonPhase";
 import { addDaysYmd, ymdSpan } from "@/lib/dates";
 
 /**
- * Month calendar of upcoming nights. Each night shows its moon-darkness quality
- * (new moon = best for imaging). Past nights are disabled. Picking a night
- * drives the rest of the booking flow.
+ * Month calendar of upcoming nights. Each night shows the Moon's phase as a small
+ * glyph (purely informational). Past nights are disabled. Picking a night drives
+ * the rest of the booking flow.
  */
+// The lit limb is on the right while the Moon waxes, on the left while it wanes.
+function isWaxing(phase: string) {
+  return !(phase.startsWith("Waning") || phase === "Last quarter");
+}
 function jdForLocalMidnight(y: number, m: number, d: number, utcOffset: number) {
   const ms = Date.UTC(y, m, d, 0, 0, 0, 0) + (24 - utcOffset) * 3600000;
   return ms / 86400000 + 2440587.5;
@@ -94,8 +98,8 @@ export function NightCalendar({
           // Today and earlier can't be booked: we can't process a same-day order.
           const tooSoon = cellMs <= todayMs;
           const booked = !tooSoon && isReserved(ymd);
-          const illum = moonIllumination(jdForLocalMidnight(view.y, view.m, d, utcOffset)).fraction;
-          const q = nightTier(illum);
+          const moon = moonIllumination(jdForLocalMidnight(view.y, view.m, d, utcOffset));
+          const illumPct = Math.round(moon.fraction * 100);
           // Can a stay START here? For a single night, just not booked. For a
           // week, every night in the span must be free.
           const spanFree = !tooSoon && (span === 1 ? !booked : ymdSpan(ymd, span).every((dd) => !isReserved(dd)));
@@ -127,26 +131,22 @@ export function NightCalendar({
                     : booked
                       ? "Booked. Choose another night"
                       : noSpan
-                        ? `Not enough consecutive open nights for a ${span}-night week`
+                        ? `Not enough consecutive open nights for a ${span}-night stay`
                         : span > 1
-                          ? `Start a ${span}-night week here (through ${addDaysYmd(ymd, span - 1)})`
-                          : `${Math.round(illum * 100)}% moon · ${q.label} · ${fmtPrice(q.price)}/night`
+                          ? `Start a ${span}-night stay here (through ${addDaysYmd(ymd, span - 1)}) · ${moon.phase}, ${illumPct}% lit`
+                          : `${moon.phase} · ${illumPct}% lit`
               }
               style={
                 disabled
                   ? undefined
                   : isStart
-                    ? // Single night keeps the moon-tier colour (price varies); the week is
-                      // one flat price, so its start is a neutral accent, not a tier colour.
-                      { backgroundColor: span > 1 ? "#6ea8fe" : q.color }
+                    ? // One flat neutral accent for the picked night (or a span's start).
+                      { backgroundColor: "#6ea8fe" }
                     : inSpan
                       ? { backgroundColor: "rgba(110,168,254,0.22)" }
-                      : span > 1
-                        ? // Week mode: no per-night price tiers, so a neutral outline.
-                          ({ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.14)", "--tier-bg": "rgba(255,255,255,0.06)" } as CSSProperties)
-                        : ({ boxShadow: `inset 0 0 0 1px ${q.color}`, "--tier-bg": `${q.color}33` } as CSSProperties)
+                      : undefined
               }
-              className={`relative flex aspect-square items-center justify-center rounded-md text-sm transition-colors ${
+              className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-md text-sm transition-colors ${
                 tooSoon
                   ? "cursor-not-allowed text-muted/30"
                   : booked
@@ -166,25 +166,37 @@ export function NightCalendar({
                   className="pointer-events-none absolute top-1/2 right-[-7px] z-10 h-[3px] w-3.5 -translate-y-1/2 rounded-full bg-gold"
                 />
               )}
-              {d}
+              <span className="leading-none">{d}</span>
+              {/* Moon phase glyph — only on selectable future nights, to stay quiet. */}
+              {!disabled && (
+                <MoonPhase
+                  fraction={moon.fraction}
+                  waxing={isWaxing(moon.phase)}
+                  size={12}
+                  className={isStart ? "opacity-80" : "opacity-60"}
+                />
+              )}
             </button>
           );
         })}
       </div>
 
-      {span > 1 ? (
-        <p className="mt-4 text-[11px] text-muted">
-          Pick the first of {span} consecutive nights. Dimmed nights can&apos;t start a full week.
-        </p>
-      ) : (
-        reserved &&
-        reserved.size > 0 && (
-          <p className="mt-4 text-[11px] text-muted">
-            Outlined nights are available · <span className="line-through">struck-through</span> nights are
-            already booked
-          </p>
-        )
-      )}
+      <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <MoonPhase fraction={0.5} waxing size={12} className="opacity-70" />
+          moon phase for the night
+        </span>
+        {span > 1 ? (
+          <span>· pick the first of {span} consecutive nights (dimmed nights can&apos;t start the stay)</span>
+        ) : (
+          reserved &&
+          reserved.size > 0 && (
+            <span>
+              · <span className="line-through">struck-through</span> nights are already booked
+            </span>
+          )
+        )}
+      </p>
     </div>
   );
 }

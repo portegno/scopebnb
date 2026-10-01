@@ -128,18 +128,20 @@ const cta = () => `
   </td></tr>`;
 
 /**
- * Booking confirmation email. Adapts to the three modalities:
+ * Booking confirmation email. Adapts to the modalities:
  *  - managed imaging (we capture the target for you)
- *  - remote single night
- *  - remote week (7 consecutive nights, no per-night weather rescheduling)
+ *  - remote control, a fixed block of consecutive nights (3 nights or a full
+ *    week of 7), with no per-night weather rescheduling
  * Mike adds a warm human note to each.
  */
 export function bookingConfirmationEmail(b: Booking): { subject: string; html: string; text: string } {
   const name = b.contact?.name?.trim().split(" ")[0];
   const hi = name ? `${name}, ` : "";
   const isRemote = b.product === "remote";
-  const isWeek = isRemote && b.remotePlan === "week";
   const nights = typeof b.nights === "number" && b.nights > 0 ? b.nights : 1;
+  // Remote is sold only as a fixed multi-night block; a full week is 7+ nights.
+  const isWeek = nights >= 7;
+  const stayLabel = isWeek ? "week" : `${nights}-night stay`;
   const startLabel = fmtDate(b.date);
   const endLabel = b.date ? fmtDate(addDaysYmd(b.date, nights - 1)) : "";
 
@@ -200,17 +202,18 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
       `Next steps: we'll confirm the service details (target, framing, filter) before your night.`,
       `Weather: if your night isn't usable we reschedule to the next good night, free.`,
     );
-  } else if (isWeek) {
-    // ---- Remote week (7 consecutive nights) ----
-    subject = `Your remote week is booked: ${startLabel} to ${endLabel}`;
+  } else {
+    // ---- Remote control (fixed multi-night block: 3 nights or a full week) ----
+    const serviceLabel = isWeek ? "Remote control (weekly)" : `Remote control (${nights}-night block)`;
+    subject = `Your remote ${stayLabel} is booked: ${startLabel} to ${endLabel}`;
     inner =
       header(
         "Booking received",
-        "The rig is yours for the week.",
+        isWeek ? "The rig is yours for the week." : `The rig is yours for ${nights} nights.`,
         `${hi}thanks for booking with ScopeBnB. You have full remote control of the rig with N.I.N.A. for ${nights} consecutive nights, from <strong style="color:#e8ebf5;">${startLabel}</strong> to <strong style="color:#e8ebf5;">${endLabel}</strong>.`,
       ) +
       detailTable([
-        ["Service", "Remote control (weekly)"],
+        ["Service", serviceLabel],
         ["Nights", `${nights} consecutive`],
         ["From", startLabel],
         ["To", endLabel],
@@ -221,58 +224,24 @@ export function bookingConfirmationEmail(b: Booking): { subject: string; html: s
         `We'll send your remote-access details and a quick start guide before your first night so you're ready to drive the rig.`,
       ) +
       policyBox(
-        "Weather policy (weekly plan)",
-        `The weekly plan is a fixed block. Once your opening night runs, the whole week runs as booked and we don't reschedule the remaining nights for weather. Clear or cloudy, the rig is reserved for you across the full week. If the opening night can't run at all, get in touch and we'll sort out the week with you.`,
+        "Weather policy (block plan)",
+        `Your ${stayLabel} is a fixed block. Once your opening night runs, the whole block runs as booked and we don't reschedule the remaining nights for weather. Clear or cloudy, the rig is reserved for you across every night. If the opening night can't run at all, get in touch and we'll sort it out with you.`,
       ) +
       mikeNote(
-        `A whole week under Bortle 1. That's the good stuff. Plan a few targets so you make the most of every clear hour. I'll get your access set up before night one. Clear skies!`,
+        isWeek
+          ? `A whole week under Bortle 1. That's the good stuff. Plan a few targets so you make the most of every clear hour. I'll get your access set up before night one. Clear skies!`
+          : `${nights} nights in a row under Bortle 1. Plan a couple of targets so you make the most of every clear hour. I'll get your access set up before night one. Clear skies!`,
       ) +
       cta();
 
     textLines.push(
       `Thanks for booking with ScopeBnB.`,
       ``,
-      `Remote control (weekly): ${nights} consecutive nights, ${startLabel} to ${endLabel}.`,
+      `${serviceLabel}: ${nights} consecutive nights, ${startLabel} to ${endLabel}.`,
       typeof b.totalUsd === "number" ? `Total: $${b.totalUsd}` : "",
       ``,
       `Next steps: we'll send remote-access details and a quick start guide before night one.`,
-      `Weather (weekly): once the opening night runs, the whole week runs as booked. We don't reschedule individual nights for weather. If the opening night can't run at all, get in touch.`,
-    );
-  } else {
-    // ---- Remote single night ----
-    subject = `Your remote night is booked: ${startLabel}`;
-    inner =
-      header(
-        "Booking received",
-        "The rig is yours for the night.",
-        `${hi}thanks for booking with ScopeBnB. You have full remote control of the rig with N.I.N.A. on the night of <strong style="color:#e8ebf5;">${startLabel}</strong>.`,
-      ) +
-      detailTable([
-        ["Service", "Remote control (single night)"],
-        ["Night", startLabel],
-        ...(typeof b.totalUsd === "number" ? ([["Total", `$${b.totalUsd}`]] as [string, string][]) : []),
-      ]) +
-      policyBox(
-        "Next steps",
-        `We'll send your remote-access details and a quick start guide before your night so you're ready to drive the rig.`,
-      ) +
-      policyBox(
-        "Weather policy",
-        `If your night isn't usable, we reschedule it to the next good night at no extra cost.`,
-      ) +
-      mikeNote(
-        `Have a target list ready so you're not deciding at the eyepiece. If the weather turns, we'll just move you to the next clear night. Clear skies!`,
-      ) +
-      cta();
-
-    textLines.push(
-      `Thanks for booking with ScopeBnB.`,
-      ``,
-      `Remote control (single night): ${startLabel}.`,
-      typeof b.totalUsd === "number" ? `Total: $${b.totalUsd}` : "",
-      ``,
-      `Next steps: we'll send remote-access details and a quick start guide before your night.`,
-      `Weather: if your night isn't usable we reschedule to the next good night, free.`,
+      `Weather (block plan): once the opening night runs, the whole block runs as booked. We don't reschedule individual nights for weather. If the opening night can't run at all, get in touch.`,
     );
   }
 

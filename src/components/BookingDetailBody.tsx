@@ -40,7 +40,13 @@ export function BookingDetailBody({ booking }: { booking: Booking }) {
   const b = booking;
   const isRemote = b.product === "remote";
   const nights = b.nights ?? 1;
-  const title = isRemote ? (nights > 1 ? "Remote week" : "Remote night") : b.targetName ?? "Target";
+  const title = isRemote
+    ? nights >= 7
+      ? "Remote week"
+      : nights > 1
+        ? `Remote ${nights}-night`
+        : "Remote night"
+    : b.targetName ?? "Target";
   const nightText =
     isRemote && nights > 1 && b.date
       ? `${b.date} → ${addDaysYmd(b.date, nights - 1)} · ${nights} nights`
@@ -115,7 +121,9 @@ export function BookingDetailBody({ booking }: { booking: Booking }) {
           {total != null && (
             <Row label="Price">
               {fmtPrice(total)}
-              {isRemote && nights > 1 && <span className="text-muted"> · full week</span>}
+              {isRemote && nights > 1 && (
+                <span className="text-muted"> · {nights >= 7 ? "full week" : `${nights}-night block`}</span>
+              )}
               {!isRemote && b.nightTier && <span className="text-muted"> · {cap(b.nightTier)} night</span>}
               {!isRemote && b.wantsIntegration && <span className="text-muted"> + ${INTEGRATION_FEE} integration</span>}
             </Row>

@@ -19,9 +19,10 @@ Dos modalidades:
 - **Managed Imaging** (foto por encargo): el cliente elige target y encuadre; el
   equipo captura y entrega los lights + calibración (FITS) en 24 h. Add-on:
   imagen integrada por $25.
-- **Remote Control (N.I.N.A.)**: el cliente maneja el rig él mismo. Plan estrella:
-  **semana de 7 noches de corrido a $300 flat** (MOST POPULAR, se empuja a esto).
-  También noche suelta.
+- **Remote Control (N.I.N.A.)**: el cliente maneja el rig él mismo. Se vende SOLO
+  por paquete de noches de corrido (no hay noche suelta ni precio por luna):
+  **3 noches $150** o **7 noches (semana) $300 flat** (MOST POPULAR, se empuja a
+  esto). Fuente única: `REMOTE_PLANS` en `src/lib/pricing.ts`.
 
 El rig: William Optics RedCat 91 (91mm f/4.9) · montura ZWO AM5N · cámara color
 ZWO ASI2600MC · rotador CAA · filtro Optolong L-Extreme · EAF · NUC con N.I.N.A.
@@ -118,7 +119,10 @@ robots.ts (permite bots de IA), sitemap dinámico, `public/llms.txt`, JSON-LD
 - **Copy del sitio en inglés, SIN em dashes** (—). Usar comas, dos puntos o punto.
 - **Radius 4px** en botones y paneles (`rounded-[4px]`).
 - Data demo/seed separada de la UI (en `src/data/`), componentes reutilizables.
-- El "+10%" de Remote Control es el RECARGO del uso remoto, no el descuento.
+- **Managed** se cobra por noche según la luna (tiers dark/good/bright/full en
+  `NIGHT_TIERS`); **Remote** es precio plano por paquete (no depende de la luna).
+- El calendario (`NightCalendar`) ya NO colorea los días por luna: muestra un
+  **glifo de fase lunar** por noche (`components/MoonPhase.tsx`, informativo).
 
 ## Coordinación entre sesiones
 

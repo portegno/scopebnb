@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Section, Eyebrow, CTA, Card } from "@/components/ui";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { NIGHT_TIERS, fmtPrice, remotePrice, INTEGRATION_FEE, REMOTE_WEEK_PRICE, REMOTE_WEEK_NIGHTS } from "@/lib/pricing";
+import { NIGHT_TIERS, fmtPrice, INTEGRATION_FEE, REMOTE_PLANS } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Managed imaging from $65 to $100 per night by sky darkness, a flat $300 for a full remote week (7 nights), and a $25 integrated-image add-on. No subscription.",
+    "Managed imaging from $65 to $100 per night by sky darkness, remote control by the block ($150 for 3 nights or $300 for a full week of 7), and a $25 integrated-image add-on. No subscription.",
   alternates: { canonical: "/pricing" },
 };
 
-function TierTable({ remote = false }: { remote?: boolean }) {
+function TierTable() {
   return (
     <ul className="mt-5 divide-y divide-hairline">
       {NIGHT_TIERS.map((t) => (
@@ -19,9 +20,7 @@ function TierTable({ remote = false }: { remote?: boolean }) {
             <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.color }} />
             {t.key === "dark" ? "Dark (new moon)" : t.label}
           </span>
-          <span className="text-xl font-semibold text-gold">
-            {fmtPrice(remote ? remotePrice(t.price) : t.price)}
-          </span>
+          <span className="text-xl font-semibold text-gold">{fmtPrice(t.price)}</span>
         </li>
       ))}
     </ul>
@@ -34,8 +33,8 @@ export default function Pricing() {
       <Eyebrow>Pricing</Eyebrow>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">Simple rates, no hidden fees</h1>
       <p className="mt-4 max-w-2xl text-muted">
-        No subscription. You only pay when you book, and every night is priced by how dark it is.
-        New-moon nights image the faintest targets, so they cost the most.
+        No subscription, you only pay when you book. Managed imaging is priced by how dark the night is: new-moon
+        nights image the faintest targets, so they cost the most. Remote control is a flat rate for a block of nights.
       </p>
 
       <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -65,37 +64,49 @@ export default function Pricing() {
 
         {/* Remote Control */}
         <Card className="flex flex-col">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent">Remote Control (NINA)</p>
-            <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] font-semibold text-gold">+10%</span>
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Remote Control (NINA)</p>
           <h2 className="mt-1 text-lg font-semibold">You drive the rig yourself</h2>
           <p className="mt-1 text-sm text-muted">
-            Rent the telescope and operate it remotely with N.I.N.A., pointing it at anything you like.
+            Rent the telescope and operate it remotely with N.I.N.A., pointing it at anything you like. Sold by the
+            block of consecutive nights, one flat rate, no matter the moon.
           </p>
 
-          {/* Featured: the full-week plan, the best value. */}
-          <div className="mt-4 rounded-[4px] bg-surface-2 p-4 ring-1 ring-gold/40">
-            <div className="flex items-center justify-between gap-2">
-              <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-background">
-                Most popular
-              </span>
-              <span className="text-2xl font-semibold text-gold">{fmtPrice(REMOTE_WEEK_PRICE)}</span>
-            </div>
-            <p className="mt-2 text-sm font-semibold text-foreground">
-              Full week · {REMOTE_WEEK_NIGHTS} nights in a row
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              ≈ {fmtPrice(Math.round(REMOTE_WEEK_PRICE / REMOTE_WEEK_NIGHTS))}/night. Best odds of clear skies, far
-              cheaper than booking nightly.
-            </p>
-          </div>
-
-          <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted">Or by the night</p>
-          <TierTable remote />
-          <p className="mt-4 text-xs text-muted">Per night, hands-on. 10% above the managed rate.</p>
-          <div className="mt-6">
-            <CTA href="/book?mode=remote">Reserve your week</CTA>
+          <div className="mt-4 flex-1 space-y-3">
+            {REMOTE_PLANS.map((p) => (
+              <Link
+                key={p.key}
+                href={`/book?mode=remote&plan=${p.key}`}
+                className={`group block rounded-[4px] p-4 transition-colors ${
+                  p.popular
+                    ? "bg-surface-2 ring-1 ring-gold/40 hover:ring-gold/70"
+                    : "bg-surface-2/60 ring-1 ring-hairline hover:ring-accent/50"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  {p.popular ? (
+                    <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-background">
+                      Most popular
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted">Shorter run</span>
+                  )}
+                  <span className="text-2xl font-semibold text-gold">{fmtPrice(p.price)}</span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {p.popular ? "Full week" : `${p.nights}-night block`} · {p.nights} nights in a row
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  ≈ {fmtPrice(Math.round(p.price / p.nights))}/night.{" "}
+                  {p.popular ? "Best odds of clear skies, the cheapest per night." : "When a full week is more than you need."}
+                </p>
+                <span
+                  className={`mt-3 inline-flex items-center gap-1 text-xs font-semibold ${p.popular ? "text-gold" : "text-accent"}`}
+                >
+                  {p.popular ? "Reserve your week" : "Reserve 3 nights"}
+                  <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </span>
+              </Link>
+            ))}
           </div>
         </Card>
       </div>

@@ -129,7 +129,13 @@ export default function Dashboard() {
           // show the week's date range; every card shows its price + paid state.
           const isRemote = b.product === "remote";
           const nights = b.nights ?? 1;
-          const title = isRemote ? (nights > 1 ? "Remote week" : "Remote night") : b.targetName ?? "Target";
+          const title = isRemote
+            ? nights >= 7
+              ? "Remote week"
+              : nights > 1
+                ? `Remote ${nights}-night`
+                : "Remote night"
+            : b.targetName ?? "Target";
           const dateLine =
             isRemote && nights > 1 && b.date
               ? `${b.date} → ${addDaysYmd(b.date, nights - 1)} · ${nights} nights`

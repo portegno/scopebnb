@@ -5,7 +5,7 @@
 ScopeBnB gives you a professional imaging rig under some of the darkest skies in the continental United States (Bortle 1, roughly 270 clear nights a year). You book online and choose how you want to work:
 
 - **Managed imaging**: our team frames and captures your chosen target and delivers the session's calibrated light frames plus calibration frames (darks and flats) as 16-bit FITS to your dashboard within 24 hours. No experience needed. Priced by how dark the sky is that night, from $65 to $100 per night.
-- **Remote control (N.I.N.A.)**: rent the rig and drive it yourself, pointing at any target you like. The most popular option is a full week of seven consecutive nights for a flat $300.
+- **Remote control (N.I.N.A.)**: rent the rig and drive it yourself, pointing at any target you like. Sold only as a fixed block of consecutive nights at a flat rate (no single nights, no moon-based pricing): 3 nights for $150, or a full week of 7 nights for a flat $300 (the most popular, the best value).
 - **Integrated image add-on ($25)**: optional processing where we calibrate, stack and finish your data into a ready-to-stretch image.
 
 The rig is a wide-field setup (about 3° × 2° field of view), ideal for large nebulae and rich star fields. There is no subscription; you only pay when you book. Bad-weather nights are automatically rescheduled at no extra cost (weather guarantee).
@@ -15,15 +15,15 @@ Location: Starfront Observatories, 1724 County Road 244, Rockwood, TX 76873 (app
 ## Key pages
 - [Home](https://scopebnb.com/): what ScopeBnB is and how it works
 - [Book a night](https://scopebnb.com/book): choose managed or remote, pick your nights, choose a target
-- [Pricing](https://scopebnb.com/pricing): nightly tiers, the $300 remote week, and add-ons
+- [Pricing](https://scopebnb.com/pricing): nightly managed tiers, the remote 3-night and 7-night packages, and add-ons
 - [FAQ](https://scopebnb.com/faq): experience needed, weather guarantee, what you receive, targets, subscription
 - [Blog](https://scopebnb.com/blog): guides and field notes on astrophotography under dark skies
 
 ## Facts
 - Sky quality: Bortle 1 (darkest class)
 - Clear nights: ~270 per year
-- Managed imaging: $65–$100 per night, delivered within 24 hours
-- Remote week: $300 for 7 consecutive nights (best value, most popular)
+- Managed imaging: $65 to $100 per night (priced by sky darkness), delivered within 24 hours
+- Remote control: sold only by the block, 3 nights for $150 or 7 nights for $300 (best value, most popular); flat rate, no moon-based pricing
 - Integrated image add-on: $25
 - Equipment: wide-field rig, ~3° × 2° field of view
 - No subscription; weather guarantee with free rescheduling

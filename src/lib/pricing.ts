@@ -45,20 +45,34 @@ export function fmtPrice(usd: number): string {
 export const INTEGRATION_FEE = 25;
 
 /**
- * Remote Control rents the rig itself (the user drives it), priced 10% above
- * the managed-imaging "we take the photo" rate. Derived so it tracks any change
- * to the base tier prices.
+ * Remote Control is sold only as a fixed multi-night package — no single nights.
+ * Each package is a flat rate for a block of consecutive nights, independent of
+ * the moon (the moon prices managed imaging, not remote). Two options: a short
+ * 3-night block and the full week, which is the best value and the one we steer
+ * bookers toward. Single source of truth for the plan cards and the booking price.
  */
-export const REMOTE_SURCHARGE = 1.1;
+export type RemotePlanKey = "short" | "week";
 
-export function remotePrice(usd: number): number {
-  return Math.round(usd * REMOTE_SURCHARGE);
+export type RemotePlan = {
+  key: RemotePlanKey;
+  label: string;
+  nights: number;
+  /** Flat price for the whole block, in USD. */
+  price: number;
+  popular?: boolean;
+};
+
+const REMOTE_PLAN_MAP: Record<RemotePlanKey, RemotePlan> = {
+  short: { key: "short", label: "3 nights", nights: 3, price: 150 },
+  week: { key: "week", label: "Full week", nights: 7, price: 300, popular: true },
+};
+
+export const REMOTE_PLANS: RemotePlan[] = [REMOTE_PLAN_MAP.week, REMOTE_PLAN_MAP.short];
+
+export function remotePlan(key: RemotePlanKey): RemotePlan {
+  return REMOTE_PLAN_MAP[key];
 }
 
-/**
- * Remote Control weekly plan: the rig is yours for 7 consecutive nights at a
- * flat rate — the best value, and the option we steer bookers toward. Priced
- * well below 7 nightly rentals so a full week is the obvious choice.
- */
-export const REMOTE_WEEK_NIGHTS = 7;
-export const REMOTE_WEEK_PRICE = 300;
+// Kept for the full-week plan (referenced across the site, schema and landings).
+export const REMOTE_WEEK_NIGHTS = REMOTE_PLAN_MAP.week.nights;
+export const REMOTE_WEEK_PRICE = REMOTE_PLAN_MAP.week.price;

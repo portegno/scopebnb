@@ -5,7 +5,7 @@
  * ScopeBnB is, where it is, what it costs, and what questions it answers.
  */
 import { site } from "@/config/site";
-import { NIGHT_TIERS, REMOTE_WEEK_PRICE, REMOTE_WEEK_NIGHTS, INTEGRATION_FEE } from "@/lib/pricing";
+import { NIGHT_TIERS, REMOTE_PLANS, INTEGRATION_FEE } from "@/lib/pricing";
 import type { Faq } from "@/data/faq";
 import type { BlogPost } from "@/lib/blog/types";
 
@@ -27,7 +27,27 @@ const postalAddress = () => ({
   addressCountry: "US",
 });
 
-/** Managed imaging spans the nightly tiers; remote is a flat weekly rate. */
+const IN_STOCK = "https://schema.org/InStock";
+const WORLDWIDE = { "@type": "Country", name: "Worldwide" };
+
+/** A Service node for an Offer's itemOffered, so the offer is self-describing. */
+function service(name: string, serviceType: string, description: string) {
+  return {
+    "@type": "Service",
+    name,
+    serviceType,
+    description,
+    provider: { "@id": ORG_ID },
+    areaServed: WORLDWIDE,
+  };
+}
+
+/**
+ * The priced catalogue, as granular Offers so search engines and LLMs can quote
+ * exact prices and units: Managed imaging is a per-night range (priced by moon),
+ * Remote Control is a flat rate per fixed block of nights, plus the add-on. Each
+ * offer carries its unit/quantity, the Service it buys, and a deep link to book.
+ */
 function offers() {
   const nightly = NIGHT_TIERS.map((t) => t.price);
   return [
@@ -36,30 +56,55 @@ function offers() {
       name: "Managed astrophotography session",
       description:
         "We frame and capture your target and deliver the session's calibrated light and calibration frames within 24 hours. Priced by how dark the sky is that night.",
+      category: "Managed imaging",
+      url: abs("/book?mode=managed"),
       priceCurrency: "USD",
       priceSpecification: {
-        "@type": "PriceSpecification",
+        "@type": "UnitPriceSpecification",
         minPrice: Math.min(...nightly),
         maxPrice: Math.max(...nightly),
         priceCurrency: "USD",
+        unitText: "night",
+        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitText: "night" },
       },
-      availability: "https://schema.org/InStock",
+      availability: IN_STOCK,
+      itemOffered: service(
+        "Managed astrophotography session",
+        "Remote astrophotography imaging service",
+        "Our team operates the rig and images your chosen target, delivering calibrated FITS within 24 hours.",
+      ),
     },
-    {
+    ...REMOTE_PLANS.map((p) => ({
       "@type": "Offer",
-      name: "Remote imaging week",
-      description: `Full remote control of the rig with N.I.N.A. for ${REMOTE_WEEK_NIGHTS} consecutive nights. Flat rate, the best value.`,
-      price: REMOTE_WEEK_PRICE,
+      name: p.popular ? `Remote imaging week (${p.nights} nights)` : `Remote imaging (${p.nights} nights)`,
+      description: `Full remote control of the rig with N.I.N.A. for ${p.nights} consecutive nights at a flat rate${p.popular ? ", the best value" : ""}.`,
+      category: "Remote control",
+      url: abs(`/book?mode=remote&plan=${p.key}`),
+      price: p.price,
       priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
-    },
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: p.price,
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", value: p.nights, unitText: "night" },
+      },
+      eligibleQuantity: { "@type": "QuantitativeValue", value: p.nights, unitText: "night" },
+      availability: IN_STOCK,
+      itemOffered: service(
+        `Remote telescope rental, ${p.nights}-night block`,
+        "Remote telescope rental",
+        `You drive the rig yourself over the internet with N.I.N.A. for ${p.nights} consecutive nights, pointing it at any target.`,
+      ),
+    })),
     {
       "@type": "Offer",
       name: "Integrated image add-on",
       description: "Optional: we calibrate, stack and process your data into a ready-to-stretch image.",
+      category: "Add-on",
+      url: abs("/pricing"),
       price: INTEGRATION_FEE,
       priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
+      availability: IN_STOCK,
     },
   ];
 }
